@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { execFileSync } from "node:child_process";
 import { buildCompleteZip } from "../../scripts/package-complete.js";
 
 const repoRoot = path.resolve(__dirname, "..", "..");
@@ -22,9 +21,21 @@ function fakeRelease(dir: string, version: string): void {
   }
 }
 
+/** Entry names from the zip's central directory (no external tool: python printed \r\n on Windows). */
 function zipNames(file: string): string[] {
-  const out = execFileSync("python3", ["-c", "import sys,zipfile;print('\\n'.join(zipfile.ZipFile(sys.argv[1]).namelist()))", file]);
-  return out.toString().trim().split("\n");
+  const buf = fs.readFileSync(file);
+  const end = buf.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
+  const count = buf.readUInt16LE(end + 10);
+  let p = buf.readUInt32LE(end + 16);
+  const names: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const nameLen = buf.readUInt16LE(p + 28);
+    const extraLen = buf.readUInt16LE(p + 30);
+    const commentLen = buf.readUInt16LE(p + 32);
+    names.push(buf.toString("utf8", p + 46, p + 46 + nameLen));
+    p += 46 + nameLen + extraLen + commentLen;
+  }
+  return names;
 }
 
 describe("complete download (one zip with every installer)", () => {

@@ -96,3 +96,28 @@ export function collectFiles(dir: string, prefix: string, skip?: RegExp): Array<
   if (fs.existsSync(dir)) walk(dir);
   return out;
 }
+
+/** Reads every file of a zip written by writeZip (stored or deflated entries, no data descriptors). */
+export function readZip(file: string): Array<{ name: string; data: Buffer }> {
+  const buf = fs.readFileSync(file);
+  const end = buf.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
+  if (end < 0) throw new Error(`readZip: ${file} is not a zip file.`);
+  const count = buf.readUInt16LE(end + 10);
+  let p = buf.readUInt32LE(end + 16);
+  const out: Array<{ name: string; data: Buffer }> = [];
+  for (let i = 0; i < count; i++) {
+    if (buf.readUInt32LE(p) !== 0x02014b50) throw new Error(`readZip: bad central directory in ${file}.`);
+    const method = buf.readUInt16LE(p + 10);
+    const compSize = buf.readUInt32LE(p + 20);
+    const nameLen = buf.readUInt16LE(p + 28);
+    const extraLen = buf.readUInt16LE(p + 30);
+    const commentLen = buf.readUInt16LE(p + 32);
+    const local = buf.readUInt32LE(p + 42);
+    const name = buf.toString("utf8", p + 46, p + 46 + nameLen);
+    const dataStart = local + 30 + buf.readUInt16LE(local + 26) + buf.readUInt16LE(local + 28);
+    const raw = buf.subarray(dataStart, dataStart + compSize);
+    if (!name.endsWith("/")) out.push({ name, data: method === 8 ? zlib.inflateRawSync(raw) : Buffer.from(raw) });
+    p += 46 + nameLen + extraLen + commentLen;
+  }
+  return out;
+}

@@ -1,0 +1,42 @@
+JuniorRocha MCP for Adobe Creative Cloud - version {{VERSION}} - for the ChatGPT desktop app
+
+Everything you need to install, in three folders. Install only the parts for the apps you use.
+
+You need
+- Windows 10 or 11, or macOS
+- The ChatGPT desktop app, with MCP servers available on your plan
+- Node.js 20 or newer (https://nodejs.org). ChatGPT starts the server with it.
+- The creative apps you want to use, signed in and opened at least once
+
+1. The server  (folder 1-server)
+   Close the ChatGPT app.
+   Windows: double-click INSTALL-CHATGPT.bat
+   macOS:   run  chmod +x INSTALL-CHATGPT.command  once in Terminal, then double-click INSTALL-CHATGPT.command
+   It copies the server to
+     Windows: %LOCALAPPDATA%\JuniorRocha-MCP\server
+     macOS:   ~/Library/Application Support/JuniorRocha-MCP/server
+   and adds "junior-rocha-mcp" to the MCP settings of the ChatGPT app (~/.codex/config.toml),
+   after saving a backup copy of that file. Open ChatGPT again; the server is in Settings > MCP servers.
+   If you had added this server by hand before, remove that older entry so the tools do not appear twice.
+
+2. Plug-ins for Photoshop, Premiere Pro and InDesign  (folder 2-plugins)
+   Double-click each .ccx file you need. Creative Cloud asks for confirmation and installs it.
+   Open each app and open the Junior Rocha MCP panel once, so it activates.
+
+3. Bridges for After Effects, Illustrator and Lightroom Classic  (folder 3-bridges-kit)
+   Close those apps first.
+   Windows: double-click INSTALL-BRIDGES.bat
+   macOS:   run  chmod +x INSTALL-BRIDGES.command  once in Terminal, then double-click INSTALL-BRIDGES.command
+   Open the apps again. Lightroom Classic loads its plug-in on the next start.
+
+4. Check
+   Open your apps and ask ChatGPT: "Check the status of my creative apps."
+   Each app should be listed with a bridge (uxp, cep or lua).
+
+Updating later: run INSTALL-CHATGPT again with the new zip; it replaces the server and its own entry only.
+To remove: delete the JuniorRocha-MCP folder above and the "junior-rocha-mcp" server in Settings > MCP servers.
+
+Documentation and help:
+https://github.com/DicoRocha/JuniorRocha-MCP-for-Adobe-Creative-Cloud-Apps
+
+Independent project, not affiliated with or endorsed by Adobe.

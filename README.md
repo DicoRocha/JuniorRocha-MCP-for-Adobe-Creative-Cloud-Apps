@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="#download"><img src="docs/assets/banner.svg" alt="Run your creative apps from a chat: 220 tools, 6 apps, 87 skills, 327 tests" width="100%"></a>
+  <a href="#download"><img src="docs/assets/banner.svg" alt="Run your creative apps from a chat: 220 tools, 6 apps, 87 skills, 337 tests" width="100%"></a>
 </p>
 
 # JuniorRocha MCP for Adobe Creative Cloud
@@ -10,12 +10,19 @@ your own computer. You describe the job, the apps do the work, and you keep edit
 
 ## Download
 
-**[Download the complete package](https://github.com/DicoRocha/JuniorRocha-MCP-for-Adobe-Creative-Cloud-Apps/releases/latest)**: one zip,
-`JuniorRocha-MCP-<version>-complete.zip`, with every installer and an `INSTALL.txt` in the right order:
+**[Download the latest release](https://github.com/DicoRocha/JuniorRocha-MCP-for-Adobe-Creative-Cloud-Apps/releases/latest)**
+and pick the zip for your assistant. Each one has every installer and an `INSTALL.txt` in the right order:
 
-| Folder in the zip | What it is | How to install |
+| Zip | For | Server install |
 |---|---|---|
-| `1-server` | The server, as a Claude Desktop extension (`.mcpb`) | Claude Desktop → Settings → Extensions → install the file, then quit Claude and open it again |
+| `JuniorRocha-MCP-<version>-claude.zip` | Claude Desktop | Settings → Extensions → install the `.mcpb` |
+| `JuniorRocha-MCP-<version>-chatgpt.zip` | ChatGPT desktop app | Double-click `INSTALL-CHATGPT.bat` (macOS: `INSTALL-CHATGPT.command`); needs [Node.js](https://nodejs.org) 20+ |
+
+Inside both:
+
+| Folder | What it is | How to install |
+|---|---|---|
+| `1-server` | The server | As in the table above |
 | `2-plugins` | Plug-ins for Photoshop, Premiere Pro and InDesign (`.ccx`) | Double-click each one you need; Creative Cloud installs it |
 | `3-bridges-kit` | Bridges for After Effects, Illustrator and Lightroom Classic | Close those apps, then double-click `INSTALL-BRIDGES.bat` (Windows) or `INSTALL-BRIDGES.command` (macOS) |
 
@@ -71,7 +78,7 @@ See [Install from source](#install-from-source).
   [On-demand loading](#on-demand-loading).
 - **Workflow knowledge included.** 87 skills describe how studio work is done in these apps, from the brief
   to the delivery check.
-- **Tested.** 327 automated tests run on every setup, including a simulated app and the Lightroom plug-in.
+- **Tested.** 337 automated tests run on every setup, including a simulated app and the Lightroom plug-in.
 
 ## Some examples of what you can ask
 
@@ -244,17 +251,24 @@ tools and the router, and counts a signature at its full definition size.
 **You need**
 
 - Windows 10 or 11, or macOS (see [`docs/MACOS.md`](docs/MACOS.md))
-- [Claude Desktop](https://claude.ai/download), or another MCP client
+- [Claude Desktop](https://claude.ai/download), the ChatGPT desktop app, or another MCP client
 - The apps you want to drive, signed in and opened at least once
 - Port `31001` free on your computer (the panels connect to it)
 
 **Steps**
 
-1. **Download and extract** `JuniorRocha-MCP-<version>-complete.zip` from the
-   [latest release](https://github.com/DicoRocha/JuniorRocha-MCP-for-Adobe-Creative-Cloud-Apps/releases/latest).
+1. **Download and extract** `JuniorRocha-MCP-<version>-claude.zip` or `JuniorRocha-MCP-<version>-chatgpt.zip`
+   from the [latest release](https://github.com/DicoRocha/JuniorRocha-MCP-for-Adobe-Creative-Cloud-Apps/releases/latest).
 
-2. **Install the server.** In Claude Desktop: Settings → Extensions → install the `.mcpb` from `1-server`.
-   Quit Claude (on Windows, from the system tray) and open it again.
+2. **Install the server.**
+   - **Claude Desktop:** Settings → Extensions → install the `.mcpb` from `1-server`. Quit Claude (on Windows,
+     from the system tray) and open it again.
+   - **ChatGPT desktop app:** close ChatGPT and double-click `INSTALL-CHATGPT.bat` in `1-server` (macOS:
+     `chmod +x INSTALL-CHATGPT.command`, then double-click it). It copies the server to
+     `%LOCALAPPDATA%\JuniorRocha-MCP\server` (macOS: `~/Library/Application Support/JuniorRocha-MCP/server`)
+     and adds `junior-rocha-mcp` to the app's MCP settings (`~/.codex/config.toml`, backed up first). Open
+     ChatGPT again; the server is listed in Settings → MCP servers. Needs [Node.js](https://nodejs.org) 20 or
+     newer.
 
 3. **Install the plug-ins for Photoshop, Premiere Pro and InDesign.** Double-click each `.ccx` in `2-plugins`.
    Creative Cloud asks for confirmation and installs it. Open the Junior Rocha MCP panel once in each app so it
@@ -302,15 +316,15 @@ On macOS run `./SETUP.command` instead. Close the creative apps first. The scrip
 | Package the plug-ins and the bridges kit | `logs/3-package-plugins.log` |
 | Diagnostics | `logs/4-doctor.log` |
 | Package the Claude Desktop extension | `logs/5-package-mcpb.log` |
-| Build the complete download zip | `logs/6-package-complete.log` |
+| Build the two download zips (Claude and ChatGPT) | `logs/6-package-complete.log` |
 
 Each log ends in `exit=0` when the stage worked. Then install the three `.ccx` files and the `.mcpb` from
 `release/`, as in steps 2 and 3 above. Step 4 is not needed: the setup already installed those bridges.
 
 ## Client setup
 
-Only Claude Desktop is tested. The other entries are the standard stdio configuration for each client;
-replace the path with your clone.
+Claude Desktop is the main tested client, and the ChatGPT desktop app was tested by the author. The other
+entries are the standard stdio configuration for each client; replace the path with your clone.
 
 <details>
 <summary><b>Claude Desktop</b> (tested)</summary>
@@ -329,6 +343,24 @@ a backup. Use one way or the other, not both.
     }
   }
 }
+```
+</details>
+
+<details>
+<summary><b>ChatGPT desktop app</b> (tested)</summary>
+
+Recommended: the `-chatgpt.zip` download and its `INSTALL-CHATGPT` (step 2 of [Install](#install)).
+
+From a clone: Settings → MCP servers → Add server → STDIO, command `node C:/path/to/clone/dist/index.js`,
+or add this to `~/.codex/config.toml` (shared by the ChatGPT desktop app and Codex). Keep the longer tool
+timeout: renders and exports can take more than the 60 s default.
+
+```toml
+[mcp_servers.junior-rocha-mcp]
+command = "node"
+args = ["C:/path/to/clone/dist/index.js"]
+startup_timeout_sec = 30
+tool_timeout_sec = 900
 ```
 </details>
 

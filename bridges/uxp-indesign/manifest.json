@@ -1,7 +1,7 @@
 {
   "id": "com.jradbmcp.indesign.uxp",
   "name": "Junior Rocha MCP",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "main": "index.html",
   "manifestVersion": 5,
   "host": {

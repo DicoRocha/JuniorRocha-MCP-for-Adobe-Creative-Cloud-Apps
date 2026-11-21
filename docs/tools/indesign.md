@@ -75,8 +75,8 @@ Add pages (after a page or at the end, with a parent page), remove, duplicate, m
 |---|---|:---:|---|
 | `operation` | `add` · `remove` · `duplicate` · `move` · `applyParent` | yes |  |
 | `page` | integer or string |  | 1-based page number or page name; defaults to the active page. |
-| `afterPage` | any |  |  |
-| `toPage` | any |  | For move: place after this page. |
+| `afterPage` | integer or string |  | 1-based page number or page name; defaults to the active page. |
+| `toPage` | integer or string |  | For move: place after this page. |
 | `count` | integer |  |  |
 | `parent` | string |  | Parent page name or prefix, e.g. 'A-Parent' or 'A'; 'None' removes it. |
 
@@ -111,7 +111,7 @@ Edit frames and shapes (by ids, names or selection): move, move by, resize, rota
 | `rotate` | number |  | Absolute rotation in degrees. |
 | `duplicate` | boolean |  | Edit a duplicate instead of the original. |
 | `fillColor` | string or number[] |  | Swatch name ('Black', 'Paper', 'None', a document swatch), '#RRGGBB', [r,g,b] 0-255 or [c,m,y,k] 0-100. |
-| `strokeColor` | any |  | Swatch name ('Black', 'Paper', 'None', a document swatch), '#RRGGBB', [r,g,b] 0-255 or [c,m,y,k] 0-100. |
+| `strokeColor` | string or number[] |  | Swatch name ('Black', 'Paper', 'None', a document swatch), '#RRGGBB', [r,g,b] 0-255 or [c,m,y,k] 0-100. |
 | `strokeWeight` | number |  | Points. |
 | `cornerRadius` | number |  |  |
 | `opacity` | number |  |  |
@@ -139,7 +139,7 @@ Create a text frame on a page with text, formatting (paragraph/character style o
 | `contents` | string | yes | Text; use \r for new paragraphs. |
 | `format` | object |  |  |
 | `frame` | object |  |  |
-| `fillColor` | any |  | Swatch name ('Black', 'Paper', 'None', a document swatch), '#RRGGBB', [r,g,b] 0-255 or [c,m,y,k] 0-100. |
+| `fillColor` | string or number[] |  | Swatch name ('Black', 'Paper', 'None', a document swatch), '#RRGGBB', [r,g,b] 0-255 or [c,m,y,k] 0-100. |
 | `objectStyle` | string |  |  |
 | `layer` | string |  |  |
 | `name` | string |  |  |
@@ -192,7 +192,7 @@ Draw a rectangle, ellipse, polygon/star or line with fill, stroke, corner radius
 | `from` | object |  | Line start. |
 | `to` | object |  | Line end. |
 | `fillColor` | string or number[] |  | Swatch name ('Black', 'Paper', 'None', a document swatch), '#RRGGBB', [r,g,b] 0-255 or [c,m,y,k] 0-100. |
-| `strokeColor` | any |  | Swatch name ('Black', 'Paper', 'None', a document swatch), '#RRGGBB', [r,g,b] 0-255 or [c,m,y,k] 0-100. |
+| `strokeColor` | string or number[] |  | Swatch name ('Black', 'Paper', 'None', a document swatch), '#RRGGBB', [r,g,b] 0-255 or [c,m,y,k] 0-100. |
 | `strokeWeight` | number |  | Points. |
 | `cornerRadius` | number |  |  |
 | `opacity` | number |  |  |
@@ -457,7 +457,7 @@ Data merge without the Data Merge panel: the template page(s) carry {{field}} in
 | `jsonPath` | string |  |  |
 | `records` | object[] |  |  |
 | `templateFirstPage` | integer or string |  | 1-based page number or page name; defaults to the active page. |
-| `templateLastPage` | any |  |  |
+| `templateLastPage` | integer or string |  | 1-based page number or page name; defaults to the active page. |
 | `imageFit` | `fill` · `proportionally` · `contentAware` · `frameToContent` |  |  Default: `"fill"`. |
 | `imageFolder` | string |  | Relative image paths in the data are resolved against this folder. |
 | `removeTemplate` | boolean |  |  Default: `true`. |

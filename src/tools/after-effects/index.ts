@@ -1489,19 +1489,77 @@ export function registerAfterEffectsTools(server: McpServer, router: BridgeRoute
       renderSettingsTemplate: z.string().optional(),
       outputModuleTemplate: z.string().optional(),
       queueInAME: z.boolean().optional().default(false).describe("Queue in Adobe Media Encoder instead of blocking AE UI."),
-      startRenderImmediately: z.boolean().optional().default(false)
+      startRenderImmediately: z.boolean().optional().default(false),
+      overwrite: z
+        .boolean()
+        .optional()
+        .default(true)
+        .describe("An existing file at the output path is replaced (default). false: refuse with OUTPUT_EXISTS. Either way After Effects never stops on its 'Overwrite?' dialog.")
     },
     async (params) => {
       try {
-        const res = await router.dispatch("after-effects", "ae.render.queue", params, {
-          timeoutMs: 120000
-        });
-        const d = (res.data || {}) as Record<string, unknown>;
-        if (params.queueInAME && params.startRenderImmediately && typeof d.outputPath === "string") {
-          const job = watchRender(d.outputPath, `AME ${path.basename(d.outputPath)}`);
-          return formatSuccessResponse({ ...d, renderJobId: job.id, next: `Poll media_job_status { jobId: "${job.id}" }: done when the file stops growing.` });
+        const wantsRun = params.startRenderImmediately === true || params.queueInAME === true;
+        if (params.overwrite === false && params.outputPath && fs.existsSync(params.outputPath)) {
+          throw Object.assign(new Error(`Output file already exists: ${params.outputPath}. Choose another outputPath or pass overwrite: true.`), {
+            code: "OUTPUT_EXISTS"
+          });
         }
-        return formatSuccessResponse(d);
+        // 1. Queue only: the output module may change the extension, so the real path comes back from After Effects.
+        const res = await router.dispatch(
+          "after-effects",
+          "ae.render.queue",
+          { ...params, startRenderImmediately: false, queueInAME: false },
+          { timeoutMs: 60000 }
+        );
+        const d = (res.data || {}) as Record<string, unknown>;
+        const finalPath = typeof d.outputPath === "string" ? d.outputPath : params.outputPath;
+        // 2. An existing file would open "already exists. Overwrite?" and block the app until someone clicks.
+        let replacedExisting = false;
+        if (finalPath && fs.existsSync(finalPath)) {
+          if (params.overwrite === false) {
+            throw Object.assign(new Error(`Output file already exists: ${finalPath}. The item stays in the Render Queue, not started.`), {
+              code: "OUTPUT_EXISTS"
+            });
+          }
+          fs.rmSync(finalPath, { force: true });
+          replacedExisting = true;
+        }
+        if (!wantsRun) return formatSuccessResponse({ ...d, replacedExisting });
+        // 3. Start. A long render outlives the bridge timeout: it keeps running and is followed on disk.
+        const startArgs = { queueInAME: params.queueInAME, startRenderImmediately: params.startRenderImmediately, renderQueueIndex: d.renderQueueIndex };
+        try {
+          const st = await router.dispatch("after-effects", "ae.render.start", startArgs, { timeoutMs: 120000 });
+          const sd = (st.data || {}) as Record<string, unknown>;
+          if (params.queueInAME && finalPath) {
+            const job = watchRender(finalPath, `AME ${path.basename(finalPath)}`);
+            return formatSuccessResponse({ ...d, ...sd, replacedExisting, renderJobId: job.id, next: `Poll media_job_status { jobId: "${job.id}" }: done when the file stops growing.` });
+          }
+          return formatSuccessResponse({ ...d, ...sd, replacedExisting, rendered: true });
+        } catch (errStart) {
+          const code = (errStart as { code?: string }).code;
+          if (code === "ACTION_NOT_SUPPORTED") {
+            // Older panel without ae.render.start: start through the script hatch.
+            await router.dispatch(
+              "after-effects",
+              "ae.raw.executeExtendScript",
+              { code: params.queueInAME ? `app.project.renderQueue.queueInAME(${params.startRenderImmediately ? "true" : "false"}); true` : "app.project.renderQueue.render(); true" },
+              { timeoutMs: 120000 }
+            );
+            return formatSuccessResponse({ ...d, replacedExisting, rendered: true });
+          }
+          if ((code === "BRIDGE_TIMEOUT" || code === "APP_BUSY") && finalPath) {
+            // After Effects writes a temporary .m4v/.aac pair and the final file only at the end.
+            const job = watchRender(finalPath, `AE ${path.basename(finalPath)}`, { startTimeoutMs: 60 * 60 * 1000 });
+            return formatSuccessResponse({
+              ...d,
+              replacedExisting,
+              rendering: true,
+              renderJobId: job.id,
+              next: `The render is still running in After Effects. Poll media_job_status { jobId: "${job.id}" }: done when the file stops growing. Other After Effects commands answer APP_BUSY until it ends.`
+            });
+          }
+          throw errStart;
+        }
       } catch (err) {
         return formatErrorResponse(err);
       }

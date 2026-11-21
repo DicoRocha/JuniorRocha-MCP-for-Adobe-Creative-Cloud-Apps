@@ -8,6 +8,8 @@ import { BridgeRouter } from "../../core/bridge-router.js";
 import { buildImageToolResponse, formatErrorResponse, formatSuccessResponse } from "../../core/image-helper.js";
 import { FORMATS, resolveZones } from "../../core/formats.js";
 import { hexToRgb, resolveKit } from "../../core/brand-kit.js";
+import { downscaleBase64 } from "../../media/downscale.js";
+import * as fsPreview from "node:fs";
 
 const HEX = /^#?[0-9a-f]{6}$/i;
 const norm = (h: string) => (h.startsWith("#") ? h : `#${h}`).toUpperCase();
@@ -62,6 +64,40 @@ const Output = {
   quality: z.number().int().min(1).max(100).optional(),
   psdPath: z.string().optional().describe("Also save the layered result as a PSD copy.")
 };
+
+/**
+ * Preview after a recipe. With closeAfter the working copy is already closed: no document may be open at all,
+ * and a snapshot of "the active document" failed with "No active document" although the file was written
+ * (21/11/2026). Then the written file itself is the preview; otherwise the snapshot is taken of the result.
+ */
+export async function recipePreview(
+  router: BridgeRouter,
+  data: Record<string, unknown>
+): Promise<{ filePath?: string; base64Data?: string; mimeType?: string; previewNote?: string }> {
+  const fileField = data.file as unknown;
+  const written =
+    typeof fileField === "string" ? fileField : fileField && typeof (fileField as { path?: unknown }).path === "string" ? String((fileField as { path: string }).path) : undefined;
+  const docOpen = typeof data.document === "string" && data.document.length > 0;
+  if (docOpen) {
+    try {
+      const snap = await router.dispatch("photoshop", "ps.doc.snapshot", { maxDimension: 1200, documentName: data.document }, { timeoutMs: 60000 });
+      const sd = (snap.data || {}) as Record<string, unknown>;
+      return {
+        filePath: typeof sd.outputPath === "string" ? sd.outputPath : undefined,
+        base64Data: typeof sd.previewBase64 === "string" ? sd.previewBase64 : undefined
+      };
+    } catch {
+      // fall through to the written file
+    }
+  }
+  if (written && /\.(png|jpe?g|webp)$/i.test(written) && fsPreview.existsSync(written)) {
+    const mimeType = /\.png$/i.test(written) ? "image/png" : /\.webp$/i.test(written) ? "image/webp" : "image/jpeg";
+    const raw = fsPreview.readFileSync(written).toString("base64");
+    const small = mimeType === "image/webp" ? { base64: raw } : await downscaleBase64(raw, 1200, mimeType);
+    return { base64Data: small.base64, mimeType, previewNote: "Preview from the written file (the working copy was closed)." };
+  }
+  return { previewNote: "No preview: the working copy was closed and no image file was written." };
+}
 
 export function registerPhotoshopRecipes(server: McpServer, router: BridgeRouter): void {
   server.tool(
@@ -224,11 +260,11 @@ export function registerPhotoshopRecipes(server: McpServer, router: BridgeRouter
           { timeoutMs: 300000, undoGroup: "MCP: Remove background" }
         );
         const data = res.data as Record<string, unknown>;
-        const snap = await router.dispatch("photoshop", "ps.doc.snapshot", { maxDimension: 1200 }, { timeoutMs: 60000 });
-        const sd = (snap.data || {}) as Record<string, unknown>;
-        return buildImageToolResponse(data, {
-          filePath: typeof sd.outputPath === "string" ? sd.outputPath : undefined,
-          base64Data: typeof sd.previewBase64 === "string" ? sd.previewBase64 : undefined,
+        const pv = await recipePreview(router, data);
+        return buildImageToolResponse(pv.previewNote ? { ...data, previewNote: pv.previewNote } : data, {
+          filePath: pv.filePath,
+          base64Data: pv.base64Data,
+          mimeType: pv.mimeType,
           includeImageContent: true
         });
       } catch (err) {
@@ -288,11 +324,11 @@ export function registerPhotoshopRecipes(server: McpServer, router: BridgeRouter
           { timeoutMs: 300000, undoGroup: "MCP: Pop-out" }
         );
         const data = res.data as Record<string, unknown>;
-        const snap = await router.dispatch("photoshop", "ps.doc.snapshot", { maxDimension: 1200 }, { timeoutMs: 60000 });
-        const sd = (snap.data || {}) as Record<string, unknown>;
-        return buildImageToolResponse(data, {
-          filePath: typeof sd.outputPath === "string" ? sd.outputPath : undefined,
-          base64Data: typeof sd.previewBase64 === "string" ? sd.previewBase64 : undefined,
+        const pv = await recipePreview(router, data);
+        return buildImageToolResponse(pv.previewNote ? { ...data, previewNote: pv.previewNote } : data, {
+          filePath: pv.filePath,
+          base64Data: pv.base64Data,
+          mimeType: pv.mimeType,
           includeImageContent: true
         });
       } catch (err) {
@@ -358,11 +394,11 @@ export function registerPhotoshopRecipes(server: McpServer, router: BridgeRouter
           { timeoutMs: 300000, undoGroup: "MCP: Product shot" }
         );
         const data = { ...(res.data as Record<string, unknown>), format: canvas.format };
-        const snap = await router.dispatch("photoshop", "ps.doc.snapshot", { maxDimension: 1200 }, { timeoutMs: 60000 });
-        const sd = (snap.data || {}) as Record<string, unknown>;
-        return buildImageToolResponse(data, {
-          filePath: typeof sd.outputPath === "string" ? sd.outputPath : undefined,
-          base64Data: typeof sd.previewBase64 === "string" ? sd.previewBase64 : undefined,
+        const pv = await recipePreview(router, data);
+        return buildImageToolResponse(pv.previewNote ? { ...data, previewNote: pv.previewNote } : data, {
+          filePath: pv.filePath,
+          base64Data: pv.base64Data,
+          mimeType: pv.mimeType,
           includeImageContent: true
         });
       } catch (err) {

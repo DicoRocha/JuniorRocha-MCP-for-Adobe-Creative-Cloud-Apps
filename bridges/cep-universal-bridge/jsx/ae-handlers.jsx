@@ -3319,6 +3319,26 @@ function __mcpDispatch(action, params, _options) {
     };
   }
 
+  if (action === "ae.render.start") {
+    // Second half of ae_render_queue: the server first queues the item, removes an existing output file (the
+    // "already exists. Overwrite?" dialog blocked After Effects for 15 minutes on 21/11/2026), then starts here.
+    var rqS = app.project.renderQueue;
+    if (typeof __mcpCloseUndoGroup === "function") __mcpCloseUndoGroup();
+    var canSup = typeof app.beginSuppressDialogs === "function";
+    if (canSup) app.beginSuppressDialogs();
+    try {
+      if (params.queueInAME === true && typeof rqS.queueInAME === "function") {
+        rqS.queueInAME(Boolean(params.startRenderImmediately));
+      } else {
+        rqS.render();
+      }
+    } finally {
+      if (canSup) app.endSuppressDialogs(false);
+    }
+    var itS = params.renderQueueIndex && params.renderQueueIndex <= rqS.numItems ? rqS.item(params.renderQueueIndex) : null;
+    return { started: true, renderQueueIndex: params.renderQueueIndex || null, status: itS ? String(itS.status) : null };
+  }
+
   if (action === "ae.raw.executeMenuCommand") {
     var cmdId = params.commandId;
     if (!cmdId && params.commandName) {

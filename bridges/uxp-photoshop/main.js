@@ -761,7 +761,8 @@ async function dispatchPhotoshopCommand(actionName, params, options) {
   }
 
   if (actionName === "ps.doc.snapshot") {
-    const doc = requireDoc();
+    // documentName: the snapshot of a named document (a recipe's result), not of whatever tab is in front.
+    const doc = params.documentName ? Array.from(app.documents).find((d) => d.name === params.documentName) || requireDoc() : requireDoc();
     const maxDim = params.maxDimension || 1024;
     const ratio = Math.min(1, maxDim / Math.max(doc.width, doc.height));
     const outW = Math.max(1, Math.round(doc.width * ratio));
@@ -1426,7 +1427,7 @@ function connect() {
         app: "photoshop",
         bridgeType: "uxp",
         appVersion: app.version || "unknown",
-        pluginVersion: "1.4.11",
+        pluginVersion: "1.4.12",
         capabilities: ["dom", "batchPlay", "executeUxp", "snapshot", "extendscriptHybrid"]
       })
     );

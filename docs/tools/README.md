@@ -1,13 +1,13 @@
 # Tool reference
 
-All 220 tools, generated from the server's own tool list by `npm run docs`.
+All 221 tools, generated from the server's own tool list by `npm run docs`.
 
 In the default **code** mode the client sees six tools and reaches the rest through `jradb_code` and `jradb_api`.
 Start the server with `--tools full` to expose every tool directly.
 
 | Page | Tools | What it covers |
 |---|---:|---|
-| [Shared tools](shared.md) | 13 | Status, code mode, skills, checkpoints, templates and campaigns. They work across apps. |
+| [Shared tools](shared.md) | 14 | Status, code mode, skills, checkpoints, templates and campaigns. They work across apps. |
 | [Photoshop](photoshop.md) | 38 | Documents, layers, masks, smart objects, adjustments, artboards, recipes and audits. |
 | [Illustrator](illustrator.md) | 30 | Shapes, paths, pathfinder, gradients, live effects, swatches, artboards and export. |
 | [InDesign](indesign.md) | 32 | Documents, text frames, styles, tables, links, data merge, preflight and export. |

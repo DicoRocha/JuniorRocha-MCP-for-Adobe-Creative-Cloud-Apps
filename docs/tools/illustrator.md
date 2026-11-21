@@ -103,7 +103,7 @@ Create vector primitive shapes (rectangle, rounded rectangle, ellipse, polygon, 
 | `points` | integer |  |  Default: `5`. |
 | `fillColor` | string or object |  | RGB color as hex string ('#RRGGBB') or { r, g, b } (0-255). |
 | `filled` | boolean |  |  Default: `true`. |
-| `strokeColor` | any |  | RGB color as hex string ('#RRGGBB') or { r, g, b } (0-255). |
+| `strokeColor` | string or object |  | RGB color as hex string ('#RRGGBB') or { r, g, b } (0-255). |
 | `strokeWidth` | number |  |  |
 | `stroked` | boolean |  |  |
 | `opacity` | number |  |  Default: `100`. |
@@ -118,7 +118,7 @@ Draw custom precision vector paths and Bezier curves in Illustrator by specifyin
 | `closed` | boolean |  |  Default: `true`. |
 | `points` | object[] | yes |  |
 | `fillColor` | string or object |  | RGB color as hex string ('#RRGGBB') or { r, g, b } (0-255). |
-| `strokeColor` | any |  | RGB color as hex string ('#RRGGBB') or { r, g, b } (0-255). |
+| `strokeColor` | string or object |  | RGB color as hex string ('#RRGGBB') or { r, g, b } (0-255). |
 | `strokeWidth` | number |  |  |
 
 ## `ai_create_text`

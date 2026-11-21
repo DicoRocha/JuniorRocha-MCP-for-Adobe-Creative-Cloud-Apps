@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { formatErrorResponse, formatSuccessResponse } from "../../core/image-helper.js";
+import { markSkillsConsulted, skillGateState } from "../../core/skill-gate.js";
 
 /**
  * Serves the skills in <project>/skills over MCP, so every client (Claude Desktop, Codex, Cursor…)
@@ -81,7 +82,105 @@ export function listSkills(root: string): SkillEntry[] {
   return found.sort((a, b) => (a.area + a.name).localeCompare(b.area + b.name));
 }
 
+export interface SkillMatch {
+  name: string;
+  area: string;
+  score: number;
+  description: string;
+  references: string[];
+}
+
+/** Lower case, no accents, words of 3+ letters (Portuguese and English stop words dropped). */
+export function skillTerms(text: string): string[] {
+  const stop = new Set(
+    "para com uma umas uns que por dos das nos nas del the and for with from this that into como mais sem sua seu suas seus ser sao esta este isso essa esse fazer quero preciso".split(" ")
+  );
+  return [
+    ...new Set(
+      text
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .split(/[^a-z0-9]+/)
+        .filter((w) => w.length >= 3 && !stop.has(w))
+    )
+  ];
+}
+
+/**
+ * Ranks the skills for a task described in plain words. Name and area weigh most, then the description, then the
+ * body of SKILL.md; prefix matches count ("anima" finds "animacao"), so the person's wording does not have to match.
+ */
+export function findSkills(root: string, task: string, limit = 6): SkillMatch[] {
+  const terms = skillTerms(task);
+  if (!terms.length) return [];
+  const out: SkillMatch[] = [];
+  for (const s of listSkills(root)) {
+    const name = skillTerms(`${s.name} ${s.area}`);
+    const desc = skillTerms(s.description);
+    let body: string[] = [];
+    try {
+      body = skillTerms(fs.readFileSync(path.join(s.dir, "SKILL.md"), "utf8"));
+    } catch {
+      body = [];
+    }
+    const hit = (words: string[], t: string) => words.some((w) => w === t || (t.length >= 4 && (w.startsWith(t) || t.startsWith(w) && w.length >= 4)));
+    let score = 0;
+    for (const t of terms) {
+      if (hit(name, t)) score += 5;
+      if (hit(desc, t)) score += 3;
+      if (hit(body, t)) score += 1;
+    }
+    // A skill whose name is mostly about something else ranks lower on a tie ("post" alone does not make an animation).
+    if (score > 0) score -= 0.5 * name.filter((w) => !terms.some((t) => hit([w], t))).length;
+    if (score > 0) out.push({ name: s.name, area: s.area, score, description: s.description, references: s.references });
+  }
+  out.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+  return out.slice(0, Math.max(1, limit));
+}
+
 export function registerSkillTools(server: McpServer, root: string = resolveSkillsRoot()): void {
+  server.tool(
+    "jradb_find_skills",
+    "Skills first: call this BEFORE any task in the Adobe apps, with the task in plain words (any language). Returns " +
+      "the skills that fit, best first, plus the exit-gate skills every delivery needs. Then tell the person which skills you will " +
+      "follow and ask once whether to go ahead with them; load each with jradb_get_skill { name } and follow its steps " +
+      "and exit gate. Tools that create or change work stay blocked (SKILLS_REQUIRED) until skills were looked up.",
+    {
+      task: z.string().min(2).describe("What the person asked for, e.g. 'carrossel para Instagram sobre o curso'."),
+      limit: z.number().int().min(1).max(15).optional().default(6)
+    },
+    async ({ task, limit }) => {
+      try {
+        if (!fs.existsSync(root)) {
+          throw Object.assign(new Error(`Skills folder not found: ${root}. Set JRADB_MCP_SKILLS_DIR or reinstall the project.`), {
+            code: "SKILLS_NOT_FOUND"
+          });
+        }
+        const matches = findSkills(root, task, limit);
+        markSkillsConsulted({ search: task });
+        // The exit gate applies to every deliverable (router rule 5); motion and video add their own review.
+        const names = new Set(listSkills(root).map((s) => s.name));
+        const always = ["qa-revisao-visual", ...(matches.some((m) => /^(motion|video)/.test(m.area)) ? ["qa-revisao-video"] : [])].filter(
+          (n) => names.has(n) && !matches.some((m) => m.name === n)
+        );
+        return formatSuccessResponse({
+          task,
+          matches: matches.map((m) => ({ name: m.name, area: m.area, score: m.score, description: m.description, references: m.references })),
+          alsoLoad: always,
+          next:
+            matches.length > 0
+              ? "Tell the person which of these skills you will follow (names and one line each) and ask whether to go ahead with them. Then load each with jradb_get_skill { name } before the first tool that creates or changes work."
+              : "No skill matched these words. Call jradb_get_skill with no arguments for the router, or list: true, and choose from there; tell the person if no skill covers the task.",
+          gate: skillGateState()
+        });
+      } catch (err) {
+        return formatErrorResponse(err);
+      }
+    }
+  );
+
+
   server.tool(
     "jradb_get_skill",
     "Craft knowledge for marketing and advertising work in the Adobe apps (planning, scripts, prompts for external AI, " +
@@ -102,6 +201,7 @@ export function registerSkillTools(server: McpServer, root: string = resolveSkil
           });
         }
         const skills = listSkills(root);
+        markSkillsConsulted({ skill: name || (list ? "list" : "studio-router") });
         if (list) {
           return formatSuccessResponse({
             root,

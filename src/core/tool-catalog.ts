@@ -1,6 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { logUsage } from "./usage-log.js";
+import { checkSkillGate, skillGateNotice } from "./skill-gate.js";
+import { formatErrorResponse } from "./image-helper.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type CatalogToolHandler = (args: any, extra?: any) => Promise<unknown> | unknown;
@@ -35,6 +37,10 @@ export class ToolCatalog {
       get(target, prop, receiver) {
         if (prop === "tool") {
           return (...args: unknown[]) => {
+            // Skills first: the gate wraps the handler itself, so the direct call, jradb_code and jradb_batch all pass it.
+            const gatedName = String(args[0]);
+            const original = args[args.length - 1];
+            if (typeof original === "function") args[args.length - 1] = gateHandler(gatedName, original as CatalogToolHandler);
             catalog.record(args);
             // what reaches the model is measured here (jradb_batch replays the recorded, unwrapped handlers)
             const name = String(args[0]);
@@ -95,6 +101,20 @@ export class ToolCatalog {
     scored.sort((a, b) => a.score - b.score);
     return scored.slice(0, limit).map((s) => s.candidate);
   }
+}
+
+/** Wraps a tool handler with the skills-first gate (see core/skill-gate.ts). */
+export function gateHandler(name: string, handler: CatalogToolHandler): CatalogToolHandler {
+  return async (input: unknown, extra?: unknown) => {
+    const blocked = checkSkillGate(name);
+    if (blocked) return formatErrorResponse(blocked);
+    const notice = skillGateNotice(name);
+    const result = await handler(input, extra);
+    if (notice && result && typeof result === "object" && Array.isArray((result as { content?: unknown }).content)) {
+      (result as { content: Array<{ type: string; text?: string }> }).content.push({ type: "text", text: notice });
+    }
+    return result;
+  };
 }
 
 export function editDistance(a: string, b: string): number {

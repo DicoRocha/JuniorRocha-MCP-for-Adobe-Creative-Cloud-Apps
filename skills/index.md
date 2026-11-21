@@ -6,6 +6,16 @@ Leia só as skills que o pedido toca: `jradb_get_skill({ name })`.
 
 ## 1. Regras que valem para qualquer pedido
 
+0. **Skills primeiro (obrigatório):** nenhuma tarefa nos apps começa sem as skills que ela pede.
+   - Procure sozinho: `jradb_find_skills({ task })` com o pedido em palavras simples, e confira
+     o mapa da seção 3.
+   - Diga à pessoa quais skills vai seguir (nome e uma linha de cada) e **pergunte uma vez** se pode
+     seguir com elas. Sem resposta, siga com elas e diga isso no relatório.
+   - Carregue cada uma com `jradb_get_skill({ name })` antes da primeira ferramenta que cria ou muda
+     algo, e siga os passos e o portão de saída de cada skill.
+   - Sem skill para o pedido, diga isso à pessoa antes de começar.
+   - O servidor bloqueia as ferramentas que criam ou mudam trabalho (`SKILLS_REQUIRED`) até que as
+     skills tenham sido consultadas na sessão.
 1. **Antes de mexer:** `jradb_get_status` (pontes e filas) → inspecione o documento aberto →
    `jradb_checkpoint` antes de mudança estrutural, render, prévia pesada ou script longo.
 2. **Uma etapa, um olhar:** depois de cada bloco de trabalho, confira a imagem

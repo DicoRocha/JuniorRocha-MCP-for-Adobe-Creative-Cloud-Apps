@@ -1290,6 +1290,11 @@ function __psDispatch(action, params, _options) {
 
   if (action === "ps.doc.snapshot") {
     var docSn = __psRequireDoc();
+    if (params.documentName) {
+      try {
+        docSn = app.documents.getByName(params.documentName);
+      } catch (_eSnName) {}
+    }
     var maxDim = params.maxDimension || 1024;
     var isTemp = !params.outputPath;
     var snapPath = params.outputPath || (Folder.temp.fsName + "/mcp_ps_snapshot_" + new Date().getTime() + ".png");

@@ -64,7 +64,7 @@ Create a new project, open/save an .aep project, import footage/audio/image sequ
 | Parameter | Type | Required | Description |
 |---|---|:---:|---|
 | `operation` | `new` · `open` · `save` · `import` · `createFolder` · `purge` · `settings` | yes |  |
-| `bitsPerChannel` | `8` · `16` · `32` |  | new / settings: project colour depth. |
+| `bitsPerChannel` | number |  | new / settings: project colour depth. |
 | `filePath` | string |  | Absolute path for open, save, or import. |
 | `importAs` | `footage` · `comp` · `compCroppedLayers` |  | How to import multi-layer PSD/AI files. Default: `"footage"`. |
 | `sequence` | boolean |  | Import numbered images as an image sequence. Default: `false`. |
@@ -519,7 +519,7 @@ Create a new Text, Solid, Adjustment, Null, Camera, Light, or empty Shape layer 
 | `tracking` | number |  |  |
 | `justification` | `left` · `center` · `right` |  | Text alignment (After Effects defaults to left). |
 | `leading` | number |  | Line spacing in px (turns auto leading off). |
-| `color` | any |  | Solid color [r,g,b] in 0..1 when layerType='solid'. |
+| `color` | number[] |  | Solid color [r,g,b] in 0..1 when layerType='solid'. |
 | `width` | integer |  |  |
 | `height` | integer |  |  |
 | `duration` | number |  |  |
@@ -550,7 +550,7 @@ Create a parametric or custom Bezier vector Shape Layer in After Effects with Fi
 | `closed` | boolean |  |  Default: `true`. |
 | `fillColor` | number[] |  | Normalized RGB array [r, g, b] where each channel is between 0.0 and 1.0. |
 | `fillOpacity` | number |  |  |
-| `strokeColor` | any |  | Normalized RGB array [r, g, b] where each channel is between 0.0 and 1.0. |
+| `strokeColor` | number[] |  | Normalized RGB array [r, g, b] where each channel is between 0.0 and 1.0. |
 | `strokeWidth` | number |  |  |
 | `trimPaths` | object |  |  |
 | `position` | number[] |  |  |
@@ -610,7 +610,7 @@ Set the static value of any property or deep sub-property (effect parameter, sha
 | `layerIndex` | integer |  |  |
 | `layerName` | string |  |  |
 | `propertyPath` | string or integer[] | yes | Path of matchNames, display names, or 1-based indices (e.g. ['ADBE Transform Group', 'ADBE Opacity'] or ['Position']). |
-| `value` | any |  | Value to set (number, [x,y], [r,g,b], boolean, etc.). |
+| `value` | any | yes | Value to set (number, [x,y], [r,g,b], boolean, etc.). |
 
 ## `ae_set_keyframes`
 
@@ -772,6 +772,7 @@ Add a composition to the After Effects Render Queue, configure templates and out
 | `outputModuleTemplate` | string |  |  |
 | `queueInAME` | boolean |  | Queue in Adobe Media Encoder instead of blocking AE UI. Default: `false`. |
 | `startRenderImmediately` | boolean |  |  Default: `false`. |
+| `overwrite` | boolean |  | An existing file at the output path is replaced (default). false: refuse with OUTPUT_EXISTS. Either way After Effects never stops on its 'Overwrite?' dialog. Default: `true`. |
 
 ## `ae_execute_menu_command`
 

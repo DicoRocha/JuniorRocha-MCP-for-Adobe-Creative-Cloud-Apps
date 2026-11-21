@@ -1,6 +1,6 @@
 # Known issues and open items
 
-Last reviewed on 21 November 2026, version 1.9.4. Items are grouped by where they show up.
+Last reviewed on 21 November 2026, version 1.10.0. Items are grouped by where they show up.
 
 ## Not available through the server
 
@@ -27,6 +27,15 @@ Last reviewed on 21 November 2026, version 1.9.4. Items are grouped by where the
 | `media_analyze_audio` | Reported 60 BPM for a 120 BPM pulse (half time); the onsets were right |
 | Text creation in Photoshop and Illustrator | With the World-Ready text engine as the app preference, new point text is laid out to the left of the anchor. The tools do not force the composer or the alignment yet |
 | Hub port | Fixed in the panels (31001 since 1.9.0; it was 3001, a port many development servers use). If another program holds it, no bridge connects |
+
+## Fixed in 1.10.0 (21 November 2026), to confirm live
+
+| Tool | Was | Now |
+|---|---|---|
+| `ae_render_queue` | An existing output file opened "already exists. Overwrite?" and After Effects stopped until someone clicked | The file is removed before the render starts (`overwrite: false` refuses with `OUTPUT_EXISTS`); a long render is followed as a job |
+| Any After Effects command that fails | Undo reverted only the last part when the command had imported footage, leaving a half-built comp; a second run then found two comps with the same name | Items created by the failed command are removed and listed in `leftoversRemoved` |
+| `ps_recipe_remove_background`, `ps_recipe_pop_out`, `ps_recipe_product_shot` with `closeAfter` | The file was written but the tool answered "No active document" | The preview comes from the written file, or from the named document |
+| All creating or changing tools | Could run without the craft skills | Blocked with `SKILLS_REQUIRED` until skills were looked up (`JRADB_MCP_SKILLS_GATE`) |
 
 ## Platform
 

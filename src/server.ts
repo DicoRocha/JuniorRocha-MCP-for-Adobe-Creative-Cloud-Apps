@@ -126,7 +126,25 @@ const REFERENCE_MATCH_NAMES = {
 export type ToolMode = "full" | "code";
 
 /** Tools the client still sees in code mode. */
-export const CODE_MODE_TOOLS = ["jradb_code", "jradb_api", "jradb_get_status", "jradb_get_skill", "jradb_usage", "jradb_launch_app"];
+export const CODE_MODE_TOOLS = [
+  "jradb_code",
+  "jradb_api",
+  "jradb_get_status",
+  "jradb_find_skills",
+  "jradb_get_skill",
+  "jradb_usage",
+  "jradb_launch_app"
+];
+
+/** Sent to every client at initialize: the skills-first rule holds whatever the client or model. */
+export const SERVER_INSTRUCTIONS = [
+  "JuniorRocha MCP for Adobe Creative Cloud. Skills first: never do a task in the Adobe apps without the skills it needs.",
+  "1. Before the first tool that creates or changes work, look up the skills yourself: jradb_find_skills { task } with the request in plain words, or jradb_get_skill with no arguments for the router (studio-router).",
+  "2. Tell the person which skills you will follow (name and one line each) and ask once whether to go ahead with them. With no answer, go ahead with them and say so in the report.",
+  "3. Load each skill with jradb_get_skill { name } and follow its steps and its exit gate (qa-revisao-visual for every delivery).",
+  "4. If no skill covers the request, say so before starting.",
+  "Tools that create or change work answer SKILLS_REQUIRED until skills were looked up in this session."
+].join("\n");
 
 export function createAdobeMcpServer(options: CreateAdobeMcpServerOptions = {}): AdobeMcpRuntime {
   const enabledApps =
@@ -137,10 +155,13 @@ export function createAdobeMcpServer(options: CreateAdobeMcpServerOptions = {}):
       ? "jr-adb-mcp-bridge"
       : `jr-adb-${enabledApps.join("-")}-mcp`;
 
-  const server = new McpServer({
-    name: serverName,
-    version: PACKAGE_VERSION
-  });
+  const server = new McpServer(
+    {
+      name: serverName,
+      version: PACKAGE_VERSION
+    },
+    { instructions: SERVER_INSTRUCTIONS }
+  );
 
   const hub = new WsHub({ port: options.wsPort });
   const router = new BridgeRouter({

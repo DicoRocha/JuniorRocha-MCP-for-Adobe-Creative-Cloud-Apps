@@ -1,6 +1,6 @@
 # JuniorRocha MCP for Adobe Creative Cloud — Agent Rules & Operational Guide (`AGENTS.md`)
 
-You control **Adobe Photoshop**, **After Effects**, **Premiere Pro**, **Illustrator**, **InDesign** and **Lightroom Classic** through the **Junior Rocha MCP** server (`adobe_*`, `ps_*`, `ae_*`, `pr_*`, `ai_*`, `id_*`, `lr_*`): 220 typed tools for the common operations, plus script escape hatches for everything else. The typed tools cover a subset of each app; see `docs/tools/` for the list and `docs/KNOWN-ISSUES.md` for what is not built in.
+You control **Adobe Photoshop**, **After Effects**, **Premiere Pro**, **Illustrator**, **InDesign** and **Lightroom Classic** through the **Junior Rocha MCP** server (`adobe_*`, `ps_*`, `ae_*`, `pr_*`, `ai_*`, `id_*`, `lr_*`): 221 typed tools for the common operations, plus script escape hatches for everything else. The typed tools cover a subset of each app; see `docs/tools/` for the list and `docs/KNOWN-ISSUES.md` for what is not built in.
 
 ---
 
@@ -19,6 +19,12 @@ You control **Adobe Photoshop**, **After Effects**, **Premiere Pro**, **Illustra
 
 ## 1b. Craft skills, checkpoints and errors (v1.3)
 
+- **Skills first (1.10).** Never do a task in the apps without the skills it needs. Before the first tool
+  that creates or changes work, call `jradb_find_skills { task }` with the request in plain words (or
+  `jradb_get_skill` with no arguments for the router), tell the person which skills you will follow and ask
+  once whether to go ahead with them, then load each with `jradb_get_skill { name }`. Until skills were looked
+  up in the session, creating or changing tools answer `SKILLS_REQUIRED` (`JRADB_MCP_SKILLS_GATE`:
+  `strict` default, `notice`, `off`). If no skill covers the request, say so before starting.
 - **Before any creative deliverable**, call `jradb_get_skill` with no arguments: it returns the router
   (`skills/index.md`) that says which craft skills to load (composition, formats, social post, speech
   editing, print, scripts, QA) and in what order. Every delivery ends with the `qa-revisao-visual` gate.
@@ -42,6 +48,10 @@ You control **Adobe Photoshop**, **After Effects**, **Premiere Pro**, **Illustra
 - Photoshop document tools take `documentName`: the user may switch tabs while you work, and an edit or a save
   then lands in the wrong file. In scripts use `app.documents.getByName(...)`, never a bare `activeDocument`.
   New: `ps_list_fonts`, `ps_place_file`; layer styles (incl. colorOverlay, gradientOverlay) work without UXP.
+- `ae_render_queue` queues first, then removes an existing output file (`overwrite`, default true; false
+  answers `OUTPUT_EXISTS`) so After Effects never stops on its "Overwrite?" dialog. A render longer than the
+  bridge timeout returns `renderJobId`: poll `media_job_status`. A failed After Effects command also removes
+  the project items it created (`leftoversRemoved`).
 - After Effects renders (`ae_render_queue`) and project switches close the command's undo group first (an open
   group raised "Undo group mismatch"). `ae_apply_preset` takes `time`; `ae_manage_project` `settings` sets bpc.
 - Lightroom: previews detect the full-size blank placeholder and export instead; `lr_export_photos` `fileNames`;

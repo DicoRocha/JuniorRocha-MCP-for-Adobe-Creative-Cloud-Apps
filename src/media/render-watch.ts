@@ -46,6 +46,10 @@ export async function waitForRender(
 }
 
 /** Starts a background job that resolves when the render file is complete. */
-export function watchRender(outputPath: string, label?: string): Job<RenderWatchResult> {
-  return startJob("render", () => waitForRender(outputPath), label ?? outputPath).job;
+export function watchRender(
+  outputPath: string,
+  label?: string,
+  opts?: { stableMs?: number; timeoutMs?: number; intervalMs?: number; startTimeoutMs?: number }
+): Job<RenderWatchResult> {
+  return startJob("render", () => waitForRender(outputPath, opts), label ?? outputPath).job;
 }

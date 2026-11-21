@@ -13,6 +13,7 @@ Status, code mode, skills, checkpoints, templates and campaigns. They work acros
 | [`jradb_checkpoint`](#jradb_checkpoint) | Save a named, timestamped iteration of the active document/project BEFORE a structural change, a long render, a heavy preview or anything that could hang the app. |
 | [`jradb_contact_sheet`](#jradb_contact_sheet) | Contact sheet of delivered pieces: every image (png, jpg, webp, tiff) and video (one frame) in a folder, in name order, laid out in one PNG grid — review a whole campaign,… |
 | [`jradb_usage`](#jradb_usage) | Token accounting of this MCP's tool calls (sizes only, logged per call). |
+| [`jradb_find_skills`](#jradb_find_skills) | Skills first: call this BEFORE any task in the Adobe apps, with the task in plain words (any language). |
 | [`jradb_get_skill`](#jradb_get_skill) | Craft knowledge for marketing and advertising work in the Adobe apps (planning, scripts, prompts for external AI, design fundamentals, photo, social, vector, motion, video,… |
 | [`jradb_templates_build`](#jradb_templates_build) | Build the brand's template set from the brand kit: Photoshop .psdt social posts (feed 4:5, story 9:16, square — layers named Titulo, Apoio, CTA, Foto, Logo, Botao, Fundo for… |
 | [`jradb_batch`](#jradb_batch) | Run many operations on ONE Adobe app in a single round-trip and as a single undo step (After Effects undo group; one Photoshop history state). |
@@ -94,6 +95,15 @@ Token accounting of this MCP's tool calls (sizes only, logged per call). start: 
 | `operation` | `start` · `stop` · `report` | yes |  |
 | `run` | string |  | Label (start) or label to report. |
 | `since` | string |  | ISO time: report calls after it. |
+
+## `jradb_find_skills`
+
+Skills first: call this BEFORE any task in the Adobe apps, with the task in plain words (any language). Returns the skills that fit, best first, plus the exit-gate skills every delivery needs. Then tell the person which skills you will follow and ask once whether to go ahead with them; load each with jradb_get_skill { name } and follow its steps and exit gate. Tools that create or change work stay blocked (SKILLS_REQUIRED) until skills were looked up.
+
+| Parameter | Type | Required | Description |
+|---|---|:---:|---|
+| `task` | string | yes | What the person asked for, e.g. 'carrossel para Instagram sobre o curso'. |
+| `limit` | integer |  |  Default: `6`. |
 
 ## `jradb_get_skill`
 

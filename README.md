@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="#download"><img src="docs/assets/banner.svg" alt="Run your creative apps from a chat: 220 tools, 6 apps, 87 skills, 337 tests" width="100%"></a>
+  <a href="#download"><img src="docs/assets/banner.svg" alt="Run your creative apps from a chat: 221 tools, 6 apps, 87 skills, 350 tests" width="100%"></a>
 </p>
 
 # JuniorRocha MCP for Adobe Creative Cloud
@@ -73,12 +73,15 @@ See [Install from source](#install-from-source).
 - **Audits.** Tools that review a document, a timeline or an animation and report what would fail at delivery.
 - **Built to protect client work.** One undo step per command with rollback on failure, a project lock for
   Premiere, and a switch per app.
-- **Loads only what the job needs.** By default the client sees six tools and looks up the other commands by
+- **Loads only what the job needs.** By default the client sees seven tools and looks up the other commands by
   name when a job calls for them; skills are loaded one by one through a router. See
   [On-demand loading](#on-demand-loading).
 - **Workflow knowledge included.** 87 skills describe how studio work is done in these apps, from the brief
   to the delivery check.
-- **Tested.** 337 automated tests run on every setup, including a simulated app and the Lightroom plug-in.
+- **Skills first.** The assistant looks up the skills a request needs, tells you which ones it will follow and
+  asks once before it starts. Tools that create or change work stay locked until it has. See
+  [Skills first](#skills-first).
+- **Tested.** 350 automated tests run on every setup, including a simulated app and the Lightroom plug-in.
 
 ## Some examples of what you can ask
 
@@ -207,27 +210,28 @@ desk, and it is faster to correct a piece than to rebuild it in twelve sizes.
 
 | Mode | What the client sees | When to use |
 |---|---|---|
-| `code` (default) | 6 tools: `jradb_get_status`, `jradb_code`, `jradb_api`, `jradb_get_skill`, `jradb_launch_app`, `jradb_usage` | Everyday use. `jradb_code` runs a short script that can call any of the 220 tools and return only what matters. |
-| `full` | All 220 tools | Clients without good scripting, or when you want each call visible and approved one by one. |
+| `code` (default) | 7 tools: `jradb_get_status`, `jradb_code`, `jradb_api`, `jradb_find_skills`, `jradb_get_skill`, `jradb_launch_app`, `jradb_usage` | Everyday use. `jradb_code` runs a short script that can call any of the 221 tools and return only what matters. |
+| `full` | All 221 tools | Clients without good scripting, or when you want each call visible and approved one by one. |
 
 Switch with `--tools full` or `JRADB_MCP_TOOLS=full`. In the Claude Desktop extension it is the *tool mode*
 setting.
 
 ## On-demand loading
 
-A server with 220 tools and 87 skills would normally fill the conversation before any work starts. This one
+A server with 221 tools and 87 skills would normally fill the conversation before any work starts. This one
 loads only what the job in front of it needs, for commands and for skills alike.
 
 <p align="center">
   <img src="docs/assets/on-demand.svg" alt="Context loaded per job: about 203 thousand tokens with everything up front, 9 to 14 thousand on demand" width="100%">
 </p>
 
-**Commands.** In the default mode the client sees six tools (about 1,200 tokens instead of about 69,000 for
-all 220 definitions). When the assistant needs a command it asks `jradb_api` for it, by name, by app prefix or
+**Commands.** In the default mode the client sees seven tools (about 1,400 tokens instead of about 69,000 for
+all 221 definitions). When the assistant needs a command it asks `jradb_api` for it, by name, by app prefix or
 by words (`search: "captions"`), and gets back only those signatures. Then `jradb_code` runs a short script
 that calls them and returns only what matters, so long intermediate results never enter the conversation.
 
-**Skills.** `jradb_get_skill` with no arguments returns a router of about 3,500 tokens. It reads the request
+**Skills.** `jradb_find_skills { task }` ranks the skills for a request written in plain words.
+`jradb_get_skill` with no arguments returns a router of about 3,500 tokens. It reads the request
 and names the skills to load and in what order. Each skill is then loaded by name (about 1,200 tokens at the
 median), and a skill's reference files only when a step calls for them. The other skills stay on disk.
 
@@ -237,10 +241,31 @@ median), and a skill's reference files only when a step calls for them. The othe
 | 30-second reel with captions | reels, captions and sound, Premiere rules | `pr_assemble_reel`, `pr_captions_as_mogrt`, `pr_audit_timeline` | 13,800 |
 | A5 flyer | flyers and posters, InDesign rules | `id_recipe_flyer`, `id_preflight` | 9,500 |
 | Logo package | brand package, Illustrator rules | `ai_recipe_logo_package` | 8,700 |
-| Everything loaded up front | all 87 | all 220 | 202,700 |
+| Everything loaded up front | all 87 | all 221 | 202,700 |
 
 Figures are estimates from an approximate tokenizer, measured on version 1.8.0; each total includes the six
 tools and the router, and counts a signature at its full definition size.
+
+## Skills first
+
+No task in the apps starts without the skills it needs. The server sends this rule to every client when it
+connects, so it holds in Claude, ChatGPT, Codex or Cursor alike:
+
+1. Before the first tool that creates or changes work, the assistant looks up the skills itself:
+   `jradb_find_skills` with the request in plain words, or the router from `jradb_get_skill`.
+2. It tells you which skills it will follow, one line each, and asks once whether to go ahead with them.
+   With no answer it goes ahead with them and says so in its report.
+3. It loads each skill and follows its steps and its delivery check (`qa-revisao-visual`).
+4. If no skill covers the request, it says so before starting.
+
+Tools that create or change work answer `SKILLS_REQUIRED` until skills were looked up in the session. Tools
+that only read or preview (status, lists, snapshots, audits) are never locked.
+
+| `JRADB_MCP_SKILLS_GATE` | Behaviour |
+|---|---|
+| `strict` (default) | Creating or changing tools are blocked until skills were looked up |
+| `notice` | The tool runs and its answer carries a reminder |
+| `off` | No check |
 
 ## Install
 
@@ -563,7 +588,7 @@ previews returned by the tools, follows that client's own policy.
 
 | Page | What is in it |
 |---|---|
-| [`docs/tools/`](docs/tools/README.md) | All 220 tools with parameters, one page per app |
+| [`docs/tools/`](docs/tools/README.md) | All 221 tools with parameters, one page per app |
 | [`docs/SKILLS.md`](docs/SKILLS.md) | The 87 skills and the purpose of each |
 | [`docs/MACOS.md`](docs/MACOS.md) | macOS installation, what was validated and what was not |
 | [`docs/KNOWN-ISSUES.md`](docs/KNOWN-ISSUES.md) | What is not available, and open items |

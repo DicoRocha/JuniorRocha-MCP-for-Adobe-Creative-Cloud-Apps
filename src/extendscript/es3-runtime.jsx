@@ -206,8 +206,42 @@ function __mcpEvalAeUserCode(code) {
   }
 }
 
+/** After Effects: ids of every project item, to find what a failed command created. */
+function __mcpAeItemIds() {
+  var ids = {};
+  try {
+    if (typeof app === "undefined" || !app || !app.project || typeof app.project.numItems !== "number" || typeof app.project.item !== "function") return null;
+    for (var i = 1; i <= app.project.numItems; i++) {
+      ids[String(app.project.item(i).id)] = true;
+    }
+  } catch (_eIds) {
+    return null;
+  }
+  return ids;
+}
+/**
+ * After Effects: removes the project items a failed command created (21/11/2026: a script that failed after
+ * importing footage left its half-built comp in the project, because imports split the undo group and Edit > Undo
+ * reverted only the last part; a second run then had two comps with the same name).
+ */
+function __mcpAeRemoveNewItems(before) {
+  var removed = [];
+  if (!before) return removed;
+  try {
+    for (var i = app.project.numItems; i >= 1; i--) {
+      var it = app.project.item(i);
+      if (!before[String(it.id)]) {
+        removed.push(String(it.name));
+        it.remove();
+      }
+    }
+  } catch (_eRm) {}
+  return removed;
+}
+
 function __mcpExecuteWithUndo(appId, undoName, fn) {
   var undoOpened = false;
+  var aeItemsBefore = appId === "after-effects" ? __mcpAeItemIds() : null;
   var myToken = (__mcpUndoState.token || 0) + 1;
   __mcpUndoState.token = myToken;
   __mcpUndoState.open = false;
@@ -302,16 +336,29 @@ function __mcpExecuteWithUndo(appId, undoName, fn) {
         } catch (_eUndo) {}
       }
     }
+    var leftoversRemoved = [];
+    if (appId === "after-effects" && aeItemsBefore) {
+      var noRollback2 = false;
+      try {
+        noRollback2 = !!($.global && $.global.__mcpNoRollback);
+      } catch (_eNr2) {}
+      if (!noRollback2) {
+        leftoversRemoved = __mcpAeRemoveNewItems(aeItemsBefore);
+        if (leftoversRemoved.length) rolledBack = true;
+      }
+    }
     __mcpUndoState.open = false;
 
     return JSON.stringify({
       ok: false,
       durationMs: new Date().getTime() - startTime,
       rolledBack: rolledBack,
+      leftoversRemoved: leftoversRemoved,
       error: {
         code: (err && err.name) ? String(err.name) : "EXTENDSCRIPT_ERROR",
         message: ((err && err.message) ? String(err.message) : String(err)) + (rolledBack ? " [rolled back: everything this command had done was undone]" : ""),
         rolledBack: rolledBack,
+        leftoversRemoved: leftoversRemoved,
         line: (err && typeof err.line !== "undefined") ? err.line : null,
         fileName: (err && err.fileName) ? String(err.fileName) : null
       }

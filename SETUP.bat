@@ -22,6 +22,9 @@ call npm run doctor > logs\4-doctor.log 2>&1
 echo [extra] Claude Desktop extension package (.mcpb)...
 call npm run package-mcpb > logs\5-package-mcpb.log 2>&1
 >> logs\5-package-mcpb.log echo exit=%ERRORLEVEL%
+echo [extra] Complete download (one zip with every installer)...
+call npm run package-complete > logs\6-package-complete.log 2>&1
+>> logs\6-package-complete.log echo exit=%ERRORLEVEL%
 echo %DATE% %TIME%> logs\done.txt
 echo Done. You can close this window. Logs are in the logs folder.
 timeout /t 5 > nul

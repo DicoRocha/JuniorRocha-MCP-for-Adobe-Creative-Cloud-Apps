@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="#download"><img src="docs/assets/banner.svg" alt="Run your creative apps from a chat: 220 tools, 6 apps, 87 skills, 313 tests" width="100%"></a>
+  <a href="#download"><img src="docs/assets/banner.svg" alt="Run your creative apps from a chat: 220 tools, 6 apps, 87 skills, 317 tests" width="100%"></a>
 </p>
 
 # JuniorRocha MCP for Adobe Creative Cloud
@@ -10,21 +10,23 @@ your own computer. You describe the job, the apps do the work, and you keep edit
 
 ## Download
 
-**[Get the latest release](https://github.com/DicoRocha/JuniorRocha-MCP-for-Adobe-Creative-Cloud-Apps/releases/latest)** and install the files in this order:
+**[Download the complete package](https://github.com/DicoRocha/JuniorRocha-MCP-for-Adobe-Creative-Cloud-Apps/releases/latest)**: one zip,
+`JuniorRocha-MCP-<version>-complete.zip`, with every installer and an `INSTALL.txt` in the right order:
 
-| # | File | What it is | How to install |
-|---|---|---|---|
-| 1 | `jr-adb-mcp-bridge-<version>.mcpb` | The server, as a Claude Desktop extension | Claude Desktop → Settings → Extensions → install the file, then quit Claude and open it again |
-| 2 | `jr-adb-mcp-bridge-photoshop-uxp-<version>.ccx` | Photoshop plug-in | Double-click; Creative Cloud installs it |
-| 3 | `jr-adb-mcp-bridge-premiere-uxp-<version>.ccx` | Premiere Pro plug-in | Double-click |
-| 4 | `jr-adb-mcp-bridge-indesign-uxp-<version>.ccx` | InDesign plug-in | Double-click |
-| 5 | `jr-adb-mcp-bridge-bridges-kit-<version>.zip` | Bridges for After Effects, Illustrator and Lightroom Classic | Extract, then double-click `INSTALL-BRIDGES.bat` (Windows) or `INSTALL-BRIDGES.command` (macOS) |
+| Folder in the zip | What it is | How to install |
+|---|---|---|
+| `1-server` | The server, as a Claude Desktop extension (`.mcpb`) | Claude Desktop → Settings → Extensions → install the file, then quit Claude and open it again |
+| `2-plugins` | Plug-ins for Photoshop, Premiere Pro and InDesign (`.ccx`) | Double-click each one you need; Creative Cloud installs it |
+| `3-bridges-kit` | Bridges for After Effects, Illustrator and Lightroom Classic | Close those apps, then double-click `INSTALL-BRIDGES.bat` (Windows) or `INSTALL-BRIDGES.command` (macOS) |
 
-Install only the plug-ins for the apps you use. Then open your apps and ask: *"Check the status of my creative
+Install only the parts for the apps you use. Then open your apps and ask: *"Check the status of my creative
 apps."* Step by step, with requirements and troubleshooting: [Install](#install). Prefer to build it yourself?
 See [Install from source](#install-from-source).
 
-> **Status: private preview.** Windows is the main tested platform. macOS was validated once, on Apple Silicon
+**Updating only one part?** The same release also has each installer as a separate file
+(`jr-adb-mcp-bridge-<version>.mcpb`, the three `.ccx` files and `jr-adb-mcp-bridge-bridges-kit-<version>.zip`).
+
+> **Status: preview.** Windows is the main tested platform. macOS was validated once, on Apple Silicon
 > ([`docs/MACOS.md`](docs/MACOS.md)).
 >
 > **Independent project.** Not affiliated with, sponsored by or endorsed by Adobe. Adobe, Creative Cloud,
@@ -33,7 +35,7 @@ See [Install from source](#install-from-source).
 ## Contents
 
 - [What makes it different](#what-makes-it-different)
-- [What you can ask](#what-you-can-ask)
+- [Some examples of what you can ask](#some-examples-of-what-you-can-ask)
 - [A full campaign, with you in charge](#a-full-campaign-with-you-in-charge)
 - [How it works](#how-it-works)
 - [Two tool modes](#two-tool-modes)
@@ -69,7 +71,7 @@ See [Install from source](#install-from-source).
   [On-demand loading](#on-demand-loading).
 - **Workflow knowledge included.** 87 skills describe how studio work is done in these apps, from the brief
   to the delivery check.
-- **Tested.** 313 automated tests run on every setup, including a simulated app and the Lightroom plug-in.
+- **Tested.** 317 automated tests run on every setup, including a simulated app and the Lightroom plug-in.
 
 ## Some examples of what you can ask
 
@@ -248,17 +250,19 @@ tools and the router, and counts a signature at its full definition size.
 
 **Steps**
 
-1. **Download the files** from the [latest release](https://github.com/DicoRocha/JuniorRocha-MCP-for-Adobe-Creative-Cloud-Apps/releases/latest).
+1. **Download and extract** `JuniorRocha-MCP-<version>-complete.zip` from the
+   [latest release](https://github.com/DicoRocha/JuniorRocha-MCP-for-Adobe-Creative-Cloud-Apps/releases/latest).
 
-2. **Install the server.** In Claude Desktop: Settings → Extensions → install
-   `jr-adb-mcp-bridge-<version>.mcpb`. Quit Claude (on Windows, from the system tray) and open it again.
+2. **Install the server.** In Claude Desktop: Settings → Extensions → install the `.mcpb` from `1-server`.
+   Quit Claude (on Windows, from the system tray) and open it again.
 
-3. **Install the plug-ins for Photoshop, Premiere Pro and InDesign.** Double-click each `.ccx`. Creative Cloud
-   asks for confirmation and installs it.
+3. **Install the plug-ins for Photoshop, Premiere Pro and InDesign.** Double-click each `.ccx` in `2-plugins`.
+   Creative Cloud asks for confirmation and installs it. Open the Junior Rocha MCP panel once in each app so it
+   activates.
 
-4. **Install the bridges for After Effects, Illustrator and Lightroom Classic.** Extract
-   `jr-adb-mcp-bridge-bridges-kit-<version>.zip`, close those apps and double-click `INSTALL-BRIDGES.bat`
-   (macOS: `chmod +x INSTALL-BRIDGES.command`, then double-click it). It copies the panel and the Lightroom
+4. **Install the bridges for After Effects, Illustrator and Lightroom Classic.** Close those apps and, in
+   `3-bridges-kit`, double-click `INSTALL-BRIDGES.bat` (macOS: `chmod +x INSTALL-BRIDGES.command`, then
+   double-click it). It copies the panel and the Lightroom
    plug-in to your user folders and switches on the CEP debug mode.
 
 5. **Check the connection.** Open your apps and ask Claude for the status. Each app should be listed with a
@@ -266,8 +270,9 @@ tools and the router, and counts a signature at its full definition size.
 
 **Good to know**
 
-- Inside the apps the panels are named **Junior Rocha MCP** (Window → Extensions, or Plugins). You do not
-  need to open them. They hold the on/off switch for that app and a Reconnect button.
+- Inside the apps the panels are named **Junior Rocha MCP** (Window → Extensions, or Plugins). After installing
+  or updating a `.ccx`, open its panel once so it activates; after that you do not need to open them. They
+  hold the on/off switch for that app and a Reconnect button.
 - Lightroom Classic loads its plug-in on the next start.
 - The panel for After Effects and Illustrator is not signed, which is why step 4 switches on the CEP debug
   mode. A signed `.zxp` is produced only when Adobe's `ZXPSignCmd` is available at packaging time; an unsigned
@@ -297,6 +302,7 @@ On macOS run `./SETUP.command` instead. Close the creative apps first. The scrip
 | Package the plug-ins and the bridges kit | `logs/3-package-plugins.log` |
 | Diagnostics | `logs/4-doctor.log` |
 | Package the Claude Desktop extension | `logs/5-package-mcpb.log` |
+| Build the complete download zip | `logs/6-package-complete.log` |
 
 Each log ends in `exit=0` when the stage worked. Then install the three `.ccx` files and the `.mcpb` from
 `release/`, as in steps 2 and 3 above. Step 4 is not needed: the setup already installed those bridges.

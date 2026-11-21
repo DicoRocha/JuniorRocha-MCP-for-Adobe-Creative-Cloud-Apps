@@ -1,0 +1,34 @@
+JuniorRocha MCP for Adobe Creative Cloud - version {{VERSION}}
+
+Everything you need to install, in three folders. Install only the parts for the apps you use.
+
+You need
+- Windows 10 or 11, or macOS
+- Claude Desktop (https://claude.ai/download)
+- The creative apps you want to use, signed in and opened at least once
+
+1. The server  (folder 1-server)
+   In Claude Desktop: Settings > Extensions > install the .mcpb file.
+   Quit Claude (on Windows, also from the system tray) and open it again.
+
+2. Plug-ins for Photoshop, Premiere Pro and InDesign  (folder 2-plugins)
+   Double-click each .ccx file you need. Creative Cloud asks for confirmation and installs it.
+   Open each app and open the Junior Rocha MCP panel once, so it activates
+   (Photoshop: Plugins menu; Premiere Pro and InDesign: Window > Extensions or Plugins).
+
+3. Bridges for After Effects, Illustrator and Lightroom Classic  (folder 3-bridges-kit)
+   Close those apps first.
+   Windows: double-click INSTALL-BRIDGES.bat
+   macOS:   run  chmod +x INSTALL-BRIDGES.command  once in Terminal, then double-click INSTALL-BRIDGES.command
+   Open the apps again. Lightroom Classic loads its plug-in on the next start.
+
+4. Check
+   Open your apps and ask Claude: "Check the status of my creative apps."
+   Each app should be listed with a bridge (uxp, cep or lua).
+
+Updating later: install the new files the same way; they replace the old ones.
+
+Documentation and help:
+https://github.com/DicoRocha/JuniorRocha-MCP-for-Adobe-Creative-Cloud-Apps
+
+Independent project, not affiliated with or endorsed by Adobe.

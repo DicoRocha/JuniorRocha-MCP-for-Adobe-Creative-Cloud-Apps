@@ -15,5 +15,6 @@ run "[3/4] install-bridges..."  logs/2-install-bridges.log  npm run install-brid
 run "[4/4] package-plugins..."  logs/3-package-plugins.log  npm run package-plugins
 run "doctor..."                 logs/4-doctor.log           npm run doctor
 run "mcpb package..."           logs/5-package-mcpb.log     npm run package-mcpb
+run "complete zip..."           logs/6-package-complete.log npm run package-complete
 date > logs/done.txt
 echo "Done. You can close this window. Logs are in the logs folder."

@@ -21,6 +21,7 @@
     "install-ai-clients": "tsx scripts/install-ai-clients.ts",
     "package-plugins": "tsx scripts/package-plugins.ts",
     "package-mcpb": "tsx scripts/package-mcpb.ts",
+    "package-complete": "tsx scripts/package-complete.ts",
     "docs": "tsx scripts/generate-docs.ts"
   },
   "dependencies": {

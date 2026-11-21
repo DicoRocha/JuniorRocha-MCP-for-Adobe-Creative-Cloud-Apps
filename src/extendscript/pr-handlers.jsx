@@ -822,27 +822,50 @@ function __mcpDispatch(action, params, _options) {
     // duration and shows more of the source instead of shortening the clip (measured 21/11/2026: 2 s at 200 % stayed
     // 2 s). Bring the end to where the same content ends at the new speed, and close the gap when ripple is on.
     var trimmedSp = false;
+    var warnSp = [];
     if (typeof params.speedPercent === "number" && params.keepDuration !== true) {
       var oldRate = Math.abs(Number(params.__previousSpeed) || 1);
       // Use the speed Premiere actually applied: on some cut clips it applies less than what was asked.
       var newRate = Math.abs(Number(afterSp.getSpeed()) || params.speedPercent / 100);
       var wantEnd = beforeSp.start + ((beforeSp.end - beforeSp.start) * oldRate) / newRate;
       var deltaSp = afterSp.end.seconds - wantEnd;
+      var mv;
       if (deltaSp > 0.02) {
-        var endT = new Time();
-        endT.seconds = wantEnd;
-        afterSp.end = endT;
+        // faster: shorten the clip, then pull the next clips up
+        afterSp.end = __prTime(wantEnd);
         trimmedSp = true;
         if (params.ripple !== false) {
-          for (var mv = idxSp + 1; mv < trackSp.clips.numItems; mv++) {
+          for (mv = idxSp + 1; mv < trackSp.clips.numItems; mv++) {
             try { trackSp.clips[mv].move(-deltaSp); } catch (_eMv) {}
           }
         }
         afterSp = __prTargetClip(seqSp, { trackIndex: params.trackIndex, clipIndex: idxSp });
+      } else if (deltaSp < -0.02) {
+        // slower: the clip needs more room. Push the next clips later first (last one first, so none lands on
+        // another), then lengthen the clip into the space. Without ripple it would cover the next clip.
+        var growSp = -deltaSp;
+        var hasNextSp = idxSp + 1 < trackSp.clips.numItems;
+        if (hasNextSp && params.ripple === false) {
+          warnSp.push("The clip plays slower but keeps its length, so the end of its content is cut off: lengthening it would cover the next clip. Use ripple (default) to push the next clips later.");
+        } else {
+          for (mv = trackSp.clips.numItems - 1; mv > idxSp; mv--) {
+            try { trackSp.clips[mv].move(growSp); } catch (_eMv2) {}
+          }
+          afterSp.end = __prTime(wantEnd);
+          afterSp = __prTargetClip(seqSp, { trackIndex: params.trackIndex, clipIndex: idxSp });
+          trimmedSp = true;
+          var shortSp = wantEnd - afterSp.end.seconds;
+          if (shortSp > 0.02) {
+            // Premiere stopped the end earlier (not enough source material): close the gap that would be left
+            for (mv = idxSp + 1; mv < trackSp.clips.numItems; mv++) {
+              try { trackSp.clips[mv].move(-shortSp); } catch (_eMv3) {}
+            }
+            warnSp.push("Premiere lengthened the clip only to " + (Math.round(afterSp.end.seconds * 1000) / 1000) + " s instead of " + (Math.round(wantEnd * 1000) / 1000) + " s (not enough source material after the cut), so the end of its content is cut off.");
+          }
+        }
       }
     }
     var gotSp = Math.round(afterSp.getSpeed() * 10000) / 100;
-    var warnSp = [];
     if (typeof params.speedPercent === "number" && Math.abs(gotSp - params.speedPercent) > 1) {
       warnSp.push("Premiere applied " + gotSp + " % instead of " + params.speedPercent + " %. This happens on some clips cut out of a longer source; check the clip, or apply the speed before cutting.");
     }

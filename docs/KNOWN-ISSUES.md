@@ -1,6 +1,6 @@
 # Known issues and open items
 
-Last reviewed on 21 November 2026, version 1.9.3. Items are grouped by where they show up.
+Last reviewed on 21 November 2026, version 1.9.4. Items are grouped by where they show up.
 
 ## Not available through the server
 
@@ -23,7 +23,6 @@ Last reviewed on 21 November 2026, version 1.9.3. Items are grouped by where the
 | `ps_save_document` | After saving, the document is named `x.psd`; the earlier `documentName` no longer finds it |
 | `pr_scene_edit_detection` | Found one of two hard cuts at medium sensitivity |
 | `pr_clip_speed` | On some clips cut out of a longer source Premiere applies less speed than asked (150 % for 200 %). The tool keeps the content, reports the speed applied and adds a warning |
-| `pr_clip_speed` | Slowing down a cut clip that has another clip right after it keeps its length, so the end of its content is cut off; speeding up is handled (the clip shortens and the next ones move up) |
 | `ai_get_artboard_preview` | Once, with five apps working at the same time, the reply did not arrive (the PNG was written) and the call timed out after 70 s; not reproduced in three repeats, and the next command worked normally |
 | `media_analyze_audio` | Reported 60 BPM for a 120 BPM pulse (half time); the onsets were right |
 | Text creation in Photoshop and Illustrator | With the World-Ready text engine as the app preference, new point text is laid out to the left of the anchor. The tools do not force the composer or the alignment yet |

@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="#download"><img src="docs/assets/banner.svg" alt="Run your creative apps from a chat: 220 tools, 6 apps, 87 skills, 320 tests" width="100%"></a>
+  <a href="#download"><img src="docs/assets/banner.svg" alt="Run your creative apps from a chat: 220 tools, 6 apps, 87 skills, 327 tests" width="100%"></a>
 </p>
 
 # JuniorRocha MCP for Adobe Creative Cloud
@@ -71,7 +71,7 @@ See [Install from source](#install-from-source).
   [On-demand loading](#on-demand-loading).
 - **Workflow knowledge included.** 87 skills describe how studio work is done in these apps, from the brief
   to the delivery check.
-- **Tested.** 320 automated tests run on every setup, including a simulated app and the Lightroom plug-in.
+- **Tested.** 327 automated tests run on every setup, including a simulated app and the Lightroom plug-in.
 
 ## Some examples of what you can ask
 

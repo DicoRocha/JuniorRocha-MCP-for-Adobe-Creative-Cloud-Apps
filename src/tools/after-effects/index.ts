@@ -617,7 +617,7 @@ export function registerAfterEffectsTools(server: McpServer, router: BridgeRoute
       offsetSeconds: z.number().optional().describe("Shift all times (the clip starts later in the comp)."),
       y: z.number().optional().describe("Baseline y in px (default 72 % of the comp height; keep clear of faces and of the platform UI)."),
       singleLayer: z.boolean().optional().describe("One text layer for the whole video (Source Text picks the block by time): the style is edited in one place. Default: one layer per block."),
-      replace: z.record(z.string()).optional().describe("Fix words the engine misheard: { 'beta.': 'Beta.' } (case-insensitive match on the word).")
+      replace: z.record(z.string(), z.string()).optional().describe("Fix words the engine misheard: { 'beta.': 'Beta.' } (case-insensitive match on the word).")
     },
     async (p) => {
       try {

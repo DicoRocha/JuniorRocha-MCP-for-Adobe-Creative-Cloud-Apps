@@ -613,7 +613,7 @@ export function registerPhotoshopTools(realServer: McpServer, router: BridgeRout
       documentName: z.string().optional().describe("Open template document (default: the active one)."),
       csvPath: z.string().optional(),
       jsonPath: z.string().optional(),
-      records: z.array(z.record(z.union([z.string(), z.number(), z.boolean()]))).optional(),
+      records: z.array(z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]))).optional(),
       outputFolder: z.string(),
       fileNamePattern: z.string().optional().default("{{#}}"),
       format: z.enum(["png", "jpg", "psd"]).optional().default("png"),

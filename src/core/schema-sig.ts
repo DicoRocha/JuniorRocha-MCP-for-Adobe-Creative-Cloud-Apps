@@ -4,70 +4,74 @@
  */
 import { z } from "zod";
 
-type AnyZod = z.ZodTypeAny & { _def: Record<string, unknown> & { typeName?: string } };
+// zod 4: the definition lives in `_zod.def` and its kind in `def.type` ("string", "optional", "pipe", ...).
+type ZodDef = Record<string, unknown> & { type?: string };
+type AnyZod = { _zod: { def: ZodDef }; description?: string; minValue?: number | null; maxValue?: number | null; isInt?: boolean };
+
+const def = (t: AnyZod): ZodDef => t._zod.def;
 
 function inner(t: AnyZod): { type: AnyZod; optional: boolean; def?: unknown } {
   let cur = t;
   let optional = false;
-  let def: unknown;
+  let dflt: unknown;
   for (let i = 0; i < 10; i++) {
-    const tn = cur._def.typeName;
-    if (tn === "ZodOptional" || tn === "ZodNullable") {
+    const d = def(cur);
+    if (d.type === "optional" || d.type === "nullable") {
       optional = true;
-      cur = cur._def.innerType as AnyZod;
-    } else if (tn === "ZodDefault") {
+      cur = d.innerType as AnyZod;
+    } else if (d.type === "default" || d.type === "prefault") {
       optional = true;
-      def = (cur._def.defaultValue as () => unknown)();
-      cur = cur._def.innerType as AnyZod;
-    } else if (tn === "ZodEffects") {
-      cur = cur._def.schema as AnyZod;
+      dflt = d.defaultValue;
+      cur = d.innerType as AnyZod;
+    } else if (d.type === "pipe") {
+      // preprocess: in = transform, out = the schema; .transform(): in = the schema, out = transform
+      const out = d.out as AnyZod;
+      cur = def(out).type === "transform" ? (d.in as AnyZod) : out;
     } else break;
   }
-  return { type: cur, optional, def };
+  return { type: cur, optional, def: dflt };
 }
 
+/** Bounds as a comment; the safe-integer limits that .int() adds by itself are not real bounds. */
 function range(t: AnyZod): string {
-  const checks = (t._def.checks as Array<{ kind: string; value?: number; inclusive?: boolean }>) ?? [];
-  const min = checks.find((c) => c.kind === "min");
-  const max = checks.find((c) => c.kind === "max");
-  const isInt = checks.some((c) => c.kind === "int");
+  const real = (v: number | null | undefined) => typeof v === "number" && Number.isFinite(v) && Math.abs(v) !== Number.MAX_SAFE_INTEGER;
+  const min = real(t.minValue) ? t.minValue : undefined;
+  const max = real(t.maxValue) ? t.maxValue : undefined;
   const parts: string[] = [];
-  if (isInt) parts.push("int");
-  if (min && max) parts.push(`${min.value}–${max.value}`);
-  else if (min) parts.push(`≥${min.value}`);
-  else if (max) parts.push(`≤${max.value}`);
+  if (t.isInt) parts.push("int");
+  if (min !== undefined && max !== undefined) parts.push(`${min}–${max}`);
+  else if (min !== undefined) parts.push(`≥${min}`);
+  else if (max !== undefined) parts.push(`≤${max}`);
   return parts.length ? `/*${parts.join(" ")}*/` : "";
 }
 
 export function typeToTs(t: AnyZod, depth = 0): string {
   const { type } = inner(t);
-  const tn = type._def.typeName;
-  switch (tn) {
-    case "ZodString":
+  const d = def(type);
+  switch (d.type) {
+    case "string":
       return "string";
-    case "ZodNumber":
+    case "number":
       return `number${range(type)}`;
-    case "ZodBoolean":
+    case "boolean":
       return "boolean";
-    case "ZodLiteral":
-      return JSON.stringify(type._def.value);
-    case "ZodEnum":
-      return (type._def.values as string[]).map((v) => JSON.stringify(v)).join(" | ");
-    case "ZodNativeEnum":
-      return Object.values(type._def.values as Record<string, string>).map((v) => JSON.stringify(v)).join(" | ");
-    case "ZodArray": {
-      const el = typeToTs(type._def.type as AnyZod, depth + 1);
+    case "literal":
+      return (d.values as unknown[]).map((v) => JSON.stringify(v)).join(" | ");
+    case "enum":
+      return Object.values(d.entries as Record<string, string | number>).map((v) => JSON.stringify(v)).join(" | ");
+    case "array": {
+      const el = typeToTs(d.element as AnyZod, depth + 1);
       return /[|&]/.test(el) && !el.startsWith("{") ? `(${el})[]` : `${el}[]`;
     }
-    case "ZodTuple":
-      return `[${(type._def.items as AnyZod[]).map((i) => typeToTs(i, depth + 1)).join(", ")}]`;
-    case "ZodUnion":
-      return (type._def.options as AnyZod[]).map((o) => typeToTs(o, depth + 1)).join(" | ");
-    case "ZodRecord":
-      return `Record<string, ${typeToTs(type._def.valueType as AnyZod, depth + 1)}>`;
-    case "ZodObject":
+    case "tuple":
+      return `[${(d.items as AnyZod[]).map((i) => typeToTs(i, depth + 1)).join(", ")}]`;
+    case "union":
+      return (d.options as AnyZod[]).map((o) => typeToTs(o, depth + 1)).join(" | ");
+    case "record":
+      return `Record<string, ${typeToTs(d.valueType as AnyZod, depth + 1)}>`;
+    case "object":
       if (depth > 3) return "object";
-      return shapeToTs((type._def.shape as () => z.ZodRawShape)(), depth + 1, false);
+      return shapeToTs(d.shape as z.ZodRawShape, depth + 1, false);
     default:
       return "any";
   }
@@ -76,9 +80,9 @@ export function typeToTs(t: AnyZod, depth = 0): string {
 /** `{ a?: string; b: number }` — with `docs`, a short comment per field (default value, first sentence). */
 export function shapeToTs(shape: z.ZodRawShape, depth = 0, docs = true): string {
   const fields = Object.entries(shape).map(([k, v]) => {
-    const z0 = v as AnyZod;
+    const z0 = v as unknown as AnyZod;
     const { optional, def } = inner(z0);
-    const desc = docs ? firstSentence(z0.description ?? (inner(z0).type.description as string | undefined)) : "";
+    const desc = docs ? firstSentence(z0.description ?? inner(z0).type.description) : "";
     const notes = [def !== undefined ? `default ${JSON.stringify(def)}` : "", desc].filter(Boolean).join("; ");
     return `${k}${optional ? "?" : ""}: ${typeToTs(z0, depth)}${notes ? ` // ${notes}` : ""}`;
   });

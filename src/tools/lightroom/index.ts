@@ -204,7 +204,8 @@ export function registerLightroomTools(server: McpServer, router: BridgeRouter):
     {
       ...PhotoTargets,
       hsl: z
-        .record(
+        // partialRecord: any subset of the colours (a zod 4 record with enum keys requires every key)
+        .partialRecord(
           z.enum(["red", "orange", "yellow", "green", "aqua", "blue", "purple", "magenta"]),
           z.object({ hue: z.number().min(-100).max(100).optional(), saturation: z.number().min(-100).max(100).optional(), luminance: z.number().min(-100).max(100).optional() })
         )
@@ -427,7 +428,7 @@ export function registerLightroomTools(server: McpServer, router: BridgeRouter):
         ),
       invert: z.boolean().optional().describe("create: invert the new mask (e.g. everything except the subject)."),
       adjustments: z
-        .record(z.number())
+        .record(z.string(), z.number())
         .optional()
         .describe("Local sliders, e.g. { Exposure: 0.4, Temperature: 10, Clarity: 15 } (the 'local_' prefix is added)."),
       maskId: z.string().optional(),

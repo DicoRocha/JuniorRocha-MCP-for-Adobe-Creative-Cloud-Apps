@@ -33,7 +33,7 @@ const CueStyle = {
   uppercase: z.boolean().optional(),
   stripPunctuation: z.boolean().optional(),
   glossary: z
-    .record(z.string())
+    .record(z.string(), z.string())
     .optional()
     .describe("Corrections 'wrong' → 'right' applied before splitting, e.g. {'chat GPP': 'ChatGPT', 'em camadas': 'em camadas'}."),
   terms: z

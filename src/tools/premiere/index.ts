@@ -732,7 +732,7 @@ export function registerPremiereTools(server: McpServer, router: BridgeRouter): 
       durationSeconds: z.number().positive().optional(),
       videoTrackIndex: z.number().int().min(0).optional().default(1),
       audioTrackIndex: z.number().int().min(0).optional().default(0),
-      values: z.record(z.union([z.string(), z.number(), z.boolean()])).optional().describe("Parameter display name → value, e.g. {'Titel': 'Photoshop Beta'}.")
+      values: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional().describe("Parameter display name → value, e.g. {'Titel': 'Photoshop Beta'}.")
     },
     async (params) => {
       try {
@@ -819,7 +819,7 @@ export function registerPremiereTools(server: McpServer, router: BridgeRouter): 
       srtPath: z.string().optional(),
       cues: z.array(z.object({ start: z.number().min(0), end: z.number().min(0), text: z.string() })).optional(),
       textParam: z.string().optional().describe("Display name of the text parameter (default: the template's first text field)."),
-      extraValues: z.record(z.union([z.string(), z.number(), z.boolean()])).optional().describe("Same values on every clip (e.g. a colour)."),
+      extraValues: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional().describe("Same values on every clip (e.g. a colour)."),
       offsetSeconds: z.number().optional().describe("Shift every cue (cue times are relative to the sequence start)."),
       videoTrackIndex: z.number().int().min(0).optional().default(2),
       audioTrackIndex: z.number().int().min(0).optional().default(0),

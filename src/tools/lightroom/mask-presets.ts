@@ -187,7 +187,7 @@ export function registerLightroomMaskPresets(server: McpServer): void {
           z.object({
             name: z.string().min(1),
             part: z.enum(Object.keys(MASK_PARTS) as [MaskPart, ...MaskPart[]]),
-            adjustments: z.record(z.number()).describe(`Sliders: ${Object.keys(LOCAL).join(", ")}.`),
+            adjustments: z.record(z.string(), z.number()).describe(`Sliders: ${Object.keys(LOCAL).join(", ")}.`),
             inverted: z.boolean().optional()
           })
         )

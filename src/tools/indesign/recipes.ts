@@ -219,7 +219,7 @@ export function registerInDesignRecipes(server: McpServer, router: BridgeRouter)
       ...KitShape,
       csvPath: z.string().optional().describe("CSV/TSV with a header row (delimiter auto-detected)."),
       jsonPath: z.string().optional(),
-      records: z.array(z.record(z.union([z.string(), z.number(), z.boolean()]))).optional(),
+      records: z.array(z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]))).optional(),
       fields: z
         .object({ title: z.string(), description: z.string(), price: z.string(), image: z.string(), code: z.string() })
         .partial()

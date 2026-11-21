@@ -663,7 +663,7 @@ export function registerInDesignTools(server: McpServer, router: BridgeRouter): 
     {
       csvPath: z.string().optional().describe("CSV/TSV with a header row (delimiter auto-detected)."),
       jsonPath: z.string().optional(),
-      records: z.array(z.record(z.union([z.string(), z.number(), z.boolean()]))).optional(),
+      records: z.array(z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]))).optional(),
       templateFirstPage: PageRef,
       templateLastPage: PageRef,
       imageFit: z.enum(["fill", "proportionally", "contentAware", "frameToContent"]).optional().default("fill"),

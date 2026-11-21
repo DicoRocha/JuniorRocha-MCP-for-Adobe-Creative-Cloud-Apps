@@ -55,7 +55,7 @@ export function registerReelTool(server: McpServer, router: BridgeRouter): void 
       captionsTrack: z.number().int().min(1).optional().default(2).describe("Video track for .mogrt captions (0 = V1)."),
       language: z.string().optional().describe("ISO code of the speech (pt, de, en). Empty = detect."),
       model: z.enum(["tiny", "base", "small", "medium"]).optional(),
-      glossary: z.record(z.string()).optional().describe("Wrong → right, e.g. {'chat de apt': 'ChatGPT'}."),
+      glossary: z.record(z.string(), z.string()).optional().describe("Wrong → right, e.g. {'chat de apt': 'ChatGPT'}."),
       terms: z.array(z.string()).optional().describe("Names/brands spelled right; close-sounding runs of words are fixed (e.g. ['Levatio'])."),
       maxChars: z.number().int().min(10).max(60).optional().default(26),
       maxLines: z.number().int().min(1).max(3).optional().default(2),

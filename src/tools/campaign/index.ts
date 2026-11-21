@@ -64,7 +64,7 @@ export const PieceSchema = z.object({
   canal: z.string().optional(),
   etapaProducao: z.enum(STAGES).optional().describe("Overrides the stage of the type."),
   ferramenta: z.string().optional().describe("tipo 'tool': any MCP tool name."),
-  params: z.record(z.unknown()).optional(),
+  params: z.record(z.string(), z.unknown()).optional(),
   depende: z.array(z.string()).optional(),
   observacao: z.string().optional()
 });

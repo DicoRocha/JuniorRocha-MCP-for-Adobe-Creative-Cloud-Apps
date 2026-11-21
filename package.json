@@ -1,6 +1,6 @@
 {
   "name": "jr-adb-mcp-bridge",
-  "version": "1.9.2",
+  "version": "1.9.3",
   "description": "Unified local MCP server for Adobe Photoshop, Illustrator, InDesign, Lightroom Classic, After Effects and Premiere Pro: typed tools, recipes, audits, templates, campaign runner and skills (UXP, CEP, ExtendScript, COM)",
   "type": "module",
   "main": "dist/index.js",
@@ -27,7 +27,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.28.0",
     "ws": "^8.18.0",
-    "zod": "^3.24.2"
+    "zod": "^4.6.7"
   },
   "optionalDependencies": {
     "ffmpeg-static": "^5.2.0",
@@ -39,7 +39,7 @@
     "luaparse": "^0.3.1",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2",
-    "vitest": "^3.0.7"
+    "vitest": "^5.1.1"
   },
   "engines": {
     "node": ">=20.0.0"

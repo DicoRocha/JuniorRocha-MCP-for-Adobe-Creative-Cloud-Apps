@@ -260,7 +260,7 @@ export function registerIllustratorTools(server: McpServer, router: BridgeRouter
     {
       csvPath: z.string().optional(),
       jsonPath: z.string().optional(),
-      records: z.array(z.record(z.union([z.string(), z.number(), z.boolean()]))).optional(),
+      records: z.array(z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]))).optional(),
       outputFolder: z.string(),
       fileNamePattern: z.string().optional().default("{{#}}"),
       format: z.enum(["png", "jpg", "svg"]).optional().default("png"),

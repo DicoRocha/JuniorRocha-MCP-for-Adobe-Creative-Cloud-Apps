@@ -1,0 +1,87 @@
+{
+  "id": "com.jradbmcp.premiere.uxp",
+  "name": "Junior Rocha MCP",
+  "version": "1.4.1",
+  "main": "index.html",
+  "manifestVersion": 5,
+  "host": {
+    "app": "premierepro",
+    "minVersion": "25.6.0"
+  },
+  "entrypoints": [
+    {
+      "type": "panel",
+      "id": "com.jradbmcp.premiere.panel",
+      "label": {
+        "default": "Junior Rocha MCP"
+      },
+      "minimumSize": {
+        "width": 260,
+        "height": 180
+      },
+      "maximumSize": {
+        "width": 800,
+        "height": 600
+      },
+      "preferredDockedSize": {
+        "width": 280,
+        "height": 200
+      },
+      "preferredFloatingSize": {
+        "width": 280,
+        "height": 200
+      },
+      "icons": [
+        {
+          "width": 23,
+          "height": 23,
+          "path": "icons/icon.png",
+          "scale": [
+            1,
+            2
+          ],
+          "theme": [
+            "darkest",
+            "dark",
+            "medium",
+            "light",
+            "lightest",
+            "all"
+          ],
+          "species": [
+            "pluginList"
+          ]
+        }
+      ]
+    }
+  ],
+  "icons": [
+    {
+      "width": 23,
+      "height": 23,
+      "path": "icons/icon.png",
+      "scale": [
+        1,
+        2
+      ],
+      "theme": [
+        "darkest",
+        "dark",
+        "medium",
+        "light",
+        "lightest",
+        "all"
+      ],
+      "species": [
+        "pluginList"
+      ]
+    }
+  ],
+  "requiredPermissions": {
+    "network": {
+      "domains": "all"
+    },
+    "localFileSystem": "fullAccess",
+    "allowCodeGenerationFromStrings": true
+  }
+}

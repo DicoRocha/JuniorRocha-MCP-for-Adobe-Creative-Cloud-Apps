@@ -1,0 +1,33 @@
+node_modules/
+dist/
+coverage/
+*.log
+.DS_Store
+temp/
+.env
+logs/
+vendor/
+pesquisa/fontes-externas/
+build/
+release/
+MAC-VALIDATION-PACKAGE/
+
+# Adobe's ZXPSignCmd, if the user downloads it (not redistributed here)
+tools/ZXPSignCmd*
+
+# Working notes in Portuguese (kept on the author's disk, not published)
+notes-pt/
+docs/0*.md
+docs/1[0-6]-*.md
+docs/17-MEDICAO-DE-TOKENS.md
+docs/conhecimento/
+docs/superpowers/
+docs/LEIA-ME-MAPA-DA-PASTA.md
+bench/avaliacao-skills/
+mac-validation/START-HERE.md
+mac-validation/CLAUDE-INSTRUCTIONS.md
+docs/TOKEN-MEASUREMENT.md
+mac-validation/RESULTS-2026-11-20.md
+scripts/bench/
+bench/*.json
+bench/*.jsonl

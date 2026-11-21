@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Kit de marca (jr-adb-mcp-bridge)",
+  "type": "object",
+  "required": ["cliente", "status", "cores", "tipos"],
+  "properties": {
+    "cliente": { "type": "string" },
+    "status": { "enum": ["aprovado", "proposta"] },
+    "cores": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["nome", "hex"],
+        "properties": {
+          "nome": { "type": "string" },
+          "hex": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+          "cmyk": { "type": ["array", "null"], "items": { "type": "number" }, "minItems": 4, "maxItems": 4 },
+          "pantone": { "type": ["string", "null"] },
+          "uso": { "enum": ["fundo", "superficie", "texto", "texto-secundario", "destaque", "semantica"] },
+          "origem": { "enum": ["manual", "conversao", "proposta"] }
+        }
+      }
+    },
+    "tipos": {
+      "type": "object",
+      "properties": {
+        "titulo": { "$ref": "#/$defs/fonte" },
+        "corpo": { "$ref": "#/$defs/fonte" },
+        "rotulo": { "$ref": "#/$defs/fonte" }
+      }
+    },
+    "logo": {
+      "type": "object",
+      "properties": {
+        "arquivos": { "type": "object", "additionalProperties": { "type": "string" } },
+        "respiro": { "type": "string" },
+        "minimo_mm": { "type": "number" },
+        "minimo_px": { "type": "number" }
+      }
+    },
+    "tom": { "type": "string" },
+    "nunca": { "type": "array", "items": { "type": "string" } }
+  },
+  "$defs": {
+    "fonte": {
+      "type": "object",
+      "required": ["familia"],
+      "properties": {
+        "familia": { "type": "string" },
+        "estilo": { "type": "string" },
+        "postscript": { "type": "string" }
+      }
+    }
+  }
+}

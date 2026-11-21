@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "jr-adb-mcp-bridge": {
+      "command": "node",
+      "args": [
+        "D:/INTELIGENCIA ARTIFICIAL/DESENVOLVIMENTO/MCPS ADOBE/dist/index.js",
+        "--apps",
+        "all"
+      ]
+    }
+  }
+}

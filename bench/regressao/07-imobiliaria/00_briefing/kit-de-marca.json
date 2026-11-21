@@ -1,0 +1,53 @@
+{
+  "cliente": "Casa Nova Imóveis",
+  "status": "proposta",
+  "cores": [
+    {
+      "nome": "Fundo",
+      "hex": "#F2F4F3",
+      "uso": "fundo",
+      "origem": "proposta"
+    },
+    {
+      "nome": "Superficie",
+      "hex": "#FFFFFF",
+      "uso": "superficie",
+      "origem": "proposta"
+    },
+    {
+      "nome": "Texto",
+      "hex": "#22313F",
+      "uso": "texto",
+      "origem": "proposta"
+    },
+    {
+      "nome": "Texto-secundario",
+      "hex": "#5D6D7E",
+      "uso": "texto-secundario",
+      "origem": "proposta"
+    },
+    {
+      "nome": "Destaque",
+      "hex": "#1E8C6E",
+      "uso": "destaque",
+      "origem": "proposta"
+    }
+  ],
+  "tipos": {
+    "titulo": {
+      "familia": "Arial",
+      "estilo": "Bold",
+      "postscript": "Arial-BoldMT"
+    },
+    "corpo": {
+      "familia": "Arial",
+      "postscript": "ArialMT"
+    },
+    "rotulo": {
+      "familia": "Arial",
+      "estilo": "Bold",
+      "postscript": "Arial-BoldMT"
+    }
+  },
+  "nota": "Kit fictício da suíte de regressão (bench/regressao)."
+}

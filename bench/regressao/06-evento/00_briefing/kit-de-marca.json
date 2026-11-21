@@ -1,0 +1,53 @@
+{
+  "cliente": "Festival Ritmo Sul",
+  "status": "proposta",
+  "cores": [
+    {
+      "nome": "Fundo",
+      "hex": "#120A1F",
+      "uso": "fundo",
+      "origem": "proposta"
+    },
+    {
+      "nome": "Superficie",
+      "hex": "#1E1233",
+      "uso": "superficie",
+      "origem": "proposta"
+    },
+    {
+      "nome": "Texto",
+      "hex": "#FFFFFF",
+      "uso": "texto",
+      "origem": "proposta"
+    },
+    {
+      "nome": "Texto-secundario",
+      "hex": "#C9B8E8",
+      "uso": "texto-secundario",
+      "origem": "proposta"
+    },
+    {
+      "nome": "Destaque",
+      "hex": "#FF3D7F",
+      "uso": "destaque",
+      "origem": "proposta"
+    }
+  ],
+  "tipos": {
+    "titulo": {
+      "familia": "Arial",
+      "estilo": "Bold",
+      "postscript": "Arial-BoldMT"
+    },
+    "corpo": {
+      "familia": "Arial",
+      "postscript": "ArialMT"
+    },
+    "rotulo": {
+      "familia": "Arial",
+      "estilo": "Bold",
+      "postscript": "Arial-BoldMT"
+    }
+  },
+  "nota": "Kit fictício da suíte de regressão (bench/regressao)."
+}

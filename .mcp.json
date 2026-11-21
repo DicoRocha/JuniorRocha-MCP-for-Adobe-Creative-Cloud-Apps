@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "jr-adb-mcp-bridge": {
+      "command": "node",
+      "args": [
+        "dist/index.js",
+        "--apps",
+        "all"
+      ]
+    }
+  }
+}

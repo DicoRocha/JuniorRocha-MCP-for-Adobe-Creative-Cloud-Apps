@@ -1,0 +1,47 @@
+{
+  "name": "jr-adb-mcp-bridge",
+  "version": "1.9.2",
+  "description": "Unified local MCP server for Adobe Photoshop, Illustrator, InDesign, Lightroom Classic, After Effects and Premiere Pro: typed tools, recipes, audits, templates, campaign runner and skills (UXP, CEP, ExtendScript, COM)",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "jr-adb-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:unit": "vitest run tests/unit",
+    "test:sim": "vitest run tests/simulator",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "doctor": "tsx scripts/doctor.ts",
+    "install-bridges": "tsx scripts/install-bridges.ts",
+    "install-ai-clients": "tsx scripts/install-ai-clients.ts",
+    "package-plugins": "tsx scripts/package-plugins.ts",
+    "package-mcpb": "tsx scripts/package-mcpb.ts",
+    "docs": "tsx scripts/generate-docs.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.28.0",
+    "ws": "^8.18.0",
+    "zod": "^3.24.2"
+  },
+  "optionalDependencies": {
+    "ffmpeg-static": "^5.2.0",
+    "sherpa-onnx-node": "^2.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "@types/ws": "^8.18.0",
+    "luaparse": "^0.3.1",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.7"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "license": "MIT"
+}

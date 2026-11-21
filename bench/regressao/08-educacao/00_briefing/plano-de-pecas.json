@@ -1,0 +1,108 @@
+{
+  "cliente": "Escola Aprender+",
+  "campanha": "Regressão 08-educacao",
+  "aprovacoes": [
+    "conceito",
+    "arte-chave",
+    "video"
+  ],
+  "pecas": [
+    {
+      "id": "P01",
+      "tipo": "templates",
+      "nome": "Templates da marca",
+      "params": {
+        "outputFolder": "@/02_design/templates",
+        "apps": [
+          "photoshop",
+          "indesign"
+        ]
+      }
+    },
+    {
+      "id": "P02",
+      "tipo": "produto",
+      "nome": "Foto de produto 1:1",
+      "etapa": "atencao",
+      "canal": "instagram",
+      "params": {
+        "filePath": "@/01_fotos/produto.jpg",
+        "format": "square1x1",
+        "outputPath": "@/02_design/exports/produto_1x1.png",
+        "psdPath": "@/02_design/psd/produto_1x1.psd"
+      }
+    },
+    {
+      "id": "P03",
+      "tipo": "titulo",
+      "nome": "Cartela de título",
+      "params": {
+        "title": "Escola Aprender+",
+        "kicker": "Educação (cursos livres)",
+        "format": "story9x16",
+        "preview": false
+      }
+    },
+    {
+      "id": "P04",
+      "tipo": "lower-third",
+      "nome": "Lower third",
+      "params": {
+        "name": "Nome Sobrenome",
+        "role": "Educação (cursos livres)",
+        "preview": false
+      }
+    },
+    {
+      "id": "P05",
+      "tipo": "transicao",
+      "nome": "Transição da marca",
+      "params": {
+        "style": "wipe",
+        "format": "story9x16",
+        "preview": false
+      }
+    },
+    {
+      "id": "P06",
+      "tipo": "flyer",
+      "nome": "Flyer A5",
+      "etapa": "conversao",
+      "canal": "impresso",
+      "params": {
+        "title": "Escola Aprender+",
+        "kicker": "Educação (cursos livres)",
+        "subtitle": "Matricular-se na turma de março",
+        "bullets": [
+          "Atendimento rápido",
+          "Equipe especializada",
+          "Condições claras"
+        ],
+        "cta": "Matricular-se na turma de março",
+        "footer": "endereço · site · @perfil",
+        "size": "A5",
+        "savePath": "@/05_impressos/flyer_A5.indd",
+        "pdfPath": "@/05_impressos/flyer_A5.pdf",
+        "previewPath": "@/05_impressos/flyer_A5_previa.jpg"
+      }
+    },
+    {
+      "id": "P07",
+      "tipo": "folha-contato",
+      "nome": "Folha de contato",
+      "depende": [
+        "P02"
+      ],
+      "params": {
+        "folder": "@/02_design/exports",
+        "outputPath": "@/06_entrega/folha-de-contato.png"
+      }
+    },
+    {
+      "id": "P08",
+      "tipo": "a-mao",
+      "nome": "Revisão humana do texto legal",
+      "observacao": "datas e valores da secretaria"
+    }
+  ]
+}

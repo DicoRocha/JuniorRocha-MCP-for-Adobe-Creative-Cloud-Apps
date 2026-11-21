@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExtensionManifest Version="11.0" ExtensionBundleId="com.jradbmcp.universal" ExtensionBundleVersion="1.4.9"
+  ExtensionBundleName="Junior Rocha MCP" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <ExtensionList>
+    <Extension Id="com.jradbmcp.universal.panel" Version="1.4.9" />
+    <Extension Id="com.jradbmcp.universal.background" Version="1.4.9" />
+  </ExtensionList>
+  <ExecutionEnvironment>
+    <HostList>
+      <Host Name="AEFT" Version="[0.0,99.9]" />
+      <Host Name="PPRO" Version="[0.0,99.9]" />
+      <Host Name="ILST" Version="[0.0,99.9]" />
+      <Host Name="PHXS" Version="[0.0,99.9]" />
+      <Host Name="IDSN" Version="[0.0,99.9]" />
+    </HostList>
+    <LocaleList>
+      <Locale Code="All" />
+    </LocaleList>
+    <RequiredRuntimeList>
+      <RequiredRuntime Name="CSXS" Version="11.0" />
+    </RequiredRuntimeList>
+  </ExecutionEnvironment>
+  <DispatchInfoList>
+    <Extension Id="com.jradbmcp.universal.panel">
+      <DispatchInfo>
+        <Resources>
+          <MainPath>./index.html</MainPath>
+          <CEFCommandLine>
+            <Parameter>--enable-nodejs</Parameter>
+            <Parameter>--mixed-context</Parameter>
+          </CEFCommandLine>
+        </Resources>
+        <Lifecycle>
+          <AutoVisible>true</AutoVisible>
+        </Lifecycle>
+        <UI>
+          <Type>Panel</Type>
+          <Menu>Junior Rocha MCP</Menu>
+          <Geometry>
+            <Size>
+              <Width>300</Width>
+              <Height>220</Height>
+            </Size>
+          </Geometry>
+        </UI>
+      </DispatchInfo>
+    </Extension>
+    <!-- Invisible copy that starts with Premiere Pro (validated live 19/11/2026: the event starts the extension;
+         as a visible panel it floated over the app and could not be moved, so it runs without a window). -->
+    <Extension Id="com.jradbmcp.universal.background">
+      <DispatchInfo Host="PPRO">
+        <Resources>
+          <MainPath>./index.html</MainPath>
+          <CEFCommandLine>
+            <Parameter>--enable-nodejs</Parameter>
+            <Parameter>--mixed-context</Parameter>
+          </CEFCommandLine>
+        </Resources>
+        <Lifecycle>
+          <AutoVisible>false</AutoVisible>
+          <StartOn>
+            <Event>com.adobe.csxs.events.ApplicationActivate</Event>
+          </StartOn>
+        </Lifecycle>
+        <UI>
+          <Type>Custom</Type>
+          <Geometry>
+            <Size>
+              <Width>1</Width>
+              <Height>1</Height>
+            </Size>
+          </Geometry>
+        </UI>
+      </DispatchInfo>
+      <!-- Step 3 (19/11/2026, not validated yet): same invisible copy in After Effects; each app dispatches a different startup event. -->
+      <DispatchInfo Host="AEFT">
+        <Resources>
+          <MainPath>./index.html</MainPath>
+          <CEFCommandLine>
+            <Parameter>--enable-nodejs</Parameter>
+            <Parameter>--mixed-context</Parameter>
+          </CEFCommandLine>
+        </Resources>
+        <Lifecycle>
+          <AutoVisible>false</AutoVisible>
+          <StartOn>
+            <Event>applicationActivate</Event>
+            <Event>com.adobe.csxs.events.ApplicationActivate</Event>
+            <Event>com.adobe.csxs.events.ApplicationInitialized</Event>
+          </StartOn>
+        </Lifecycle>
+        <UI>
+          <Type>Custom</Type>
+          <Geometry>
+            <Size>
+              <Width>1</Width>
+              <Height>1</Height>
+            </Size>
+          </Geometry>
+        </UI>
+      </DispatchInfo>
+      <!-- Step 3 (19/11/2026, not validated yet): same invisible copy in Illustrator; each app dispatches a different startup event. -->
+      <DispatchInfo Host="ILST">
+        <Resources>
+          <MainPath>./index.html</MainPath>
+          <CEFCommandLine>
+            <Parameter>--enable-nodejs</Parameter>
+            <Parameter>--mixed-context</Parameter>
+          </CEFCommandLine>
+        </Resources>
+        <Lifecycle>
+          <AutoVisible>false</AutoVisible>
+          <StartOn>
+            <Event>applicationActivate</Event>
+            <Event>com.adobe.csxs.events.ApplicationActivate</Event>
+            <Event>com.adobe.csxs.events.ApplicationInitialized</Event>
+          </StartOn>
+        </Lifecycle>
+        <UI>
+          <Type>Custom</Type>
+          <Geometry>
+            <Size>
+              <Width>1</Width>
+              <Height>1</Height>
+            </Size>
+          </Geometry>
+        </UI>
+      </DispatchInfo>
+      <!-- Step 3 (19/11/2026, not validated yet): same invisible copy in InDesign; each app dispatches a different startup event. -->
+      <DispatchInfo Host="IDSN">
+        <Resources>
+          <MainPath>./index.html</MainPath>
+          <CEFCommandLine>
+            <Parameter>--enable-nodejs</Parameter>
+            <Parameter>--mixed-context</Parameter>
+          </CEFCommandLine>
+        </Resources>
+        <Lifecycle>
+          <AutoVisible>false</AutoVisible>
+          <StartOn>
+            <Event>applicationActivate</Event>
+            <Event>com.adobe.csxs.events.ApplicationActivate</Event>
+            <Event>com.adobe.csxs.events.ApplicationInitialized</Event>
+          </StartOn>
+        </Lifecycle>
+        <UI>
+          <Type>Custom</Type>
+          <Geometry>
+            <Size>
+              <Width>1</Width>
+              <Height>1</Height>
+            </Size>
+          </Geometry>
+        </UI>
+      </DispatchInfo>
+    </Extension>
+  </DispatchInfoList>
+</ExtensionManifest>

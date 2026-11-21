@@ -1,0 +1,53 @@
+{
+  "cliente": "Clínica Sorriso Claro",
+  "status": "proposta",
+  "cores": [
+    {
+      "nome": "Fundo",
+      "hex": "#F4F1EC",
+      "uso": "fundo",
+      "origem": "proposta"
+    },
+    {
+      "nome": "Superficie",
+      "hex": "#FFFFFF",
+      "uso": "superficie",
+      "origem": "proposta"
+    },
+    {
+      "nome": "Texto",
+      "hex": "#1E2A33",
+      "uso": "texto",
+      "origem": "proposta"
+    },
+    {
+      "nome": "Texto-secundario",
+      "hex": "#5B6770",
+      "uso": "texto-secundario",
+      "origem": "proposta"
+    },
+    {
+      "nome": "Destaque",
+      "hex": "#2F7D6D",
+      "uso": "destaque",
+      "origem": "proposta"
+    }
+  ],
+  "tipos": {
+    "titulo": {
+      "familia": "Arial",
+      "estilo": "Bold",
+      "postscript": "Arial-BoldMT"
+    },
+    "corpo": {
+      "familia": "Arial",
+      "postscript": "ArialMT"
+    },
+    "rotulo": {
+      "familia": "Arial",
+      "estilo": "Bold",
+      "postscript": "Arial-BoldMT"
+    }
+  },
+  "nota": "Kit fictício da suíte de regressão (bench/regressao)."
+}

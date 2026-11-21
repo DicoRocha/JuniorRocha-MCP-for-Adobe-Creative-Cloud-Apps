@@ -1,0 +1,53 @@
+{
+  "cliente": "Loja Ponto Certo",
+  "status": "proposta",
+  "cores": [
+    {
+      "nome": "Fundo",
+      "hex": "#FFF8E7",
+      "uso": "fundo",
+      "origem": "proposta"
+    },
+    {
+      "nome": "Superficie",
+      "hex": "#FFFFFF",
+      "uso": "superficie",
+      "origem": "proposta"
+    },
+    {
+      "nome": "Texto",
+      "hex": "#1A1A1A",
+      "uso": "texto",
+      "origem": "proposta"
+    },
+    {
+      "nome": "Texto-secundario",
+      "hex": "#555555",
+      "uso": "texto-secundario",
+      "origem": "proposta"
+    },
+    {
+      "nome": "Destaque",
+      "hex": "#E63946",
+      "uso": "destaque",
+      "origem": "proposta"
+    }
+  ],
+  "tipos": {
+    "titulo": {
+      "familia": "Arial",
+      "estilo": "Bold",
+      "postscript": "Arial-BoldMT"
+    },
+    "corpo": {
+      "familia": "Arial",
+      "postscript": "ArialMT"
+    },
+    "rotulo": {
+      "familia": "Arial",
+      "estilo": "Bold",
+      "postscript": "Arial-BoldMT"
+    }
+  },
+  "nota": "Kit fictício da suíte de regressão (bench/regressao)."
+}

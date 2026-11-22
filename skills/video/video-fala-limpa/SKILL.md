@@ -83,6 +83,8 @@ reanalisa se o clipe for aparado depois. Para transcrever e achar pausas antes d
 |---|---|
 | Onde cortar | Só em pausa entre frases, no silêncio |
 | Tempos da transcrição | ±50–100 ms: guia, não ponto de corte |
+| Início de cada trecho | começo **real** da 1ª sílaba (nível sobe acima de ruído + 5 dB) − 0,12 a 0,2 s |
+| Fim de cada trecho | fim real da última sílaba + 0,15 a 0,25 s (não cortar o "s" final nem a queda da voz) |
 | Ar no início / fim da peça | ≤ 0,15 s antes da 1ª palavra · ≤ 0,2 s depois da última |
 | Consoante explosiva (p/t/k/b/d/g) | ~50 ms de ar antes |
 | Respiração | Pertence à frase seguinte; nunca cortar no meio; não tirar todas |
@@ -115,6 +117,24 @@ reanalisa se o clipe for aparado depois. Para transcrever e achar pausas antes d
 
 **Trave a fala primeiro.** Só depois de cortes, pausas e níveis aprovados entram B-roll,
 gráficos, música e legenda — mexer na fala depois desalinha tudo que está por cima.
+
+### Tempo zero do clipe (22/11/2026)
+
+Vídeo de celular costuma ter o **áudio começando antes do primeiro quadro** (0,34 s no caso real). O Premiere
+conta o tempo do clipe a partir do primeiro quadro; um áudio extraído com ffmpeg conta do primeiro sample. Sem
+corrigir, **todo corte cai atrasado** e a primeira sílaba some ("exportar" virou "portar").
+- As ferramentas do MCP (`media_transcribe`, `media_analyze_audio`, `pr_assemble_reel`) já alinham ao primeiro
+  quadro. Em análise feita fora delas, meça a diferença (`ffprobe -show_entries stream=start_time`) e desconte.
+- Melhor ainda: analise o áudio **exportado do próprio Premiere** (sequência com o clipe em 0) — ele já está no
+  tempo do clipe, e é o áudio limpo que vai para o vídeo.
+
+### Conferir cada emenda pelo gráfico (obrigatório)
+
+Antes de montar, gere a forma de onda (e o espectrograma) de 1,5 s em volta de **cada** ponto de corte, com a
+linha do corte marcada. O corte tem de cair em silêncio, antes do começo da primeira sílaba (consoantes como
+"s", "f", "x" aparecem no espectrograma como faixa alta e fraca, quase invisível na onda). Depois de montar,
+transcreva de novo o áudio cortado e compare a primeira palavra de cada trecho com o texto escolhido.
+Tosse, pigarro e respiração alta são cortados por inteiro; uma frase dita de uma vez fica **num trecho só**.
 
 ## 5. Checklist por emenda
 

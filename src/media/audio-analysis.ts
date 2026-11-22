@@ -79,19 +79,23 @@ export function detectSilences(samples: Float32Array, sampleRate: number, opts: 
   const env = rmsEnvelope(samples, sampleRate);
   const minSilence = opts.minSilence ?? 0.4;
   let threshold = opts.thresholdDb;
-  if (threshold === undefined) {
-    const sorted = Array.from(env.db).sort((a, b) => a - b);
-    const floor = sorted.length ? sorted[Math.floor(sorted.length * 0.1)] : -60;
-    threshold = Math.min(-30, Math.max(-55, floor + 12));
-  }
+  const sorted = Array.from(env.db).sort((a, b) => a - b);
+  const floor = sorted.length ? sorted[Math.floor(sorted.length * 0.1)] : -60;
+  if (threshold === undefined) threshold = Math.min(-30, Math.max(-55, floor + 12));
+  // Soft edge (22/11/2026): word onsets such as "ex-", "s", "f" sit well below the speech threshold. A pause ends
+  // where the level first rises above floor + 5 dB, not where it crosses the threshold, so the cut keeps them.
+  const soft = Math.min(threshold - 3, floor + 5);
   const silences: Range[] = [];
   let runStart = -1;
   for (let f = 0; f <= env.db.length; f++) {
     const quiet = f < env.db.length && env.db[f] < threshold;
     if (quiet && runStart < 0) runStart = f;
     if (!quiet && runStart >= 0) {
-      const start = runStart * env.hop;
-      const end = f === env.db.length ? samples.length / sampleRate : f * env.hop;
+      let a0 = runStart, a1 = f;
+      while (a1 > a0 && a1 < env.db.length && env.db[a1 - 1] >= soft) a1--;
+      while (a0 < a1 && a0 > 0 && env.db[a0] >= soft) a0++;
+      const start = a0 * env.hop;
+      const end = f === env.db.length ? samples.length / sampleRate : a1 * env.hop;
       if (end - start >= minSilence) silences.push({ start: round(start, 3), end: round(end, 3) });
       runStart = -1;
     }

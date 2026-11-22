@@ -1188,8 +1188,17 @@ function __mcpDispatch(action, params, _options) {
         itemAs.setInPoint(__prSecondsToTicks(rg.start), mediaType);
         itemAs.setOutPoint(__prSecondsToTicks(rg.end), mediaType);
         trackAs.overwriteClip(itemAs, __prSecondsToTicks(at));
-        placed.push({ sourceStart: Number(rg.start), sourceEnd: Number(rg.end), timelineStart: Math.round(at * 1000) / 1000 });
-        at += len;
+        // Premiere snaps in/out to frames: the piece can end up to a frame shorter than len. The next piece starts
+        // where this one really ends, so no 1-frame gap (black and silence) appears between pieces (22/11/2026).
+        var realEnd = at + len;
+        try {
+          for (var ci = trackAs.clips.numItems - 1; ci >= 0; ci--) {
+            var tc = trackAs.clips[ci];
+            if (Math.abs(tc.start.seconds - at) < 0.05) { realEnd = tc.end.seconds; break; }
+          }
+        } catch (_eEnd) {}
+        placed.push({ sourceStart: Number(rg.start), sourceEnd: Number(rg.end), timelineStart: Math.round(at * 1000) / 1000, timelineEnd: Math.round(realEnd * 1000) / 1000 });
+        at = realEnd;
       }
     } finally {
       try {

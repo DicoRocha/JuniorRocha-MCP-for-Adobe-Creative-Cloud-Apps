@@ -102,12 +102,51 @@ export function run(
   });
 }
 
-/** Decodes any audio/video file to mono Float32 PCM at sampleRate (optionally only a time range). */
-export async function decodeToPcm(file: string, sampleRate = 16000, range?: { start?: number; duration?: number }): Promise<Float32Array> {
+/** Timestamp (s) of the first packet of the first video or audio stream, or null when there is none. */
+export async function firstPacketSeconds(file: string, kind: "v" | "a"): Promise<number | null> {
+  const ffmpeg = requireFfmpeg();
+  const res = await run(ffmpeg, ["-v", "error", "-nostdin", "-i", file, "-map", `0:${kind}:0`, "-c", "copy", "-frames:" + kind, "1", "-f", "framemd5", "pipe:1"], {
+    timeoutMs: 30000
+  });
+  if (res.code !== 0) return null;
+  const txt = res.stdout.toString();
+  const tb = /#tb \d+: (\d+)\/(\d+)/.exec(txt);
+  const line = txt.split(/\r?\n/).find((l) => /^\s*\d+,/.test(l));
+  if (!tb || !line) return null;
+  const pts = Number(line.split(",")[2]); // #stream, dts, pts, ...
+  return Number.isFinite(pts) ? (pts * Number(tb[1])) / Number(tb[2]) : null;
+}
+
+/**
+ * Seconds of audio that come before the first video frame (positive) or after it (negative). Premiere, After
+ * Effects and every editor count clip time from the first video frame; ffmpeg's audio decode counts from the first
+ * audio sample. Phone recordings often start the audio first (0,34 s on 22/11/2026): without this correction every
+ * cut planned from the audio landed 0,34 s late and the first syllable of the next phrase was lost.
+ */
+export async function audioLeadSeconds(file: string): Promise<number> {
+  if (/\.(wav|mp3|aac|m4a|flac|ogg|aif|aiff)$/i.test(file)) return 0;
+  const v = await firstPacketSeconds(file, "v");
+  const a = await firstPacketSeconds(file, "a");
+  if (v === null || a === null) return 0;
+  const lead = v - a;
+  return Math.abs(lead) < 0.0005 ? 0 : lead;
+}
+
+/**
+ * Decodes any audio/video file to mono Float32 PCM at sampleRate (optionally only a time range). For video files
+ * the samples are aligned to the first video frame (time 0 = what the editors call 0), see audioLeadSeconds.
+ */
+export async function decodeToPcm(
+  file: string,
+  sampleRate = 16000,
+  range?: { start?: number; duration?: number },
+  opts: { alignToVideo?: boolean } = {}
+): Promise<Float32Array> {
   if (!fs.existsSync(file)) throw new MediaToolError("FILE_NOT_FOUND", `File not found: ${file}`);
   const ffmpeg = requireFfmpeg();
+  const lead = opts.alignToVideo === false ? 0 : await audioLeadSeconds(file);
   const args = ["-v", "error", "-nostdin"];
-  if (range?.start) args.push("-ss", String(range.start));
+  if (range?.start) args.push("-ss", String(Math.max(0, range.start + lead)));
   args.push("-i", file);
   if (range?.duration) args.push("-t", String(range.duration));
   args.push("-vn", "-ac", "1", "-ar", String(sampleRate), "-f", "f32le", "pipe:1");
@@ -116,7 +155,13 @@ export async function decodeToPcm(file: string, sampleRate = 16000, range?: { st
   const buf = res.stdout;
   const out = new Float32Array(Math.floor(buf.length / 4));
   for (let i = 0; i < out.length; i++) out[i] = buf.readFloatLE(i * 4);
-  return out;
+  if (range?.start || lead === 0) return out;
+  // Whole file: drop the audio that plays before the first frame, or pad silence when the audio starts later.
+  const n = Math.round(Math.abs(lead) * sampleRate);
+  if (lead > 0) return out.subarray(Math.min(n, out.length));
+  const padded = new Float32Array(out.length + n);
+  padded.set(out, n);
+  return padded;
 }
 
 /** Writes a 16-bit PCM mono WAV (for tools that want a file). */

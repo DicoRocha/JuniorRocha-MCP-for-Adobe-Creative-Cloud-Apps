@@ -12,6 +12,24 @@ description: Cor e exportação de vídeo no Premiere — correção antes do lo
 3. **Look:** com intensidade 30–70%; o mesmo em toda a peça.
 4. Fotos já tratadas no Lightroom (`foto-revelacao`) **não** recebem outro look por cima.
 
+### Look pedido tem de aparecer (22/11/2026)
+
+Um "look cinematográfico" com Contrast 24, Blacks −16 e Saturation 88 num vídeo de celular chapado mudou
+o desvio de luminância só ~5% — a pessoa viu o vídeo "igual ao original". Ponto de partida que aparece
+(Lumetri em AE/Premiere, rosto de vídeo de celular):
+
+- **Color Balance antes do Lumetri** (`ADBE Color Balance 2`, 1º efeito, Preserve Luminosity ligado):
+  sombras R −14 G −2 B +20, médios R +3 B −5, realces R +12 G +2 B −12 (teal e laranja). Antes do Lumetri
+  para que um trecho com Saturation 0 continue P&B.
+- **Lumetri:** Exposure −0.2, Contrast ~48, Highlights ~−42, Shadows ~−18, Whites ~0, Blacks ~−40,
+  Saturation 90, Faded Film ~16, Sharpen ~14, Vibrance ~8, Temperature ~−6; vinheta −2.4 (só aparece se a
+  borda da camada estiver visível — numa camada com matte, a vinheta some).
+- **Medir antes/depois** no mesmo quadro (`saveFrameToPng` com o efeito ligado e desligado, ou export de
+  quadro): o desvio de luminância do rosto deve subir **≥ 15%**, os pretos (p2) devem descer de forma
+  visível e nada pode estourar (p98 < 0,95 na pele). Mostre o antes/depois à pessoa.
+- Lumetri no AE por script: os índices mudam por versão; leia os nomes antes (`property(i).name`). Split
+  Toning e Color Wheels são blobs sem API — use Color Balance para tingir.
+
 ### Premiere 27 (nov/2026): Color Mode no lugar do painel Lumetri
 
 O **painel** Lumetri saiu; a cor nova é o **Color Mode** (área própria de cor). O que o MCP alcança

@@ -16,6 +16,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ToolCatalog, editDistance } from "../../core/tool-catalog.js";
 import { logUsage, usageDir } from "../../core/usage-log.js";
 import { firstSentence, shapeToTs } from "../../core/schema-sig.js";
+import { runWithTimeoutFloor } from "../../core/timeouts.js";
 
 type Content = { type: string; text?: string; data?: string; mimeType?: string };
 export type ToolResult = { content?: Content[]; isError?: boolean };
@@ -180,7 +181,8 @@ export function registerCodeTools(server: McpServer, catalog: ToolCatalog): void
       "log(...), show(i?) adds the last call's images to the answer, sleep(ms), readText/readJson/writeText/exists/" +
       "mkdir/listDir(path), path.join/dirname/basename. End with `return {...}` (keep it small). Independent apps can " +
       "run in parallel with Promise.all. A failed tool throws (catch it to continue). Long work: background: true " +
-      "returns a jobId at once; poll with { jobId }. Read jradb_api first for signatures.",
+      "returns a jobId at once; poll with { jobId }. Inside a background job an app call waits as long as the job allows " +
+      "(no 60 s bridge timeout), so a long build followed by a render runs to the end. Read jradb_api first for signatures.",
     {
       code: z.string().optional().describe("Body of an async function. Example: const d = await tools.ps_audit_document({}); return d.verdict;"),
       background: z.boolean().optional().describe("Return a jobId at once and run in the background (for work over ~60 s)."),
@@ -206,7 +208,10 @@ export function registerCodeTools(server: McpServer, catalog: ToolCatalog): void
         fs.mkdirSync(dir, { recursive: true });
         const file = path.join(dir, `${id}.json`);
         fs.writeFileSync(file, JSON.stringify({ status: "running", started: Date.now(), jobId: id }));
-        void runScript(catalog, code, { timeoutMs, extra }).then((run) => fs.writeFileSync(file, JSON.stringify({ ...run, status: "done", jobId: id })));
+        // Bridge calls inside a background job may wait for the time the job has left (see runWithTimeoutFloor).
+        void runWithTimeoutFloor(Date.now() + timeoutMs - 5000, () => runScript(catalog, code, { timeoutMs, extra })).then((run) =>
+          fs.writeFileSync(file, JSON.stringify({ ...run, status: "done", jobId: id }))
+        );
         return { content: [{ type: "text" as const, text: JSON.stringify({ jobId: id, status: "running", poll: "jradb_code { jobId }" }) }] };
       }
       const run = await runScript(catalog, code, { timeoutMs, extra });

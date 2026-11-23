@@ -20,6 +20,27 @@ function envMs(name: string, fallback: number): number {
  * busy probe and hints never reached Claude. Timeout + probe now fit inside that window.
  * Long renders and exports should report progress asynchronously; override with the env vars.
  */
+import { AsyncLocalStorage } from "node:async_hooks";
+
+/**
+ * Background code-mode jobs (jradb_code background: true) may run for many minutes. Inside one, a bridge call
+ * may wait up to the time the job has left instead of the usual 60-70 s: on 23/11/2026 a build that took 70 s
+ * "timed out", the script threw and the render queued after it never started, although After Effects finished
+ * the build. Foreground calls keep the short timeouts (a linked device drops a tool call after ~80 s).
+ */
+const floorStore = new AsyncLocalStorage<{ untilMs: number }>();
+
+export function runWithTimeoutFloor<T>(untilMs: number, fn: () => Promise<T>): Promise<T> {
+  return floorStore.run({ untilMs }, fn);
+}
+
+/** The timeout to use for a bridge call: unchanged outside a background job, else at least the time it has left. */
+export function applyTimeoutFloor(timeoutMs: number, now: number = Date.now()): number {
+  const f = floorStore.getStore();
+  if (!f) return timeoutMs;
+  return Math.max(timeoutMs, Math.floor(f.untilMs - now));
+}
+
 export const TIMEOUTS = {
   /** Cheap reads: status, lists, document info. */
   read: envMs("JRADB_MCP_TIMEOUT_READ_MS", 30_000),

@@ -13,7 +13,7 @@ import {
 import { WsHub } from "./ws-hub.js";
 import { executeDirectOsFallback } from "./com-runner.js";
 import { logger } from "./logger.js";
-import { resolveTimeoutMs, TIMEOUTS } from "./timeouts.js";
+import { applyTimeoutFloor, resolveTimeoutMs, TIMEOUTS } from "./timeouts.js";
 
 export type OsFallbackExecutor = (packet: BridgeCommandPacket, timeoutMs: number) => Promise<BridgeResponsePacket>;
 
@@ -282,7 +282,7 @@ export class BridgeRouter {
     options: CommandOptions
   ): Promise<BridgeResponsePacket> {
     const id = `req_${randomUUID().replace(/-/g, "").slice(0, 16)}`;
-    const timeoutMs = resolveTimeoutMs(action, options.timeoutMs ?? this.defaultTimeoutMs, params);
+    const timeoutMs = applyTimeoutFloor(resolveTimeoutMs(action, options.timeoutMs ?? this.defaultTimeoutMs, params));
     const canUseOsFallback = this.enableOsFallback && options.preferBridge !== "uxp";
 
     const triedBridges: BridgeType[] = [];

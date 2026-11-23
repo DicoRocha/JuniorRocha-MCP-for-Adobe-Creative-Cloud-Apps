@@ -1,7 +1,7 @@
 {
   "id": "com.jradbmcp.premiere.uxp",
   "name": "Junior Rocha MCP",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "main": "index.html",
   "manifestVersion": 5,
   "host": {

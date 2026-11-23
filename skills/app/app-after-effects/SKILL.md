@@ -47,7 +47,7 @@ Referência: `references/ae-matchnames.md`. Ofício: `motion-fundamentos`.
 Ternário encadeado só com parênteses (`a ? x : (b ? y : z)`): sem eles o ExtendScript avalia errado.
 
 Roda num grupo de desfazer, com diálogos suprimidos. Regras:
-- **Uma comp por chamada**, poucos objetivos. Script longo trava.
+- **Uma comp por chamada**, poucos objetivos. Script longo trava: com o script rodando o After não responde (o painel mostra "Executando: script · N s"). Projeto grande: monte **uma cena por chamada** (`$.evalFile` de um arquivo por cena), cada uma em até ~20 s.
 - **Não chame `app.project.save()` no script** — salve com `ae_manage_project` em outra chamada.
 - Ache comps por nome percorrendo `app.project.item(i)`.
 - **Depois de `addProperty`, pegue as referências de novo** pelo caminho (`layer.property("ADBE Root Vectors Group").property(1)...`):

@@ -11,9 +11,9 @@ function fakeRelease(dir: string, version: string): void {
   fs.mkdirSync(dir, { recursive: true });
   writeZip(path.join(dir, `jr-adb-mcp-bridge-${version}.mcpb`), [{ name: "dist/index.js", data: Buffer.from("x") }]);
   for (const f of [
-    "jr-adb-mcp-bridge-photoshop-uxp-1.4.12.ccx",
-    "jr-adb-mcp-bridge-premiere-uxp-1.4.1.ccx",
-    "jr-adb-mcp-bridge-indesign-uxp-1.0.5.ccx",
+    "jr-adb-mcp-bridge-photoshop-uxp-1.4.13.ccx",
+    "jr-adb-mcp-bridge-premiere-uxp-1.4.2.ccx",
+    "jr-adb-mcp-bridge-indesign-uxp-1.0.6.ccx",
     "jr-adb-mcp-bridge-bridges-kit-1.4.9.zip",
     "jr-adb-mcp-bridge-cep-1.4.9.zip",
     "jr-adb-mcp-bridge-1.0.0.mcpb"
@@ -51,9 +51,9 @@ describe("complete download (one zip with every installer)", () => {
     for (const f of [
       "INSTALL.txt",
       "1-server/jr-adb-mcp-bridge-9.9.9.mcpb",
-      "2-plugins/jr-adb-mcp-bridge-photoshop-uxp-1.4.12.ccx",
-      "2-plugins/jr-adb-mcp-bridge-premiere-uxp-1.4.1.ccx",
-      "2-plugins/jr-adb-mcp-bridge-indesign-uxp-1.0.5.ccx",
+      "2-plugins/jr-adb-mcp-bridge-photoshop-uxp-1.4.13.ccx",
+      "2-plugins/jr-adb-mcp-bridge-premiere-uxp-1.4.2.ccx",
+      "2-plugins/jr-adb-mcp-bridge-indesign-uxp-1.0.6.ccx",
       "3-bridges-kit/INSTALL-BRIDGES.bat",
       "3-bridges-kit/INSTALL-BRIDGES.command",
       "3-bridges-kit/com.jradbmcp.universal/CSXS/manifest.xml",
@@ -68,7 +68,7 @@ describe("complete download (one zip with every installer)", () => {
   it("refuses to build when an installer is missing", () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "jr-complete-"));
     fakeRelease(tmp, "9.9.9");
-    fs.rmSync(path.join(tmp, "jr-adb-mcp-bridge-indesign-uxp-1.0.5.ccx"));
+    fs.rmSync(path.join(tmp, "jr-adb-mcp-bridge-indesign-uxp-1.0.6.ccx"));
     expect(() => buildDownloads({ repoRoot, releaseDir: tmp, version: "9.9.9" }).claude).toThrow(/indesign/);
   });
 

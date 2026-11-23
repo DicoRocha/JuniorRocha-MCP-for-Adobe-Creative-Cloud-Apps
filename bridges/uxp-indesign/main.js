@@ -20,6 +20,54 @@ let ws = null;
 let reconnectTimer = null;
 let reconnectButtonBound = false;
 
+
+// A long script leaves the app without reaction until it ends and it looks frozen (22/11/2026): show what runs.
+const __busy = { list: [], timer: null };
+function __busyLabel(action) {
+  if (/raw\.execute|execute(Uxp|Extend)Script|\.code$/i.test(action)) return "script";
+  if (/render/i.test(action)) return "render";
+  if (/export/i.test(action)) return "exportando";
+  if (/save/i.test(action)) return "salvando";
+  return action;
+}
+function __busyPaint() {
+  const el = document.getElementById("busy");
+  if (!el) return;
+  if (!el.style) return;
+  if (!__busy.list.length) {
+    el.style.display = "none";
+    return;
+  }
+  const cur = __busy.list[0];
+  const secs = Math.round((Date.now() - cur.t0) / 1000);
+  const more = __busy.list.length > 1 ? ` (+${__busy.list.length - 1} na fila)` : "";
+  el.textContent = `Executando: ${__busyLabel(cur.action)} \u00b7 ${secs} s${more}. O app pode n\u00e3o responder at\u00e9 terminar.`;
+  el.style.display = "block";
+}
+// setTimeout chain, not setInterval: one tick a second only while something runs.
+function __busyTick() {
+  if (__busy.timer || !__busy.list.length) return;
+  __busy.timer = setTimeout(() => {
+    __busy.timer = null;
+    __busyPaint();
+    __busyTick();
+  }, 1000);
+}
+function busyStart(action) {
+  __busy.list.push({ action, t0: Date.now() });
+  __busyPaint();
+  __busyTick();
+}
+function busyEnd(action) {
+  const i = __busy.list.findIndex((b) => b.action === action);
+  if (i >= 0) {
+    const secs = Math.round((Date.now() - __busy.list[i].t0) / 1000);
+    if (secs >= 5) log(`Fim: ${__busyLabel(action)} (${secs} s)`);
+    __busy.list.splice(i, 1);
+  }
+  __busyPaint();
+}
+
 function log(msg) {
   const el = typeof document !== "undefined" ? document.getElementById("log") : null;
   if (el) {
@@ -219,7 +267,7 @@ function connect() {
         app: "indesign",
         bridgeType: "uxp",
         appVersion: String(app.version || "unknown"),
-        pluginVersion: "1.0.5",
+        pluginVersion: "1.0.6",
         capabilities: ["uxp", "extendscriptHybrid", "extendscript", "dom"]
       })
     );
@@ -236,6 +284,7 @@ function connect() {
 
     log(`Action: ${msg.action}`);
     const start = Date.now();
+    busyStart(msg.action);
     let reply;
     try {
       const data = await runExtendScriptHybrid(msg.action, msg.params || {}, msg.options || {});
@@ -255,6 +304,7 @@ function connect() {
         }
       };
     }
+    busyEnd(msg.action);
     try {
       socket.send(
         JSON.stringify(

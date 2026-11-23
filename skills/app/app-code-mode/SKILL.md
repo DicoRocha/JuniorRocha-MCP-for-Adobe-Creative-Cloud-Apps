@@ -25,6 +25,10 @@ Chame direto, sem script, quando um único passo precisa de decisão visual (ver
 2. `jradb_code { code }`. Helpers: `log(...)`, `show(i?)` (imagens da última chamada vão para a resposta),
    `sleep`, `readText/readJson/writeText/exists/mkdir/listDir`, `path.join/dirname/basename`.
 3. Trabalho acima de ~60 s: `background: true` devolve `jobId`; consulte com `jradb_code { jobId }`.
+   Dentro de um job em segundo plano cada chamada ao app espera o tempo que sobra do job (sem o corte de
+   60 s): um build demorado seguido de render vai até o fim. Mesmo assim, **cada chamada ao app deve ser curta**
+   (até ~20 s): enquanto um script roda, o app não responde e parece travado. O painel mostra
+   "Executando: … · N s". Monte por partes (uma cena ou uma comp por chamada) em vez de um script gigante.
 
 Exemplo:
 

@@ -43,6 +43,58 @@
     logEl.textContent = (line + logEl.textContent).slice(0, 4000);
   }
 
+  /*
+   * A long script leaves the app without reaction until it ends, and it looks frozen (22/11/2026). The panel shows
+   * what is running and for how long, so the person knows the app is working.
+   */
+  var busyEl = document.getElementById("busy");
+  var busyRunning = [];
+  var busyTimer = null;
+  function busyLabel(action) {
+    if (/raw\.execute|executeExtendScript|\.code$/i.test(action)) return "script";
+    if (/render/i.test(action)) return "render";
+    if (/export/i.test(action)) return "exportando";
+    if (/save/i.test(action)) return "salvando";
+    return action;
+  }
+  function busyPaint() {
+    if (!busyEl || !busyEl.style) return;
+    if (!busyRunning.length) {
+      busyEl.style.display = "none";
+      return;
+    }
+    var cur = busyRunning[0];
+    var secs = Math.round((Date.now() - cur.t0) / 1000);
+    var more = busyRunning.length > 1 ? " (+" + (busyRunning.length - 1) + " na fila)" : "";
+    busyEl.textContent = "Executando: " + busyLabel(cur.action) + " \u00b7 " + secs + " s" + more + ". O app pode n\u00e3o responder at\u00e9 terminar.";
+    busyEl.style.display = "block";
+  }
+  // setTimeout chain, not setInterval: one tick a second only while something runs.
+  function busyTick() {
+    if (busyTimer || !busyRunning.length) return;
+    busyTimer = setTimeout(function () {
+      busyTimer = null;
+      busyPaint();
+      busyTick();
+    }, 1000);
+  }
+  function busyStart(action) {
+    busyRunning.push({ action: action, t0: Date.now() });
+    busyPaint();
+    busyTick();
+  }
+  function busyEnd(action) {
+    for (var i = 0; i < busyRunning.length; i++) {
+      if (busyRunning[i].action === action) {
+        var secs = Math.round((Date.now() - busyRunning[i].t0) / 1000);
+        if (secs >= 5) appendLog("Fim: " + busyLabel(action) + " (" + secs + " s)");
+        busyRunning.splice(i, 1);
+        break;
+      }
+    }
+    busyPaint();
+  }
+
   function evalExtendScript(scriptCode) {
     return new Promise(function (resolve) {
       if (!cep || typeof cep.evalScript !== "function") {
@@ -396,7 +448,9 @@
         var msg = JSON.parse(ev.data);
         if (msg.type === "command") {
           appendLog("Cmd: " + msg.action);
-          handleCommandPacket(msg, socket);
+          busyStart(msg.action);
+          var doneCmd = function () { busyEnd(msg.action); };
+          handleCommandPacket(msg, socket).then(doneCmd, doneCmd);
         }
       } catch (e) {
         appendLog("Message error: " + e);

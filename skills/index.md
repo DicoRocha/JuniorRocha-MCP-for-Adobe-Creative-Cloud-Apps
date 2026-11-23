@@ -38,11 +38,16 @@ Leia só as skills que o pedido toca: `jradb_get_skill({ name })`.
    - **Automático** — você faz tudo de uma vez, anota as decisões que tomou e mostra no fim.
    Uma pergunta só, com as duas opções. Sem resposta, siga no automático e diga isso no relatório.
    Decisão sem volta (apagar, sobrescrever original, publicar) pede confirmação nos dois modos.
-9. **Arquivo organizado (obrigatório em PS, AI e ID):** o que pertence junto pelo sentido vai num grupo
+9. **Base por área (obrigatória):** foto no Lightroom ou no Photoshop → `foto-fundamentos` primeiro;
+   edição no Premiere → `video-fundamentos` primeiro; layout (post, flyer, página, slide) →
+   `craft-composicao`. `craft-composicao` só entra quando o trabalho cria ou muda layout (não para tratar
+   uma foto). Cada pedido novo e diferente na mesma conversa: procure as skills de novo
+   (`jradb_find_skills`), não reaproveite a lista do pedido anterior.
+10. **Arquivo organizado (obrigatório em PS, AI e ID):** o que pertence junto pelo sentido vai num grupo
    com nome (ícone + texto, texto sobre shape, listas, cards); objeto sozinho fica solto. No After,
    pré-comp por cena, nulo pai e rótulos; no Premiere, bins e trilhas por função. Skill
    `craft-organizacao-camadas`; ferramentas `ps_organize_layers`, `ai_organize_objects`, `id_organize_objects`.
-10. **Briefing depois dos assets:** primeiro analise o material (fotos, vídeos, logo, guia de marca);
+11. **Briefing depois dos assets:** primeiro analise o material (fotos, vídeos, logo, guia de marca);
    só então pergunte se a pessoa quer **responder um briefing curto** (as perguntas que a análise
    levantou, de `plan-briefing`) ou se prefere que você **faça como julgar melhor**. No segundo caso,
    escreva as suposições em `00_briefing/` e siga. Não pergunte o que os assets já respondem.
@@ -69,13 +74,13 @@ formato/canal, prazo de marca (logo, cores, fontes). Sem objetivo ou formato, pe
 | Post estático (feed) | `craft-composicao` → `craft-tipografia` → `craft-cor` → `craft-formatos` → `social-post` → `craft-marca` → `craft-acessibilidade` → `craft-organizacao-camadas` → `qa-anti-generico` → `qa-revisao-visual` |
 | Carrossel | `roteiro-carrossel` → `social-carrossel` → `qa-revisao-visual` |
 | Stories, capa de Reels, destaques | `social-stories-capas` |
-| Thumbnail de YouTube / capa horizontal | `social-thumbnail` → `foto-recorte-e-composicao` |
+| Thumbnail de YouTube / capa horizontal | `social-thumbnail` → `foto-fundamentos` → `foto-recorte-e-composicao` |
 | Anúncios estáticos / variações para teste | `plan-anuncios` → `plan-copy` → `ads-estatico` (lote com `ps_batch_variants`) |
 | "Versão story", "todos os formatos" | `design-adaptacao-formatos` |
-| Tratar fotos (lote, evento, campanha) | `foto-triagem-e-lote` → `foto-revelacao` → `foto-saida` |
-| Retrato, foto de equipe | `foto-retrato` → `foto-saida` |
-| Foto de produto, e-commerce | `foto-produto` → `foto-recorte-e-composicao` → `foto-saida` |
-| Montagem, troca de fundo, texto atrás do sujeito | `foto-recorte-e-composicao` |
+| Tratar fotos (lote, evento, campanha) | `foto-fundamentos` → `foto-triagem-e-lote` → `foto-revelacao` → `foto-saida` |
+| Retrato, foto de equipe | `foto-fundamentos` → `foto-retrato` → `foto-saida` |
+| Foto de produto, e-commerce | `foto-fundamentos` → `foto-produto` → `foto-recorte-e-composicao` → `foto-saida` |
+| Montagem, troca de fundo, texto atrás do sujeito | `foto-fundamentos` → `foto-recorte-e-composicao` |
 | Selo, ícones, logo simples | `vetor-logo-e-selo` → `vetor-pacote-de-marca` |
 | Animação de logo, vinheta | `motion-direcao-de-arte` → `motion-logo-e-vinheta` |
 | Texto animado, legenda animada | `motion-direcao-de-arte` → `motion-tipografia-cinetica` → `motion-legendas-dinamicas` (legenda palavra por palavra, estilos de criador) |
@@ -84,19 +89,19 @@ formato/canal, prazo de marca (logo, cores, fontes). Sem objetivo ou formato, pe
 | Post animado a partir de arte pronta | `motion-post-animado` |
 | Roteiro de reels/shorts/TikTok | `roteiro-reels-shorts` |
 | Roteiro de anúncio, UGC, VSL, storyboard | `roteiro-anuncio-video` / `roteiro-ugc` / `roteiro-vsl` → `roteiro-storyboard` |
-| Reels / vídeo vertical | `plan-roteiro-video` → `video-fala-limpa` (se houver fala) → `video-reels` → `video-legendas-e-som` → `video-cor-e-export` → `qa-revisao-video` |
-| Vídeo de anúncio 6/15/30 s | `roteiro-anuncio-video` → `video-anuncio` → `qa-revisao-video` |
-| UGC, review, depoimento curto | `roteiro-ugc` → `video-ugc` → `qa-revisao-video` |
-| VSL, aula, entrevista, talking head longo | `roteiro-vsl` → `video-fala-limpa` → `video-vsl` → `video-legendas-e-som` → `qa-revisao-video` |
+| Reels / vídeo vertical | `plan-roteiro-video` → `video-fundamentos` → `video-fala-limpa` (se houver fala) → `video-reels` → `video-legendas-e-som` → `video-cor-e-export` → `qa-revisao-video` |
+| Vídeo de anúncio 6/15/30 s | `roteiro-anuncio-video` → `video-fundamentos` → `video-anuncio` → `qa-revisao-video` |
+| UGC, review, depoimento curto | `roteiro-ugc` → `video-fundamentos` → `video-ugc` → `qa-revisao-video` |
+| VSL, aula, entrevista, talking head longo | `roteiro-vsl` → `video-fundamentos` → `video-fala-limpa` → `video-vsl` → `video-legendas-e-som` → `qa-revisao-video` |
 | Flyer, cartaz | `print-fundamentos` → `print-flyer-cartaz` |
 | Folder, brochura, livreto | `plan-espelho-impresso` → `print-fundamentos` → `print-brochura-folder` |
 | Catálogo, cardápio, tabela de preços, crachás | `print-fundamentos` → `print-catalogo` (`id_data_merge`) |
 | Imagem/vídeo por IA (prompt, folha de referência, defeitos) | `prompt-roteamento-modelos` → `prompt-imagem` / `prompt-video` / `prompt-asset-sheets` → `pipeline-ia-externa` → `prompt-diagnostico` (se falhar) |
 | Calendário, linha editorial, pauta do mês | `plan-briefing` → `plan-calendario-social` → `plan-copy` |
 | Moodboard, referências, direção visual | `plan-moodboard` → `plan-conceito-criativo` |
-| Vídeo institucional, case, depoimento | `roteiro-institucional-depoimento` → `video-fala-limpa` → `video-vsl` → `video-legendas-e-som` |
+| Vídeo institucional, case, depoimento | `roteiro-institucional-depoimento` → `video-fundamentos` → `video-fala-limpa` → `video-vsl` → `video-legendas-e-som` |
 | B-roll por IA para uma ideia abstrata | `prompt-broll-metafora` → `pipeline-ia-externa` |
-| Trilha, locução, efeitos sonoros | `prompt-musica-voz` → `video-legendas-e-som` |
+| Trilha, locução, efeitos sonoros | `prompt-musica-voz` → `video-fundamentos` → `video-legendas-e-som` |
 | Mockup, arte aplicada | `design-mockup` |
 | Ícones, pictogramas | `vetor-icones` |
 | Rótulo, etiqueta, embalagem | `print-fundamentos` → `vetor-embalagem-rotulo` → `design-mockup` |

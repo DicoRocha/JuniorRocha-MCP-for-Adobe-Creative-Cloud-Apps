@@ -47,6 +47,12 @@ function __psCollectLayers(container, depth, maxDepth) {
       blendMode: String(lyr.blendMode),
       bounds: lyr.bounds ? [ Number(lyr.bounds[0]), Number(lyr.bounds[1]), Number(lyr.bounds[2]), Number(lyr.bounds[3]) ] : null
     };
+    if (lyr.typename !== "LayerSet") {
+      try { item.kind = __psKindName(lyr); } catch (_eKind) {}
+      if (item.kind === "LayerKind.TEXT") {
+        try { item.text = String(lyr.textItem.contents).slice(0, 80); } catch (_eTxt) {}
+      }
+    }
     if (lyr.typename === "LayerSet") {
       item.children = __psCollectLayers(lyr, depth + 1, maxDepth);
     }
@@ -812,6 +818,33 @@ function __psRecipeWrite(doc, p, warnings, transparent) {
   return out;
 }
 
+/** Selects the layers with these ids and groups them (Layer > Group Layers). Returns the new group's id. */
+function __psGroupLayerIds(ids, name) {
+  for (var i = 0; i < ids.length; i++) {
+    var sd = new ActionDescriptor();
+    var sr = new ActionReference();
+    sr.putIdentifier(charIDToTypeID("Lyr "), Number(ids[i]));
+    sd.putReference(charIDToTypeID("null"), sr);
+    if (i > 0) sd.putEnumerated(__psId("selectionModifier"), __psId("selectionModifierType"), __psId("addToSelection"));
+    sd.putBoolean(charIDToTypeID("MkVs"), false);
+    executeAction(charIDToTypeID("slct"), sd, DialogModes.NO);
+  }
+  var g = new ActionDescriptor();
+  var rg = new ActionReference();
+  rg.putClass(__psId("layerSection"));
+  g.putReference(charIDToTypeID("null"), rg);
+  var rf = new ActionReference();
+  rf.putEnumerated(charIDToTypeID("Lyr "), charIDToTypeID("Ordn"), charIDToTypeID("Trgt"));
+  g.putReference(charIDToTypeID("From"), rf);
+  var nm = new ActionDescriptor();
+  nm.putString(charIDToTypeID("Nm  "), String(name));
+  g.putObject(charIDToTypeID("Usng"), __psId("layerSection"), nm);
+  executeAction(charIDToTypeID("Mk  "), g, DialogModes.NO);
+  var ar = new ActionReference();
+  ar.putEnumerated(charIDToTypeID("Lyr "), charIDToTypeID("Ordn"), charIDToTypeID("Trgt"));
+  return executeActionGet(ar).getInteger(stringIDToTypeID("layerID"));
+}
+
 /** Groups every top-level layer of the document into one new group (one action); DOM fallback for leftovers. */
 function __psGroupAllLayers(doc, name) {
   app.activeDocument = doc;
@@ -1251,6 +1284,24 @@ function __psDispatch(action, params, _options) {
     }
   }
 
+  if (action === "ps.layers.layoutInfo") {
+    // Layer tree with kind, text and bounds in px, for ps_organize_layers (ExtendScript only: UXP runs it hybrid).
+    var docLI = __psRequireDoc();
+    if (params.documentName) docLI = app.documents.getByName(params.documentName);
+    var oldRuler = app.preferences.rulerUnits;
+    app.preferences.rulerUnits = Units.PIXELS;
+    try {
+      return {
+        documentName: docLI.name,
+        width: Number(docLI.width),
+        height: Number(docLI.height),
+        layers: __psCollectLayers(docLI, 0, 8)
+      };
+    } finally {
+      app.preferences.rulerUnits = oldRuler;
+    }
+  }
+
   if (action === "ps.layer.getTree") {
     var docL = __psRequireDoc();
     return {
@@ -1331,6 +1382,35 @@ function __psDispatch(action, params, _options) {
       sourceHeight: srcH,
       previewMimeType: "image/png"
     };
+  }
+
+  if (action === "ps.layers.groupPlan") {
+    // Builds the groups proposed by ps_organize_layers: children first, then the group that holds them.
+    var docGP = __psRequireDoc();
+    if (params.documentName) docGP = app.documents.getByName(params.documentName);
+    app.activeDocument = docGP;
+    var made = [];
+    var failed = [];
+    var buildGP = function (g) {
+      var ids = [];
+      var m;
+      for (m = 0; m < (g.members || []).length; m++) ids.push(Number(g.members[m]));
+      for (m = 0; m < (g.children || []).length; m++) {
+        var cid = buildGP(g.children[m]);
+        if (cid !== null) ids.push(cid);
+      }
+      if (ids.length < 2) return ids.length === 1 ? ids[0] : null;
+      try {
+        var gid = __psGroupLayerIds(ids, g.name);
+        made.push({ name: g.name, id: gid, layers: ids.length });
+        return gid;
+      } catch (eGP) {
+        failed.push({ name: g.name, error: String(eGP) });
+        return null;
+      }
+    };
+    for (var gp = 0; gp < (params.groups || []).length; gp++) buildGP(params.groups[gp]);
+    return { documentName: docGP.name, created: made, failed: failed };
   }
 
   if (action === "ps.layer.create") {

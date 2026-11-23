@@ -2,6 +2,7 @@ import { withTrail } from "../../core/recipe-trail.js";
 import * as os from "node:os";
 import * as fs from "node:fs";
 import { z } from "zod";
+import { countLeaves, planTree, psTreeToNodes } from "../../core/grouping.js";
 import { auditPhotoshop, summarize, type PsAuditData } from "../../core/audit.js";
 import { FORMATS, resolveZones } from "../../core/formats.js";
 import * as path from "node:path";
@@ -264,6 +265,45 @@ export function registerPhotoshopTools(realServer: McpServer, router: BridgeRout
       try {
         const res = await router.dispatch("photoshop", "ps.layer.getTree", params);
         return formatSuccessResponse(res.data);
+      } catch (err) {
+        return formatErrorResponse(err);
+      }
+    }
+  );
+
+  server.tool(
+    "ps_organize_layers",
+    "Organise a Photoshop document in groups by meaning: text on a shape becomes a label group, an icon with its text " +
+      "(and the lines under it) an item group, repeated items/labels in a column or row one list group holding them. Lone " +
+      "objects, the background and adjustment layers stay as they are; a group that would change the stacking is skipped. " +
+      "apply: false (default) only reports the plan; apply: true creates the groups (one history step each; work on a copy of the user's file).",
+    {
+      documentName: z.string().optional(),
+      apply: z.boolean().optional().default(false),
+      language: z.enum(["pt", "en"]).optional().default("pt").describe("Language of the group names.")
+    },
+    async (params) => {
+      try {
+        const info = await router.dispatch("photoshop", "ps.layers.layoutInfo", { documentName: params.documentName });
+        const d = (info.data || {}) as { documentName?: string; width?: number; height?: number; layers?: Array<Record<string, unknown>> };
+        const plan = planTree(psTreeToNodes(d.layers ?? []), { width: Number(d.width) || 1, height: Number(d.height) || 1 }, { language: params.language });
+        const summary = plan.plans.flatMap((p) => p.proposals.map((g) => ({ container: p.container || "(top)", name: g.name, children: g.children.map((c) => c.name), layers: countLeaves(g) })));
+        if (!params.apply || !plan.plans.length) {
+          return formatSuccessResponse({
+            documentName: d.documentName,
+            applied: false,
+            groups: summary,
+            skipped: plan.skipped,
+            ...(plan.plans.length ? { next: "Call again with apply: true to create these groups." } : { verdict: "nothing to group" })
+          });
+        }
+        const res = await router.dispatch(
+          "photoshop",
+          "ps.layers.groupPlan",
+          { documentName: d.documentName, groups: plan.plans.flatMap((p) => p.proposals) },
+          { undoGroup: "MCP: Organize layers", timeoutMs: 60000 }
+        );
+        return formatSuccessResponse({ documentName: d.documentName, applied: true, groups: summary, skipped: plan.skipped, ...((res.data || {}) as object) });
       } catch (err) {
         return formatErrorResponse(err);
       }

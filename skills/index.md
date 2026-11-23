@@ -38,7 +38,11 @@ Leia só as skills que o pedido toca: `jradb_get_skill({ name })`.
    - **Automático** — você faz tudo de uma vez, anota as decisões que tomou e mostra no fim.
    Uma pergunta só, com as duas opções. Sem resposta, siga no automático e diga isso no relatório.
    Decisão sem volta (apagar, sobrescrever original, publicar) pede confirmação nos dois modos.
-9. **Briefing depois dos assets:** primeiro analise o material (fotos, vídeos, logo, guia de marca);
+9. **Arquivo organizado (obrigatório em PS, AI e ID):** o que pertence junto pelo sentido vai num grupo
+   com nome (ícone + texto, texto sobre shape, listas, cards); objeto sozinho fica solto. No After,
+   pré-comp por cena, nulo pai e rótulos; no Premiere, bins e trilhas por função. Skill
+   `craft-organizacao-camadas`; ferramentas `ps_organize_layers`, `ai_organize_objects`, `id_organize_objects`.
+10. **Briefing depois dos assets:** primeiro analise o material (fotos, vídeos, logo, guia de marca);
    só então pergunte se a pessoa quer **responder um briefing curto** (as perguntas que a análise
    levantou, de `plan-briefing`) ou se prefere que você **faça como julgar melhor**. No segundo caso,
    escreva as suposições em `00_briefing/` e siga. Não pergunte o que os assets já respondem.
@@ -62,7 +66,7 @@ formato/canal, prazo de marca (logo, cores, fontes). Sem objetivo ou formato, pe
 | Trabalho novo sem objetivo/público/formato, série ou campanha | `plan-briefing` → `plan-brand-kit` → `plan-conceito-criativo` → `craft-filosofia-visual` |
 | Campanha com várias peças e apps | `plan-briefing` → `plan-campanha` → `plan-conceito-criativo` → `plan-copy` → `pipeline-entre-apps` → `jradb_campaign_run` (plano → execução com aprovações → relatório) → `qa-preflight-entrega` |
 | Textos (títulos, legendas, CTA, variações) | `plan-copy` |
-| Post estático (feed) | `craft-composicao` → `craft-tipografia` → `craft-cor` → `craft-formatos` → `social-post` → `craft-marca` → `craft-acessibilidade` → `qa-anti-generico` → `qa-revisao-visual` |
+| Post estático (feed) | `craft-composicao` → `craft-tipografia` → `craft-cor` → `craft-formatos` → `social-post` → `craft-marca` → `craft-acessibilidade` → `craft-organizacao-camadas` → `qa-anti-generico` → `qa-revisao-visual` |
 | Carrossel | `roteiro-carrossel` → `social-carrossel` → `qa-revisao-visual` |
 | Stories, capa de Reels, destaques | `social-stories-capas` |
 | Thumbnail de YouTube / capa horizontal | `social-thumbnail` → `foto-recorte-e-composicao` |
@@ -105,7 +109,7 @@ formato/canal, prazo de marca (logo, cores, fontes). Sem objetivo ou formato, pe
 | Templates da marca (.psdt, .indt, .ait, .mogrt) | `plan-brand-kit` → `jradb_templates_build` |
 | App travou, timeout, erro estranho | `ops-recuperacao` |
 | Antes de mostrar proposta criativa | `qa-anti-generico` |
-| Entrega de peça estática | `craft-acessibilidade` → `qa-revisao-visual` → `qa-preflight-entrega` |
+| Entrega de peça estática | `craft-acessibilidade` → `craft-organizacao-camadas` → `qa-revisao-visual` → `qa-preflight-entrega` |
 | Entrega de vídeo | `qa-revisao-video` → `qa-preflight-entrega` |
 
 Contrato de cada app (unidades, ferramentas, armadilhas): `app-photoshop`, `app-lightroom`,

@@ -543,6 +543,91 @@ function __mcpDispatch(action, params, _options) {
   }
   params = params || {};
 
+  if (action === "ai.layout.info") {
+    // Item tree per layer for ai_organize (bounds already in artboard px, top-left origin, y down).
+    var docLI = __aiRequireDoc();
+    var abLI = typeof params.artboardIndex === "number" ? params.artboardIndex : docLI.artboards.getActiveArtboardIndex();
+    var rectLI = docLI.artboards[abLI].artboardRect;
+    var kindLI = function (it) {
+      var t = String(it.typename);
+      if (t === "TextFrame") return "text";
+      if (t === "GroupItem") return "group";
+      if (t === "PathItem" || t === "CompoundPathItem") return "shape";
+      if (t === "PlacedItem" || t === "RasterItem") return "pixel";
+      if (t === "SymbolItem") return "smart";
+      return "other";
+    };
+    var nodeLI = function (it, depth) {
+      var gb = it.geometricBounds;
+      var n = {
+        id: __aiUuid(it),
+        name: String(it.name || ""),
+        kind: kindLI(it),
+        bounds: [gb[0] - rectLI[0], rectLI[1] - gb[1], gb[2] - rectLI[0], rectLI[1] - gb[3]],
+        visible: !it.hidden
+      };
+      if (n.kind === "text") {
+        try { n.text = String(it.contents).slice(0, 80); } catch (_eTx) {}
+      }
+      if (n.kind === "group" && depth < 6 && !it.clipped) {
+        n.children = [];
+        for (var c = 0; c < it.pageItems.length; c++) n.children.push(nodeLI(it.pageItems[c], depth + 1));
+      }
+      return n;
+    };
+    var layersLI = [];
+    for (var lyI = 0; lyI < docLI.layers.length; lyI++) {
+      var lyr = docLI.layers[lyI];
+      var kids = [];
+      for (var pi = 0; pi < lyr.pageItems.length; pi++) kids.push(nodeLI(lyr.pageItems[pi], 0));
+      layersLI.push({ id: "layer:" + lyI, name: String(lyr.name), kind: "group", bounds: null, visible: lyr.visible, children: kids });
+    }
+    return { documentName: docLI.name, width: rectLI[2] - rectLI[0], height: rectLI[1] - rectLI[3], layers: layersLI };
+  }
+
+  if (action === "ai.layout.groupPlan") {
+    // Groups by uuid, children first. The group takes the place of its topmost member, so the stacking stays.
+    var docGP = __aiRequireDoc();
+    var madeGP = [];
+    var failedGP = [];
+    var byUuid = function (u) {
+      try { return docGP.getPageItemFromUuid(String(u)); } catch (_eGu) { return null; }
+    };
+    var zOf = function (it) {
+      // position among siblings, 0 = top
+      var par = it.parent;
+      for (var z = 0; z < par.pageItems.length; z++) if (par.pageItems[z] === it) return z;
+      return 0;
+    };
+    var buildGP = function (g) {
+      var items = [];
+      var m;
+      for (m = 0; m < (g.members || []).length; m++) {
+        var it = byUuid(g.members[m]);
+        if (it) items.push(it);
+      }
+      for (m = 0; m < (g.children || []).length; m++) {
+        var sub = buildGP(g.children[m]);
+        if (sub) items.push(sub);
+      }
+      if (items.length < 2) return items.length === 1 ? items[0] : null;
+      try {
+        items.sort(function (a, b) { return zOf(a) - zOf(b); });
+        var grp = items[0].parent.groupItems.add();
+        grp.move(items[0], ElementPlacement.PLACEBEFORE);
+        for (var k = 0; k < items.length; k++) items[k].move(grp, ElementPlacement.PLACEATEND);
+        grp.name = String(g.name);
+        madeGP.push({ name: grp.name, uuid: __aiUuid(grp), items: items.length });
+        return grp;
+      } catch (eGP) {
+        failedGP.push({ name: g.name, error: String(eGP) });
+        return null;
+      }
+    };
+    for (var gi = 0; gi < (params.groups || []).length; gi++) buildGP(params.groups[gi]);
+    return { documentName: docGP.name, created: madeGP, failed: failedGP };
+  }
+
   if (action === "ai.batch") {
     return __mcpBatch(params, "ai");
   }

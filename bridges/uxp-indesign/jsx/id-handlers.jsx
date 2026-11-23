@@ -588,6 +588,68 @@ function __idDispatch(action, params, _options) {
   }
   params = params || {};
 
+  if (action === "id.layout.info") {
+    // Page items of one page for id_organize_objects (units come from params.units; origin = page top-left).
+    var docLI = __idRequireDoc();
+    var pageLI = __idPage(docLI, params.page);
+    var kindLI = function (it) {
+      var t = __idTypeName(it);
+      if (t === "TextFrame") return "text";
+      if (t === "Group") return "group";
+      try {
+        if (it.graphics && it.graphics.length > 0) return "pixel";
+      } catch (_eGr) {}
+      if (t === "Rectangle" || t === "Oval" || t === "Polygon" || t === "GraphicLine") return "shape";
+      return "other";
+    };
+    var nodeLI = function (it, depth) {
+      var gb = it.geometricBounds;
+      var n = { id: it.id, name: String(it.name || ""), kind: kindLI(it), bounds: [gb[1], gb[0], gb[3], gb[2]], visible: it.visible !== false };
+      if (n.kind === "text") {
+        try { n.text = String(it.contents).slice(0, 80); } catch (_eT) {}
+      }
+      if (n.kind === "group" && depth < 6) {
+        n.children = [];
+        for (var c = 0; c < it.pageItems.length; c++) n.children.push(nodeLI(it.pageItems[c], depth + 1));
+      }
+      return n;
+    };
+    var itemsLI = [];
+    for (var i = 0; i < pageLI.pageItems.length; i++) itemsLI.push(nodeLI(pageLI.pageItems[i], 0));
+    var pb = pageLI.bounds;
+    return { documentName: docLI.name, page: String(pageLI.name), width: pb[3] - pb[1], height: pb[2] - pb[0], layers: itemsLI };
+  }
+
+  if (action === "id.layout.groupPlan") {
+    var docGP = __idRequireDoc();
+    var madeGP = [];
+    var failedGP = [];
+    var buildGP = function (g) {
+      var items = [];
+      var m;
+      for (m = 0; m < (g.members || []).length; m++) {
+        var it = __idFindById(docGP, Number(g.members[m]));
+        if (it) items.push(it);
+      }
+      for (m = 0; m < (g.children || []).length; m++) {
+        var sub = buildGP(g.children[m]);
+        if (sub) items.push(sub);
+      }
+      if (items.length < 2) return items.length === 1 ? items[0] : null;
+      try {
+        var grp = docGP.groups.add(items);
+        grp.name = String(g.name);
+        madeGP.push({ name: grp.name, id: grp.id, items: items.length });
+        return grp;
+      } catch (eGP) {
+        failedGP.push({ name: g.name, error: String(eGP) });
+        return null;
+      }
+    };
+    for (var gi = 0; gi < (params.groups || []).length; gi++) buildGP(params.groups[gi]);
+    return { documentName: docGP.name, created: madeGP, failed: failedGP };
+  }
+
   if (action === "id.batch") {
     return __mcpBatch(params, "id");
   }

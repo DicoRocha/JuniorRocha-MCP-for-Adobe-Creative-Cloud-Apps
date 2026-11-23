@@ -49,6 +49,7 @@ relatório quando ficam de propósito.
 [ ] Fatos: preço, data, telefone, endereço, nomes conferidos contra a fonte
 [ ] Nada inventado (depoimento, número, selo, resultado)
 [ ] Arquivo editável salvo + saída exportada + nomes no padrão
+[ ] Camadas organizadas por sentido: grupos com nome, nada relacionado solto (craft-organizacao-camadas)
 ```
 
 Checklists específicos ficam no portão de cada skill de área (`social-post`,

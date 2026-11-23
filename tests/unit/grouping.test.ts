@@ -67,3 +67,26 @@ describe("semantic grouping", () => {
     expect(proposeGroups(items, canvas).proposals).toHaveLength(0);
   });
 });
+
+import { planTree } from "../../src/core/grouping.js";
+
+describe("planTree (Illustrator layers, InDesign pages)", () => {
+  it("looks inside each layer and names the container", () => {
+    const r = planTree(
+      [
+        {
+          id: "layer:0",
+          name: "Camada 1",
+          kind: "group",
+          bounds: null,
+          children: [
+            { id: "a", name: "", kind: "text", text: "Comprar", bounds: [420, 1100, 660, 1150] },
+            { id: "b", name: "", kind: "shape", bounds: [380, 1080, 700, 1170] }
+          ]
+        }
+      ],
+      canvas
+    );
+    expect(r.plans).toEqual([{ container: "/Camada 1", proposals: [expect.objectContaining({ name: "Rótulo – Comprar", members: ["a", "b"] })] }]);
+  });
+});

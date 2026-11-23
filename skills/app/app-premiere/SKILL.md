@@ -17,6 +17,7 @@ Referência: `references/premiere-qe-effects.md`. Ofício: `video-reels`, `video
 | Nomes de efeito | na língua do Premiere: `pr_list_effects` primeiro |
 | Projeto novo | `pr_manage_project` new salva e fecha os outros projetos e deixa o novo ativo |
 | Sequência | `pr_create_sequence` com `fromClipName` (sem ele abre um diálogo) |
+| Organização | Bins (`01 Sequências`, `02 Vídeo`, `03 Áudio`, `04 Gráficos`) e trilhas com função fixa (V1 vídeo, V2 cobertura, V3 gráficos; A1 voz, A2 trilha). Skill `craft-organizacao-camadas` |
 
 ## 2. Qual ferramenta
 

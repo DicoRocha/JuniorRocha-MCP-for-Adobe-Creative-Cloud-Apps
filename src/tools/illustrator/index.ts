@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { registerOrganizeTool } from "../shared/organize.js";
 import * as path from "node:path";
 import { fillPattern, loadRecords } from "../../core/records.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -30,6 +31,14 @@ const AiColorSchema = z
   .describe("RGB color as hex string ('#RRGGBB') or { r, g, b } (0-255).");
 
 export function registerIllustratorTools(server: McpServer, router: BridgeRouter): void {
+  registerOrganizeTool(server, router, {
+    app: "illustrator",
+    tool: "ai_organize_objects",
+    infoAction: "ai.layout.info",
+    planAction: "ai.layout.groupPlan",
+    what: "an Illustrator document (each layer)",
+    extra: { artboardIndex: z.number().int().min(0).optional().describe("Artboard whose top-left is the origin (default: active).") }
+  });
   server.tool(
     "ai_get_document_info",
     "Retrieve active Adobe Illustrator document metadata, dimensions, color space, artboards, layers, and page item counts.",

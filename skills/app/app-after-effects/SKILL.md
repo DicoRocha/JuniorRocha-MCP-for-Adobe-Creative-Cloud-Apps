@@ -17,6 +17,7 @@ Referência: `references/ae-matchnames.md`. Ofício: `motion-fundamentos`.
 | Propriedades | caminhos em array, por **matchName** (nomes de tela mudam com o idioma): `["ADBE Transform Group","ADBE Scale"]` |
 | Painel | `Janela > Extensões > Junior Rocha MCP`; sem painel o fallback `AfterFX.exe -r` é lento |
 | Projeto | `ae_manage_project` new/open recusa descartar alterações (`PROJECT_DIRTY`) sem `discardChanges: true`; save cria a pasta e suprime diálogos |
+| Organização | Pré-comp por cena ou elemento repetido, nulo pai `CTRL …` para ícone + texto, rótulos de cor por função, pastas no projeto. Skill `craft-organizacao-camadas` |
 
 ## 2. Qual ferramenta
 

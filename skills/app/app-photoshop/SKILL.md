@@ -17,6 +17,7 @@ Referência de descritores: `references/batchplay-cheatsheet.md`.
 | Cor | `"#RRGGBB"` ou `{r,g,b}` 0–255 |
 | Camadas | por `layerId` ou `layerName` exato; sem nenhum, a ativa |
 | Salvar | `ps_save_document` cria a pasta e roda sem diálogos; PSD em camadas + JPG/PNG de saída |
+| Organização | Grupos por sentido (ícone + texto, texto sobre shape, listas, cards); objeto sozinho fica solto. `ps_organize_layers` (plano) → `apply: true`. Skill `craft-organizacao-camadas` |
 
 ## 2. Qual ferramenta
 

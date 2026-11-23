@@ -17,6 +17,7 @@ Ofício: `print-fundamentos`, `print-flyer-cartaz`.
 | Alvo | `ids` de `id_find_objects`/criação, ou `names` |
 | Salvar | `id_manage_document` save cria a pasta e confere o caminho |
 | Cor | amostra, `"#RRGGBB"`, `[r,g,b]` ou `[c,m,y,k]` (impresso) |
+| Organização | Camadas `Texto`/`Imagens`/`Fundo`; agrupe blocos que andam juntos (card, box com ícone). `id_organize_objects { page }` → `apply: true`. Skill `craft-organizacao-camadas` |
 
 ## 2. Qual ferramenta
 

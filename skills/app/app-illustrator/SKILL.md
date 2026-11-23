@@ -17,6 +17,7 @@ Referências: `references/bezier-and-menus.md` (círculos, arcos, comandos de me
 | Cor | `"#RRGGBB"` |
 | Salvar | `ai_manage_document` save com `filePath` cria a pasta e **nunca abre a janela "Salvar como"**; confere o caminho (`SAVE_PATH_MISMATCH`) |
 | Título de documento novo | `title` em create (via DocumentPreset) |
+| Organização | Camadas por função e grupos por sentido dentro delas; objeto sozinho fica solto. `ai_organize_objects` (plano) → `apply: true`. Skill `craft-organizacao-camadas` |
 
 ## 2. Qual ferramenta
 

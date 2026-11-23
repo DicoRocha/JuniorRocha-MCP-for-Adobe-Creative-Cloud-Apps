@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { registerOrganizeTool } from "../shared/organize.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { BridgeRouter } from "../../core/bridge-router.js";
 import { buildImageToolResponse, formatErrorResponse, formatSuccessResponse } from "../../core/image-helper.js";
@@ -127,6 +128,15 @@ function tool(
 }
 
 export function registerInDesignTools(server: McpServer, router: BridgeRouter): void {
+  registerOrganizeTool(server, router, {
+    app: "indesign",
+    tool: "id_organize_objects",
+    infoAction: "id.layout.info",
+    planAction: "id.layout.groupPlan",
+    what: "an InDesign page",
+    extra: { page: z.union([z.number().int().min(1), z.string()]).optional().describe("Page number or name (default: active page).") },
+    fixed: { units: "pt" }
+  });
   tool(
     server,
     router,

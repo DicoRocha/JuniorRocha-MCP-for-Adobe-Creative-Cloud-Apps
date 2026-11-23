@@ -925,6 +925,22 @@ export function registerPhotoshopTools(realServer: McpServer, router: BridgeRout
         );
         const data = res.data as PsAuditData;
         const { format, findings } = auditPhotoshop(data, { format: params.format, minContrast: params.minContrast });
+        // Organisation: related layers left loose (icon + text, text on a shape, lists) -> ps_organize_layers.
+        try {
+          const li = await router.dispatch("photoshop", "ps.layers.layoutInfo", { documentName: params.documentName });
+          const ld = (li.data || {}) as { width?: number; height?: number; layers?: Array<Record<string, unknown>> };
+          const plan = planTree(psTreeToNodes(ld.layers ?? []), { width: Number(ld.width) || 1, height: Number(ld.height) || 1 });
+          const loose = plan.plans.flatMap((p) => p.proposals);
+          if (loose.length) {
+            findings.push({
+              severity: "warn",
+              code: "UNGROUPED_RELATED",
+              message: `${plan.ungroupedRelated} related layers are not grouped (${loose.map((g) => g.name).slice(0, 4).join("; ")}). Run ps_organize_layers.`
+            });
+          }
+        } catch {
+          /* older panel without ps.layers.layoutInfo: skip the organisation check */
+        }
         return formatSuccessResponse({
           document: data.document,
           size: `${data.width}×${data.height}`,

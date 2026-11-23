@@ -1,4 +1,6 @@
 import { watchRender } from "../../media/render-watch.js";
+import { aerenderPath, buildAerenderArgs, chooseRenderEngine, runAerender } from "../../media/aerender.js";
+import { startJob } from "../../media/jobs.js";
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { BridgeRouter } from "../../core/bridge-router.js";
@@ -1494,7 +1496,14 @@ export function registerAfterEffectsTools(server: McpServer, router: BridgeRoute
         .boolean()
         .optional()
         .default(true)
-        .describe("An existing file at the output path is replaced (default). false: refuse with OUTPUT_EXISTS. Either way After Effects never stops on its 'Overwrite?' dialog.")
+        .describe("An existing file at the output path is replaced (default). false: refuse with OUTPUT_EXISTS. Either way After Effects never stops on its 'Overwrite?' dialog."),
+      engine: z
+        .enum(["auto", "app", "aerender"])
+        .optional()
+        .default("auto")
+        .describe(
+          "Who renders. auto (default): aerender, a separate After Effects process, when the project is saved with no unsaved changes, so the app stays usable during the render; otherwise inside the app. app: always inside the app (blocks it). aerender: only aerender (error if the project has unsaved changes)."
+        )
     },
     async (params) => {
       try {
@@ -1503,6 +1512,61 @@ export function registerAfterEffectsTools(server: McpServer, router: BridgeRoute
           throw Object.assign(new Error(`Output file already exists: ${params.outputPath}. Choose another outputPath or pass overwrite: true.`), {
             code: "OUTPUT_EXISTS"
           });
+        }
+        // 0. Outside the app when possible: the open After Effects stays free during the render (22/11/2026: the app
+        // looked frozen for the whole render and once froze for real).
+        let engineNote: string | undefined;
+        if (params.engine !== "app" && wantsRun && !params.queueInAME) {
+          type RenderInfo = { compName?: string; projectPath?: string | null; dirty?: boolean; appPackage?: string | null };
+          let info: RenderInfo | null = null;
+          try {
+            const ri = await router.dispatch("after-effects", "ae.render.info", { compName: params.compName, compIndex: params.compIndex }, { timeoutMs: 20000 });
+            info = (ri.data || {}) as RenderInfo;
+          } catch (errInfo) {
+            if (params.engine === "aerender") throw errInfo;
+            engineNote = `rendered in the app: ${(errInfo as Error).message.slice(0, 160)}`;
+          }
+          if (info) {
+            const exe = info.appPackage ? aerenderPath(info.appPackage) : "";
+            const hasExt = path.extname(params.outputPath) !== "";
+            const choice = chooseRenderEngine({
+              engine: params.engine,
+              wantsRun,
+              queueInAME: false,
+              projectPath: info.projectPath ?? null,
+              dirty: info.dirty === true,
+              aerenderExists: !!exe && fs.existsSync(exe) && hasExt
+            });
+            if (choice.engine === "aerender" && info.projectPath && info.compName) {
+              let replacedExisting = false;
+              if (fs.existsSync(params.outputPath)) {
+                fs.rmSync(params.outputPath, { force: true });
+                replacedExisting = true;
+              }
+              fs.mkdirSync(path.dirname(params.outputPath), { recursive: true });
+              const logPath = path.join(os.tmpdir(), "jradb-aerender", `${path.basename(params.outputPath)}.${Date.now()}.log`);
+              const args = buildAerenderArgs({
+                projectPath: info.projectPath,
+                compName: info.compName,
+                outputPath: params.outputPath,
+                renderSettingsTemplate: params.renderSettingsTemplate,
+                outputModuleTemplate: params.outputModuleTemplate
+              });
+              const { job } = startJob("render", () => runAerender({ exe, args, outputPath: params.outputPath, logPath }), `aerender ${path.basename(params.outputPath)}`);
+              return formatSuccessResponse({
+                engine: "aerender",
+                compName: info.compName,
+                projectPath: info.projectPath,
+                outputPath: params.outputPath,
+                replacedExisting,
+                rendering: true,
+                renderJobId: job.id,
+                logPath,
+                next: `Rendering in a separate After Effects process; the app stays usable. Poll media_job_status { jobId: "${job.id}" }.`
+              });
+            }
+            engineNote = choice.reason ? `rendered in the app: ${choice.reason}` : undefined;
+          }
         }
         // 1. Queue only: the output module may change the extension, so the real path comes back from After Effects.
         const res = await router.dispatch(
@@ -1534,7 +1598,7 @@ export function registerAfterEffectsTools(server: McpServer, router: BridgeRoute
             const job = watchRender(finalPath, `AME ${path.basename(finalPath)}`);
             return formatSuccessResponse({ ...d, ...sd, replacedExisting, renderJobId: job.id, next: `Poll media_job_status { jobId: "${job.id}" }: done when the file stops growing.` });
           }
-          return formatSuccessResponse({ ...d, ...sd, replacedExisting, rendered: true });
+          return formatSuccessResponse({ ...d, ...sd, replacedExisting, rendered: true, engine: "app", ...(engineNote ? { engineNote } : {}) });
         } catch (errStart) {
           const code = (errStart as { code?: string }).code;
           if (code === "ACTION_NOT_SUPPORTED") {
@@ -1554,6 +1618,8 @@ export function registerAfterEffectsTools(server: McpServer, router: BridgeRoute
               ...d,
               replacedExisting,
               rendering: true,
+              engine: "app",
+              ...(engineNote ? { engineNote } : {}),
               renderJobId: job.id,
               next: `The render is still running in After Effects. Poll media_job_status { jobId: "${job.id}" }: done when the file stops growing. Other After Effects commands answer APP_BUSY until it ends.`
             });

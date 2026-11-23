@@ -39,7 +39,7 @@ Referência: `references/ae-matchnames.md`. Ofício: `motion-fundamentos`.
 | Presets .ffx | `ae_list_presets` → `ae_apply_preset` com `time` (as chaves nascem no indicador de tempo) |
 | Ver propriedades | `ae_get_property_tree` |
 | Prévia | `ae_get_comp_frame_preview` (não espera dentro do AE; o servidor aguarda o PNG) · `ae_contact_sheet` (12 quadros da área de trabalho numa grade: a animação inteira num olhar) |
-| Render | `ae_render_queue` (use o `outputPath` devolvido; o módulo pode trocar a extensão). `queueInAME` abre o Media Encoder e pode passar do tempo limite: depois confira o arquivo na pasta |
+| Render | `ae_render_queue` com `startRenderImmediately: true`. **Salve o projeto antes** (`ae_manage_project` save): com o projeto salvo e sem alterações o render roda no aerender, um After separado, e o app continua livre; devolve `renderJobId` → `media_job_status`. Com alterações não salvas renderiza dentro do app (trava o After até acabar) e avisa em `engineNote`. Nunca salve o projeto do usuário sem pedir. `queueInAME` abre o Media Encoder |
 | Proteger | `jradb_checkpoint` app after-effects |
 
 ## 3. Script livre (`ae_execute_extendscript`, ES3)

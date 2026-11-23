@@ -162,11 +162,44 @@ describe("ae_render_queue never stops on the Overwrite dialog", () => {
     );
     const r = await run({ compName: "Video", outputPath: f, startRenderImmediately: true, queueInAME: false, overwrite: true }, {});
     const d = JSON.parse(r.content[0].text);
-    expect(calls.map((c) => c.action)).toEqual(["ae.render.queue", "ae.render.start"]);
-    expect(calls[0].params).toMatchObject({ startRenderImmediately: false, queueInAME: false });
-    expect(calls[1].params).toMatchObject({ renderQueueIndex: 2 });
+    // ae.render.info answers without a saved project here, so the render stays in the app.
+    expect(calls.map((c) => c.action)).toEqual(["ae.render.info", "ae.render.queue", "ae.render.start"]);
+    expect(calls[1].params).toMatchObject({ startRenderImmediately: false, queueInAME: false });
+    expect(calls[2].params).toMatchObject({ renderQueueIndex: 2 });
     expect(d).toMatchObject({ replacedExisting: true, rendered: true });
     expect(fs.existsSync(f)).toBe(false);
+  });
+
+  it("a saved, clean project renders with aerender and leaves the app free", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "mcp-aer-"));
+    dirs.push(dir);
+    const pkg = path.join(dir, "Adobe After Effects.app");
+    fs.mkdirSync(pkg);
+    const exe = path.join(dir, "aerender");
+    fs.writeFileSync(exe, '#!/bin/sh\nwhile [ "$1" != "-output" ]; do shift; done\nprintf "video" > "$2"\necho "PROGRESS: Finished composition"\n');
+    fs.chmodSync(exe, 0o755);
+    const out = path.join(dir, "out", "final.mp4");
+    const { calls, run } = setup(() => ({ compName: "Video", projectPath: path.join(dir, "p.aep"), dirty: false, appPackage: pkg }));
+    const r = await run({ compName: "Video", outputPath: out, startRenderImmediately: true, queueInAME: false, overwrite: true, engine: "auto" }, {});
+    const d = JSON.parse(r.content[0].text);
+    expect(calls.map((c) => c.action)).toEqual(["ae.render.info"]);
+    expect(d).toMatchObject({ engine: "aerender", rendering: true });
+    const { getJob } = await import("../../src/media/jobs.js");
+    for (let i = 0; i < 50 && getJob(d.renderJobId)?.status === "running"; i++) await new Promise((res) => setTimeout(res, 50));
+    expect(getJob(d.renderJobId)?.status).toBe("done");
+    expect(fs.readFileSync(out, "utf8")).toBe("video");
+  });
+
+  it("unsaved changes keep the render in the app and say why", async () => {
+    const f = existing();
+    const { calls, run } = setup((action) =>
+      action === "ae.render.info" ? { compName: "Video", projectPath: "D:/p.aep", dirty: true, appPackage: "/x/AE.app" } : action === "ae.render.queue" ? { outputPath: f } : { status: "DONE" }
+    );
+    const r = await run({ compName: "Video", outputPath: f, startRenderImmediately: true, engine: "auto" }, {});
+    const d = JSON.parse(r.content[0].text);
+    expect(calls.map((c) => c.action)).toEqual(["ae.render.info", "ae.render.queue", "ae.render.start"]);
+    expect(d.engine).toBe("app");
+    expect(d.engineNote).toMatch(/unsaved/);
   });
 
   it("overwrite: false refuses with OUTPUT_EXISTS and sends nothing to the app", async () => {
@@ -196,6 +229,7 @@ describe("ae_render_queue never stops on the Overwrite dialog", () => {
   it("the start handler exists in the panel copies of the After Effects handlers", () => {
     for (const p of ["src/extendscript/ae-handlers.jsx", "bridges/cep-universal-bridge/jsx/ae-handlers.jsx"]) {
       expect(read(p), p).toContain('action === "ae.render.start"');
+      expect(read(p), p).toContain('action === "ae.render.info"');
     }
   });
 });

@@ -3288,6 +3288,19 @@ function __mcpDispatch(action, params, _options) {
     return { compName: compR.name, layer: lr.name, radius: radR, fontSize: sizeR, textWidth: Math.round(fullW), arcUsedDegrees: Math.round(fullW / radR * 180 / Math.PI * 10) / 10, wordAngles: anglesR, spinAngles: spinsR, note: "Validated live on After Effects 27 (camera on -z, default angles). If the letters lie flat or face inwards change standAngle (90 / -90); if the wrong word is in front change frontOffsetDegrees or direction." };
   }
 
+  if (action === "ae.render.info") {
+    // Read-only facts the server needs to render with aerender (outside the app): changes nothing.
+    var compI = __aeFindComp(params.compName, params.compIndex);
+    var pf = app.project.file;
+    return {
+      compName: compI.name,
+      projectPath: pf ? pf.fsName : null,
+      dirty: Boolean(app.project.dirty),
+      appPackage: Folder.appPackage ? Folder.appPackage.fsName : null,
+      version: String(app.version)
+    };
+  }
+
   if (action === "ae.render.queue") {
     var rq = app.project.renderQueue;
     var compRq = __aeFindComp(params.compName, params.compIndex);

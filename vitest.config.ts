@@ -8,6 +8,6 @@ export default defineConfig({
     hookTimeout: 15000,
     environment: "node",
     // the server defaults to code mode; tests that list or call tools directly need the full set
-    env: { JRADB_MCP_TOOLS: "full", JRADB_MCP_SKILLS_GATE: "off" }
+    env: { JRADB_MCP_TOOLS: "full", JRADB_MCP_SKILLS_GATE: "off", JRADB_MCP_UPDATE_CHECK: "off" }
   }
 });

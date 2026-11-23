@@ -446,6 +446,15 @@
     socket.onmessage = function (ev) {
       try {
         var msg = JSON.parse(ev.data);
+        if (msg.type === "notice" || msg.type === "hello_ack") {
+          var noticeText = msg.type === "notice" ? msg.text : msg.notice;
+          var noticeEl = document.getElementById("notice");
+          if (noticeText && noticeEl && noticeEl.style) {
+            noticeEl.textContent = noticeText;
+            noticeEl.style.display = "block";
+          }
+          if (noticeText) appendLog(noticeText);
+        }
         if (msg.type === "command") {
           appendLog("Cmd: " + msg.action);
           busyStart(msg.action);

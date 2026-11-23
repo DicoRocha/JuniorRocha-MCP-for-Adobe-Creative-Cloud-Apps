@@ -26,6 +26,8 @@ import { registerCodeTools } from "./tools/code/index.js";
 import { registerTemplatesTool } from "./tools/shared/templates.js";
 import { registerCampaignTool } from "./tools/campaign/index.js";
 import * as fsNode from "node:fs";
+import { UpdateChecker } from "./core/update-check.js";
+import { usageDir } from "./core/usage-log.js";
 import * as pathNode from "node:path";
 import { fileURLToPath as fileUrlToPath } from "node:url";
 
@@ -169,6 +171,12 @@ export function createAdobeMcpServer(options: CreateAdobeMcpServerOptions = {}):
     enableOsFallback: options.enableOsFallback ?? true
   });
 
+  // Newer release on GitHub: checked once a day in the background, shown in jradb_get_status and in the panels.
+  const updates = new UpdateChecker(PACKAGE_VERSION, pathNode.join(usageDir(), "..", "update-check.json"));
+  if (UpdateChecker.enabled()) {
+    void updates.refresh().then(() => hub.setNotice(updates.panelNotice()));
+  }
+
   // Every tool registered through `tools` is also recorded in the catalog (used by jradb_batch).
   const catalog = new ToolCatalog();
   const toolMode: ToolMode = options.toolMode ?? (process.env.JRADB_MCP_TOOLS === "full" ? "full" : "code");
@@ -176,7 +184,7 @@ export function createAdobeMcpServer(options: CreateAdobeMcpServerOptions = {}):
   const tools = catalog.wrap(server);
 
   // Register global cross-app tools
-  registerSharedTools(tools, router, enabledApps);
+  registerSharedTools(tools, router, enabledApps, updates);
   registerUsageTool(tools);
   registerSkillTools(tools);
   registerMediaTools(tools);

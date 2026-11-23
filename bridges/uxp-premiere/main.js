@@ -53,6 +53,17 @@ function __busyTick() {
     __busyTick();
   }, 1000);
 }
+// Newer release on GitHub (sent by the MCP server; the user installs it himself).
+function showNotice(msg) {
+  const text = msg && (msg.type === "notice" ? msg.text : msg.notice);
+  if (!text) return;
+  const el = document.getElementById("notice");
+  if (el && el.style) {
+    el.textContent = text;
+    el.style.display = "block";
+  }
+  log(text);
+}
 function busyStart(action) {
   __busy.list.push({ action, t0: Date.now() });
   __busyPaint();
@@ -534,6 +545,7 @@ function connect() {
   socket.onmessage = async (event) => {
     try {
       const msg = JSON.parse(event.data);
+      if (msg.type === "notice" || msg.type === "hello_ack") showNotice(msg);
       if (msg.type === "command") {
         log(`Action: ${msg.action}`);
         const start = Date.now();

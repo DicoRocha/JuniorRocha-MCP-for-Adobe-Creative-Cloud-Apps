@@ -675,8 +675,24 @@ export class WsHub {
 
     this.bridges.set(key, { ws, info });
     logger.info(`Registered Adobe Bridge: ${info.app} via ${info.bridgeType} (v${info.appVersion})`);
-    ws.send(JSON.stringify({ type: "hello_ack", app: info.app, bridgeType: info.bridgeType, timestamp: now }));
+    ws.send(JSON.stringify({ type: "hello_ack", app: info.app, bridgeType: info.bridgeType, timestamp: now, ...(this.notice ? { notice: this.notice } : {}) }));
     return key;
+  }
+
+  private notice: string | null = null;
+
+  /** A line every panel shows (a newer release on GitHub). Sent to the connected panels and with each hello_ack. */
+  public setNotice(text: string | null): void {
+    if (text === this.notice) return;
+    this.notice = text;
+    if (!text) return;
+    for (const { ws } of this.bridges.values()) {
+      try {
+        ws.send(JSON.stringify({ type: "notice", text }));
+      } catch {
+        /* a closing socket gets it with its next hello_ack */
+      }
+    }
   }
 
   private selectBridgeSocket(

@@ -1,5 +1,6 @@
 import { FORMATS_REVIEWED, formatsReviewAge } from "../../core/formats.js";
 import { z } from "zod";
+import type { UpdateChecker } from "../../core/update-check.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { spawn } from "node:child_process";
 import { BridgeRouter } from "../../core/bridge-router.js";
@@ -39,7 +40,7 @@ export const OPEN_TOOL: Record<string, string> = {
   lightroom: "lr_import_photos"
 };
 
-export function registerSharedTools(server: McpServer, router: BridgeRouter, enabledApps: AdobeAppId[]): void {
+export function registerSharedTools(server: McpServer, router: BridgeRouter, enabledApps: AdobeAppId[], updates?: UpdateChecker): void {
   server.tool(
     "jradb_get_status",
     "Check installed Adobe apps, running processes, live WebSocket/COM bridges and each app's command queue " +
@@ -64,7 +65,18 @@ export function registerSharedTools(server: McpServer, router: BridgeRouter, ena
         const age = formatsReviewAge();
         if (age > 92) hints.push(`The platform format table (sizes, safe zones) was last reviewed ${age} days ago (${FORMATS_REVIEWED}): review craft-formatos and src/core/formats.ts.`);
         if (leader.state === "disconnected") hints.push("Lost the link to the leader MCP process; it is reconnecting. Call jradb_get_status again in a few seconds.");
+        if (updates) {
+          await updates.refresh(3000);
+          hub.setNotice(updates.panelNotice());
+        }
+        const update = updates?.status() ?? null;
+        if (update?.announce) {
+          hints.push(
+            `A newer release is on GitHub: ${update.latest} (installed ${update.current}), ${update.url}. Tell the user once, in their language; never download or install it yourself.`
+          );
+        }
         return formatSuccessResponse({
+          ...(update ? { update: { current: update.current, latest: update.latest, url: update.url } } : {}),
           hub: {
             role: hub.getRole(),
             error: hub.getLastError(),

@@ -19,6 +19,7 @@ import {
   Range
 } from "../../media/audio-analysis.js";
 import { loadAudio } from "../../media/ffmpeg.js";
+import { normalizeLoudness } from "../../media/loudnorm.js";
 import { balanceLines } from "../../media/balance.js";
 import { transcribeFile, WhisperSize } from "../../media/transcribe.js";
 import { runJob, getJob, jobView, listJobs } from "../../media/jobs.js";
@@ -100,6 +101,35 @@ export function registerMediaTools(server: McpServer): void {
           path.basename(p.filePath)
         );
         return formatSuccessResponse(jobView(job));
+      } catch (err) {
+        return formatErrorResponse(err);
+      }
+    }
+  );
+
+  server.tool(
+    "media_normalize_loudness",
+    "Normalise the loudness of a video or audio file in two passes (EBU R128 loudnorm): default -14 LUFS and -1.5 dBTP " +
+      "for Instagram/Reels. Video is copied untouched; streams are mapped by type. Writes a new file (the original stays) " +
+      "and reports the level before and after. Long files become a job: poll media_job_status.",
+    {
+      filePath: z.string(),
+      outputPath: z.string().describe("New file (must differ from filePath). .wav/.mp3/.m4a = audio only."),
+      lufs: z.number().min(-36).max(-5).optional().default(-14),
+      truePeak: z.number().min(-9).max(0).optional().default(-1.5),
+      lra: z.number().min(1).max(20).optional().default(11),
+      waitSeconds: z.number().int().min(0).max(55).optional().default(45)
+    },
+    async (p) => {
+      try {
+        const job = await runJob(
+          "loudness",
+          () => normalizeLoudness(p.filePath, p.outputPath, { lufs: p.lufs, truePeak: p.truePeak, lra: p.lra }),
+          p.waitSeconds * 1000,
+          path.basename(p.filePath)
+        );
+        if (job.status === "failed") throw Object.assign(new Error(job.error?.message), { code: job.error?.code });
+        return formatSuccessResponse(job.status === "done" ? job.result : jobView(job));
       } catch (err) {
         return formatErrorResponse(err);
       }

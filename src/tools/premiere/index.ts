@@ -406,7 +406,7 @@ export function registerPremiereTools(server: McpServer, router: BridgeRouter): 
             includeImageContent: params.includeImageContent
           });
         }
-        if (params.queueInAME && typeof dataObj.outputPath === "string") {
+        if ((params.queueInAME || dataObj.engine === "media-encoder") && typeof dataObj.outputPath === "string") {
           const job = watchRender(dataObj.outputPath, `AME ${path.basename(dataObj.outputPath)}`);
           return formatSuccessResponse({ ...dataObj, renderJobId: job.id, next: `Poll media_job_status { jobId: "${job.id}" }: done when the file stops growing.` });
         }

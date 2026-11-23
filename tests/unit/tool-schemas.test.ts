@@ -19,14 +19,14 @@ function findTupleSchemas(node: unknown, path: string, hits: string[]): void {
 }
 
 describe("MCP tool input schemas", () => {
-  it("exposes all 181 tools with schemas Claude accepts (no tuple-form arrays)", async () => {
+  it("exposes all registered tools with schemas Claude accepts (no tuple-form arrays)", async () => {
     const runtime = createAdobeMcpServer({ enabledApps: ALL_ADOBE_APPS, wsPort: 0, enableOsFallback: false });
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
     const client = new Client({ name: "schema-test", version: "1.0.0" });
     await Promise.all([runtime.server.connect(serverTransport), client.connect(clientTransport)]);
     try {
       const { tools } = await client.listTools();
-      expect(tools.length).toBe(221);
+      expect(tools.length).toBe(222);
       const hits: string[] = [];
       for (const tool of tools) findTupleSchemas(tool.inputSchema, tool.name, hits);
       expect(hits).toEqual([]);

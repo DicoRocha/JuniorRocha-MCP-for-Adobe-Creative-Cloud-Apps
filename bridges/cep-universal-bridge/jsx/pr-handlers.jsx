@@ -1669,9 +1669,25 @@ function __mcpDispatch(action, params, _options) {
       app.encoder.startBatch();
       return { mode: "sequence", engine: "media-encoder", jobId: String(jobId), outputPath: outMedia, status: "queued", next: "Check that the file exists and stops growing (media_analyze_audio or a frame grab) before using it." };
     }
-    seqEx.exportAsMediaDirect(outMedia, preset, app.encoder.ENCODE_ENTIRE);
+    // 22/11/2026 (Premiere 27): exportAsMediaDirect threw "Unknown Error" with a native path and a valid preset,
+    // while app.encoder.encodeSequence with the same paths worked. On any failure hand the job to Media Encoder.
+    var directError = null;
+    try {
+      seqEx.exportAsMediaDirect(outMedia, preset, app.encoder.ENCODE_ENTIRE);
+    } catch (eDirect) {
+      directError = String(eDirect && eDirect.message ? eDirect.message : eDirect);
+    }
     var outFile = new File(outMedia);
-    if (!outFile.exists) __mcpFail("EXPORT_FAILED", "Premiere did not write " + outMedia + ". Check the preset (" + preset + ") and that the sequence has content.");
+    if (!outFile.exists || outFile.length <= 0) {
+      try {
+        try { app.encoder.launchEncoder(); } catch (_eLaunch2) {}
+        var jobId2 = app.encoder.encodeSequence(seqEx, outMedia, preset, app.encoder.ENCODE_ENTIRE, 1);
+        app.encoder.startBatch();
+        return { mode: "sequence", engine: "media-encoder", fallbackFrom: "exportAsMediaDirect", directError: directError, jobId: String(jobId2), outputPath: outMedia, status: "queued" };
+      } catch (eAme) {
+        __mcpFail("EXPORT_FAILED", "Premiere did not write " + outMedia + " (direct: " + (directError || "no file") + "; Media Encoder: " + eAme + "). Check the preset (" + preset + ") and that the sequence has content.");
+      }
+    }
     return { mode: "sequence", engine: "premiere", outputPath: outMedia, preset: preset, exists: true, bytes: outFile.length };
   }
 

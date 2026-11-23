@@ -20,6 +20,9 @@ import {
 } from "../../media/audio-analysis.js";
 import { loadAudio } from "../../media/ffmpeg.js";
 import { normalizeLoudness } from "../../media/loudnorm.js";
+import { decodeImageRgb } from "../../media/ffmpeg.js";
+import { zoneMap, zoneReport } from "../../media/zones.js";
+import { encodePng } from "../../core/png.js";
 import { balanceLines } from "../../media/balance.js";
 import { transcribeFile, WhisperSize } from "../../media/transcribe.js";
 import { runJob, getJob, jobView, listJobs } from "../../media/jobs.js";
@@ -130,6 +133,34 @@ export function registerMediaTools(server: McpServer): void {
         );
         if (job.status === "failed") throw Object.assign(new Error(job.error?.message), { code: job.error?.code });
         return formatSuccessResponse(job.status === "done" ? job.result : jobView(job));
+      } catch (err) {
+        return formatErrorResponse(err);
+      }
+    }
+  );
+
+  server.tool(
+    "media_zone_report",
+    "Zone System report of a photo or a video frame (CIE L*: zone 0 = black … X = white): percent per zone, clipped " +
+      "shadows/highlights, mean L*, key (low/mid/high), colour cast of the midtones and a diagnosis (FLAT, NO_BLACK, " +
+      "HIGHLIGHTS_CLIPPED, MIDTONE_CAST…). Optional zone map PNG (each pixel painted with its zone grey). Use before and after a grade.",
+    {
+      filePath: z.string().describe("Image (jpg, png, tif, exported preview) or video."),
+      atSeconds: z.number().min(0).optional().describe("Video: the frame to read."),
+      width: z.number().int().min(64).max(2048).optional().default(512).describe("Analysis width (the image is scaled down)."),
+      zoneMapPath: z.string().optional().describe("Write the zone map PNG here.")
+    },
+    async (p) => {
+      try {
+        const img = await decodeImageRgb(p.filePath, p.width, p.atSeconds);
+        const report = zoneReport(img.data);
+        let zoneMapFile: string | undefined;
+        if (p.zoneMapPath) {
+          fs.mkdirSync(path.dirname(p.zoneMapPath), { recursive: true });
+          fs.writeFileSync(p.zoneMapPath, encodePng({ width: img.width, height: img.height, data: zoneMap(img.data) }));
+          zoneMapFile = p.zoneMapPath;
+        }
+        return formatSuccessResponse({ filePath: p.filePath, size: `${img.width}×${img.height}`, ...report, ...(zoneMapFile ? { zoneMapPath: zoneMapFile } : {}) });
       } catch (err) {
         return formatErrorResponse(err);
       }

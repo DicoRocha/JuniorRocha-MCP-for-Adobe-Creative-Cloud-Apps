@@ -77,8 +77,8 @@ formato/canal, prazo de marca (logo, cores, fontes). Sem objetivo ou formato, pe
 | Thumbnail de YouTube / capa horizontal | `social-thumbnail` → `foto-fundamentos` → `foto-recorte-e-composicao` |
 | Anúncios estáticos / variações para teste | `plan-anuncios` → `plan-copy` → `ads-estatico` (lote com `ps_batch_variants`) |
 | "Versão story", "todos os formatos" | `design-adaptacao-formatos` |
-| Tratar fotos (lote, evento, campanha) | `foto-fundamentos` → `foto-triagem-e-lote` → `foto-revelacao` → `foto-saida` |
-| Retrato, foto de equipe | `foto-fundamentos` → `foto-retrato` → `foto-saida` |
+| Tratar fotos (lote, evento, campanha) | `foto-fundamentos` → `foto-triagem-e-lote` → `foto-revelacao` → `foto-zonas` → `foto-saida` |
+| Retrato, foto de equipe | `foto-fundamentos` → `foto-retrato` → `foto-zonas` → `foto-saida` |
 | Foto de produto, e-commerce | `foto-fundamentos` → `foto-produto` → `foto-recorte-e-composicao` → `foto-saida` |
 | Montagem, troca de fundo, texto atrás do sujeito | `foto-fundamentos` → `foto-recorte-e-composicao` |
 | Selo, ícones, logo simples | `vetor-logo-e-selo` → `vetor-pacote-de-marca` |

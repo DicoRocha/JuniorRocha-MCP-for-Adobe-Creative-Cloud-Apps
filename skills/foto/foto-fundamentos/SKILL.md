@@ -20,7 +20,8 @@ Vale para Lightroom e Photoshop. As skills de área (`foto-revelacao`, `foto-ret
 ## 2. Medir antes de achar
 
 1. Leia o que já existe: `lr_get_develop_settings` (a foto pode já ter tratamento) ou `ps_get_layer_tree`.
-2. Meça: `lr_photo_stats` (histograma, realces e sombras cortados, média, `warmth`) antes e depois.
+2. Meça: `lr_photo_stats` (histograma, realces e sombras cortados, média, `warmth`) e `media_zone_report`
+   (zonas 0–X, dominante nos médios; skill `foto-zonas`) antes e depois.
 3. Olhe: prévia antes e depois de cada bloco (`lr_get_photo_preview`, `ps_get_canvas_snapshot`).
 4. Limites: realces estourados ≤ 0,5 %, sombras esmagadas ≤ 1 % (salvo look de propósito); pele nunca
    laranja ou magenta; neutros (parede branca, camiseta cinza) neutros.

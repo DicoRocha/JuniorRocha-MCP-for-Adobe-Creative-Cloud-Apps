@@ -437,7 +437,7 @@
           app: adobeAppId,
           bridgeType: "cep",
           appVersion: String(hostEnv.appVersion || "unknown"),
-          pluginVersion: "1.4.16",
+          pluginVersion: "1.4.17",
           capabilities: ["extendscript", "evalScript", "dom", "inspectDom"]
         })
       );

@@ -100,8 +100,10 @@ function __idPage(doc, pageRef) {
 }
 
 function __idTypeName(item) {
+  // page.pageItems answers generic "PageItem" objects: getElements() gives the real one (TextFrame, Rectangle...).
   try {
-    return String(item.constructor.name);
+    var real = item.getElements ? item.getElements()[0] : item;
+    return String(real.constructor.name);
   } catch (_e) {
     return "PageItem";
   }
@@ -602,7 +604,9 @@ function __idDispatch(action, params, _options) {
       if (t === "Rectangle" || t === "Oval" || t === "Polygon" || t === "GraphicLine") return "shape";
       return "other";
     };
-    var nodeLI = function (it, depth) {
+    var nodeLI = function (it0, depth) {
+      var it = it0;
+      try { if (it0.getElements) it = it0.getElements()[0]; } catch (_eGe) {}
       var gb = it.geometricBounds;
       var n = { id: it.id, name: String(it.name || ""), kind: kindLI(it), bounds: [gb[1], gb[0], gb[3], gb[2]], visible: it.visible !== false };
       if (n.kind === "text") {

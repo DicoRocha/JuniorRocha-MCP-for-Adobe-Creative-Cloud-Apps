@@ -11,7 +11,7 @@ local json = require("json")
 local logger = LrLogger("JrAdbMcpBridge")
 logger:enable("logfile")
 
-local PLUGIN_VERSION = "1.5.7"
+local PLUGIN_VERSION = "1.5.8"
 local G = _G or getfenv(0)
 local state = G.JRADB_MCP_BRIDGE_STATE
 if type(state) ~= "table" then

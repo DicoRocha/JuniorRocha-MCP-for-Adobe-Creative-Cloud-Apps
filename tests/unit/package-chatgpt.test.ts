@@ -17,7 +17,7 @@ function fakeRelease(dir: string, version: string): void {
     { name: "node_modules/zod/package.json", data: Buffer.from('{"version":"4.6.7"}') },
     { name: "skills/index.md", data: Buffer.from("# skills") }
   ]);
-  for (const f of ["jr-adb-mcp-bridge-photoshop-uxp-1.4.17.ccx", "jr-adb-mcp-bridge-premiere-uxp-1.4.2.ccx", "jr-adb-mcp-bridge-indesign-uxp-1.0.6.ccx"]) {
+  for (const f of ["jr-adb-mcp-bridge-photoshop-uxp-1.4.17.ccx", "jr-adb-mcp-bridge-premiere-uxp-1.4.2.ccx", "jr-adb-mcp-bridge-indesign-uxp-1.0.7.ccx"]) {
     fs.writeFileSync(path.join(dir, f), f);
   }
 }

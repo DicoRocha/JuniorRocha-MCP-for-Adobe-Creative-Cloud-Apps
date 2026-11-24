@@ -21,5 +21,5 @@ return {
     { title = "Parar ponte MCP", file = "StopBridge.lua" },
     { title = "Status da ponte MCP", file = "StatusBridge.lua" }
   },
-  VERSION = { major = 1, minor = 5, revision = 7, build = 0, display = "1.5.7" }
+  VERSION = { major = 1, minor = 5, revision = 8, build = 0, display = "1.5.8" }
 }

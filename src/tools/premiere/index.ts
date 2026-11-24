@@ -1,6 +1,7 @@
 import * as path from "node:path";
 import { watchRender } from "../../media/render-watch.js";
 import { z } from "zod";
+import { lookSettings, VIDEO_LOOKS } from "../../core/video-looks.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { BridgeRouter } from "../../core/bridge-router.js";
 import {
@@ -82,6 +83,21 @@ export function compactEffectReadback(data: unknown, asked: string[], limit = 30
 
 /** Built-in caption templates (made with After Effects, text exposed): templates/legendas in the repo. */
 const CAPTION_TEMPLATES_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "templates", "legendas");
+
+/** Times (s) of the 0.25 s windows whose sample peak passes thresholdDb, merged within 1 s; at most 10. */
+export function hotSpots(samples: Float32Array, sr: number, thresholdDb: number): number[] {
+  const lim = Math.pow(10, thresholdDb / 20);
+  const win = Math.round(sr * 0.25);
+  const out: number[] = [];
+  for (let i = 0; i < samples.length; i += win) {
+    let m = 0;
+    for (let j = i; j < Math.min(samples.length, i + win); j++) m = Math.max(m, Math.abs(samples[j]));
+    const t = i / sr;
+    if (m > lim && (!out.length || t - out[out.length - 1] > 1)) out.push(Math.round(t * 10) / 10);
+    if (out.length >= 10) break;
+  }
+  return out;
+}
 
 export function registerPremiereTools(server: McpServer, router: BridgeRouter): void {
   server.tool(
@@ -607,16 +623,22 @@ export function registerPremiereTools(server: McpServer, router: BridgeRouter): 
     "Colour-correct a clip with Lumetri Color using the same control names as the Lightroom and Camera Raw tools: " +
       "temperature, tint, exposure, contrast, highlights, shadows, whites, blacks, saturation, vibrance, sharpen, fadedFilm. " +
       "Adds the effect if the clip does not have it and returns the values read back. Effect names follow Premiere's " +
-      "language; in another language use pr_apply_effect with the listed name.",
+      "language; in another language use pr_apply_effect with the listed name. Named looks: " +
+      Object.keys(VIDEO_LOOKS).join(", ") +
+      " (after the correction, intensity 0.5-0.8). A look the user made by hand stays: use his, not one of these.",
     {
       trackIndex: z.number().int().min(0).optional().default(0),
       clipIndex: z.number().int().min(0).optional(),
       atSeconds: z.number().optional(),
-      settings: z.record(z.string(), z.number()).describe("e.g. { exposure: 0.3, contrast: 12, saturation: 110, temperature: 8 }")
+      settings: z.record(z.string(), z.number()).optional().describe("e.g. { exposure: 0.3, contrast: 12, saturation: 110, temperature: 8 }"),
+      look: z.enum(Object.keys(VIDEO_LOOKS) as [string, ...string[]]).optional().describe("Named look applied at `intensity`; settings override its values."),
+      intensity: z.number().min(0).max(1.5).optional().default(0.7)
     },
     async (params) => {
       try {
-        const res = await router.dispatch("premiere", "pr.color", params, { preferBridge: "cep" });
+        const settings = params.look ? lookSettings(params.look, params.intensity, params.settings ?? {}) : params.settings;
+        if (!settings || !Object.keys(settings).length) throw Object.assign(new Error("Give settings or a look."), { code: "INVALID_PARAMS" });
+        const res = await router.dispatch("premiere", "pr.color", { ...params, settings }, { preferBridge: "cep" });
         return formatSuccessResponse(res.data);
       } catch (err) {
         return formatErrorResponse(err);
@@ -665,12 +687,44 @@ export function registerPremiereTools(server: McpServer, router: BridgeRouter): 
       clipNameOrPath: z.string(),
       keep: z.array(z.object({ start: z.number().min(0), end: z.number().min(0) })).min(1),
       timeSeconds: z.number().min(0).optional().default(0),
-      videoTrackIndex: z.number().int().min(0).optional().default(0)
+      videoTrackIndex: z.number().int().min(0).optional().default(0),
+      punchIn: z
+        .object({
+          every: z.number().int().min(2).max(6).optional().default(2).describe("Every Nth piece is punched in (2 = every other)."),
+          scale: z.number().min(101).max(140).optional().default(110).describe("Motion scale in % (108-115 reads as a new shot on a talking head).")
+        })
+        .optional()
+        .describe("Hide jump cuts in a talking head: every Nth piece a little closer."),
+      audioFadeFrames: z
+        .number()
+        .int()
+        .min(0)
+        .max(6)
+        .optional()
+        .default(2)
+        .describe("Constant Power crossfade of this many frames on every audio cut (2-3 for speech: no clicks); 0 = none."),
+      audioTrackIndex: z.number().int().min(0).optional().describe("Audio track of the pieces (default: same index as the video track).")
     },
     async (params) => {
       try {
         const res = await router.dispatch("premiere", "pr.cut.assemble", params, { timeoutMs: 70000, undoGroup: "MCP: Cut plan" });
-        return formatSuccessResponse(res.data);
+        const d = (res.data || {}) as Record<string, unknown>;
+        if (params.audioFadeFrames > 0 && Number(d.segments) > 1) {
+          try {
+            const au = await router.dispatch("premiere", "pr.audit", {}, { timeoutMs: 30000 });
+            const fps = Number((au.data as { fps?: number })?.fps) || 30;
+            const tr = await router.dispatch(
+              "premiere",
+              "pr.transition.apply",
+              { trackType: "audio", trackIndex: params.audioTrackIndex ?? params.videoTrackIndex, transitionName: "Constant Power", allCuts: true, durationSeconds: params.audioFadeFrames / fps },
+              { timeoutMs: 60000, undoGroup: "MCP: Audio crossfades" }
+            );
+            d.audioFades = { frames: params.audioFadeFrames, fps, result: tr.data };
+          } catch (eFade) {
+            d.audioFades = { error: (eFade as Error).message.slice(0, 200), hint: "Run pr_apply_transition trackType audio allCuts." };
+          }
+        }
+        return formatSuccessResponse(d);
       } catch (err) {
         return formatErrorResponse(err);
       }
@@ -893,11 +947,20 @@ export function registerPremiereTools(server: McpServer, router: BridgeRouter): 
         const res = await router.dispatch("premiere", "pr.audit", {}, { timeoutMs: 60000 });
         const data = res.data as PrAuditData;
         let loudness;
+        let peakMoments: number[] = [];
         if (params.renderPath) {
           const samples = await loadAudio(params.renderPath, 16000);
           loudness = measureLoudness(samples, 16000);
+          peakMoments = hotSpots(samples, 16000, -1);
         }
         const findings = auditPremiere(data, { format: params.format, loudness, targetLufs: params.targetLufs, gapTracks: params.gapTracks });
+        if (peakMoments.length) {
+          findings.push({
+            severity: "warn",
+            code: "AUDIO_PEAKS",
+            message: `Audio above -1 dBFS at ${peakMoments.map((t) => `${t.toFixed(1)} s`).join(", ")}: lower those clips (pr_set_volume / pr_audio_keyframes) or normalise the render (media_normalize_loudness).`
+          });
+        }
         return formatSuccessResponse({
           sequence: data.sequence,
           size: `${data.width}×${data.height}`,

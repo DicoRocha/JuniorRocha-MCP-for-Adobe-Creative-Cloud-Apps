@@ -314,14 +314,16 @@ Colour labels of items in the Project panel (0-15, in the order of Premiere's la
 
 ## `pr_color`
 
-Colour-correct a clip with Lumetri Color using the same control names as the Lightroom and Camera Raw tools: temperature, tint, exposure, contrast, highlights, shadows, whites, blacks, saturation, vibrance, sharpen, fadedFilm. Adds the effect if the clip does not have it and returns the values read back. Effect names follow Premiere's language; in another language use pr_apply_effect with the listed name.
+Colour-correct a clip with Lumetri Color using the same control names as the Lightroom and Camera Raw tools: temperature, tint, exposure, contrast, highlights, shadows, whites, blacks, saturation, vibrance, sharpen, fadedFilm. Adds the effect if the clip does not have it and returns the values read back. Effect names follow Premiere's language; in another language use pr_apply_effect with the listed name. Named looks: natural-limpo, cinematico-contido, quente-editorial, frio-tecnologico, pb-contraste (after the correction, intensity 0.5-0.8). A look the user made by hand stays: use his, not one of these.
 
 | Parameter | Type | Required | Description |
 |---|---|:---:|---|
 | `trackIndex` | integer |  |  Default: `0`. |
 | `clipIndex` | integer |  |  |
 | `atSeconds` | number |  |  |
-| `settings` | object | yes | e.g. { exposure: 0.3, contrast: 12, saturation: 110, temperature: 8 } |
+| `settings` | object |  | e.g. { exposure: 0.3, contrast: 12, saturation: 110, temperature: 8 } |
+| `look` | `natural-limpo` · `cinematico-contido` · `quente-editorial` · `frio-tecnologico` · `pb-contraste` |  | Named look applied at `intensity`; settings override its values. |
+| `intensity` | number |  |  Default: `0.7`. |
 
 ## `pr_expect_project`
 
@@ -342,6 +344,9 @@ Edit out pauses: place only the kept ranges (source seconds) of one project clip
 | `keep` | object[] | yes |  |
 | `timeSeconds` | number |  |  Default: `0`. |
 | `videoTrackIndex` | integer |  |  Default: `0`. |
+| `punchIn` | object |  | Hide jump cuts in a talking head: every Nth piece a little closer. |
+| `audioFadeFrames` | integer |  | Constant Power crossfade of this many frames on every audio cut (2-3 for speech: no clicks); 0 = none. Default: `2`. |
+| `audioTrackIndex` | integer |  | Audio track of the pieces (default: same index as the video track). |
 
 ## `pr_audio_keyframes`
 

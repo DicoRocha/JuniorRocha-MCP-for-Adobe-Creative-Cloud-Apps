@@ -1239,7 +1239,30 @@ function __mcpDispatch(action, params, _options) {
         else if (itemAs.clearOutPoint) itemAs.clearOutPoint();
       } catch (_eRestore) {}
     }
-    return { clip: String(itemAs.name), videoTrackIndex: vIdx, segments: placed.length, placed: placed, endSeconds: Math.round(at * 1000) / 1000 };
+    // Punch-in: every Nth piece a little closer (Motion > Scale), so a jump cut in a talking head reads as a
+    // change of shot. Only on the pieces placed now.
+    var punched = 0;
+    if (params.punchIn && placed.length > 1) {
+      var every = Math.max(2, Number(params.punchIn.every) || 2);
+      var sc = Number(params.punchIn.scale) || 110;
+      for (var pp = 0; pp < placed.length; pp++) {
+        if (pp % every !== every - 1) continue;
+        for (var cj = 0; cj < trackAs.clips.numItems; cj++) {
+          var cc = trackAs.clips[cj];
+          if (Math.abs(cc.start.seconds - placed[pp].timelineStart) < 0.05) {
+            for (var mc = 0; mc < cc.components.numItems; mc++) {
+              if (String(cc.components[mc].matchName) === "AE.ADBE Motion") {
+                cc.components[mc].properties[1].setValue(sc, true);
+                placed[pp].scale = sc;
+                punched++;
+              }
+            }
+            break;
+          }
+        }
+      }
+    }
+    return { clip: String(itemAs.name), videoTrackIndex: vIdx, segments: placed.length, placed: placed, punchedIn: punched, endSeconds: Math.round(at * 1000) / 1000 };
   }
 
   if (action === "pr.audio.keyframes") {

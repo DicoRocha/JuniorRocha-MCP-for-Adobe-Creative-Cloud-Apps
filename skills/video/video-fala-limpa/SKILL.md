@@ -114,6 +114,9 @@ reanalisa se o clipe for aparado depois. Para transcrever e achar pausas antes d
   `media_analyze_audio` (pausas longas fora, `padding` 0,1–0,15 s de ar) ou a sua lista editorial a
   partir da transcrição (tira repetição, falso começo). Guarde os `placed` devolvidos: são os tempos da
   fala na timeline para legenda (`media_build_captions` `keep`) e ducking (`pr_duck_music`).
+  O `pr_apply_cut_plan` já põe **2 quadros de Constant Power** em cada corte de áudio (`audioFadeFrames`,
+  2–3 na fala; 0 desliga). Câmera parada e muitos cortes seguidos: `punchIn { every: 2, scale: 110 }`
+  aproxima um trecho sim, outro não, e o corte vira troca de plano (108–115 %; acima disso a imagem amolece).
 
 **Trave a fala primeiro.** Só depois de cortes, pausas e níveis aprovados entram B-roll,
 gráficos, música e legenda — mexer na fala depois desalinha tudo que está por cima.

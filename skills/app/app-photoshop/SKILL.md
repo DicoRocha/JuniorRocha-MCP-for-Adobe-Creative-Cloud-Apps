@@ -18,6 +18,7 @@ Referência de descritores: `references/batchplay-cheatsheet.md`.
 | Camadas | por `layerId` ou `layerName` exato; sem nenhum, a ativa |
 | Salvar | `ps_save_document` cria a pasta e roda sem diálogos; PSD em camadas + JPG/PNG de saída |
 | Organização | Grupos por sentido (ícone + texto, texto sobre shape, listas, cards); objeto sozinho fica solto. `ps_organize_layers` (plano) → `apply: true`. Skill `craft-organizacao-camadas` |
+| PSD mestre | Imagem ajustada aqui (recorte, retoque, cor) é salva em **PSD** com as camadas e máscaras; esse PSD é o arquivo que vai para AI, ID, AE e PR (vinculado). PNG/JPG só na entrega final. `ps_recipe_remove_background { psdPath }` |
 
 ## 2. Qual ferramenta
 

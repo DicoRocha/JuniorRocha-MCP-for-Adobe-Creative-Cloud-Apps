@@ -17,7 +17,7 @@ function fakeRelease(dir: string, version: string): void {
     { name: "node_modules/zod/package.json", data: Buffer.from('{"version":"4.6.7"}') },
     { name: "skills/index.md", data: Buffer.from("# skills") }
   ]);
-  for (const f of ["jr-adb-mcp-bridge-photoshop-uxp-1.4.17.ccx", "jr-adb-mcp-bridge-premiere-uxp-1.4.2.ccx", "jr-adb-mcp-bridge-indesign-uxp-1.0.7.ccx"]) {
+  for (const f of ["jr-adb-mcp-bridge-photoshop-uxp-1.4.18.ccx", "jr-adb-mcp-bridge-premiere-uxp-1.4.2.ccx", "jr-adb-mcp-bridge-indesign-uxp-1.0.7.ccx"]) {
     fs.writeFileSync(path.join(dir, f), f);
   }
 }
@@ -54,7 +54,7 @@ describe("downloads: one zip for Claude, one for ChatGPT", () => {
       "1-server/server/dist/index.js",
       "1-server/server/node_modules/zod/package.json",
       "1-server/server/skills/index.md",
-      "2-plugins/jr-adb-mcp-bridge-photoshop-uxp-1.4.17.ccx",
+      "2-plugins/jr-adb-mcp-bridge-photoshop-uxp-1.4.18.ccx",
       "3-bridges-kit/INSTALL-BRIDGES.bat"
     ]) {
       expect(names, f).toContain(top + f);

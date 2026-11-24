@@ -1,6 +1,6 @@
 # Known issues and open items
 
-Last reviewed on 23 November 2026, version 1.13.3. Items are grouped by where they show up.
+Last reviewed on 23 November 2026, version 1.13.4. Items are grouped by where they show up.
 
 ## Not available through the server
 
@@ -50,6 +50,7 @@ Last reviewed on 23 November 2026, version 1.13.3. Items are grouped by where th
 | Organisation (1.13) | Recipes made flat files; After Effects and Premiere projects stayed loose | `ps_recipe_social_set` and the InDesign recipes group by meaning (cards included); `ae_organize_project` (folders, labels, names) and `pr_organize_project` (bins) |
 | Looks (1.13) | The reference looks existed only as Lightroom ranges | `lr_apply_look`, `ps_recipe_look` (adjustment layers, group opacity = intensity) and the same names in `pr_color` |
 | Skills gate (1.13) | One lookup opened every tool for the rest of the session | A move to an app no looked-up skill covers, or 60 idle minutes, asks for a new lookup |
+| PSD master (1.13.4) | Edited images went into other apps as PNG/JPG exports, so a later fix in Photoshop did not reach them | Placing/importing tools use the same-name PSD when it exists (`JRADB_MCP_PREFER_PSD=off`); `ai_recipe_pop_out` writes `<photo>_recorte.psd` and links it (to confirm live: Illustrator and Premiere with a layered PSD) |
 
 Still open: `ae_manage_project` save that took ~70 s once and reconnected the panel (not reproduced yet).
 

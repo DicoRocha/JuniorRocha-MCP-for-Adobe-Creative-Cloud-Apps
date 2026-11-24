@@ -221,7 +221,7 @@ export function registerIllustratorRecipe(server: McpServer, router: BridgeRoute
       imageName: z.string().optional().describe("Name of an image already in the document (already without background)."),
       cutout: z.enum(["auto", "yes", "no"]).optional().describe("auto: Photoshop removes the background unless the file is a PNG/PSD/WebP/TIFF with transparency expected; yes: always; no: place the file as it is."),
       method: z.enum(["removeBackground", "selectSubject"]).optional(),
-      cutoutPath: z.string().optional().describe("Where Photoshop writes the transparent PNG (default: <photo>_cutout.png next to the photo)."),
+      cutoutPath: z.string().optional().describe("Where Photoshop writes the cut-out: default <photo>_recorte.psd next to the photo (editable mask, linked by Illustrator); a .png path writes a PNG instead."),
       keepBackground: z.boolean().optional().describe("Show the original photo, background included, inside the shape."),
       shape: z.enum(["circle", "ellipse", "rectangle", "roundedRectangle"]).optional().describe("Default circle."),
       shapeColor: z.string().optional().describe("'#RRGGBB' fill of the shape (default #C8783C)."),
@@ -255,19 +255,29 @@ export function registerIllustratorRecipe(server: McpServer, router: BridgeRoute
         if (params.keepBackground && !params.filePath) throw new Error("keepBackground needs filePath: the original photo.");
         if (params.filePath && wantCut) {
           if (!fs.existsSync(params.filePath)) throw new Error(`File not found: ${params.filePath}`);
-          const out = params.cutoutPath || path.join(path.dirname(params.filePath), `${path.basename(params.filePath, ext)}_cutout.png`);
+          // The cut-out is a PSD (layer mask, editable) and Illustrator links that PSD: a later touch-up of the mask in
+          // Photoshop updates the layout (author's rule 24/11/2026). A PNG only when cutoutPath asks for one.
+          const wantsPng = params.cutoutPath ? /\.(png|webp)$/i.test(params.cutoutPath) : false;
+          const out = params.cutoutPath || path.join(path.dirname(params.filePath), `${path.basename(params.filePath, ext)}_recorte.psd`);
           const cut = (
             await router.dispatch(
               "photoshop",
               "ps.recipe.removeBackground",
-              { filePath: params.filePath, outputPath: out, format: "png", method: params.method, smartObject: false, cropToSubject: !params.keepBackground, closeAfter: true },
+              {
+                filePath: params.filePath,
+                ...(wantsPng ? { outputPath: out, format: "png" } : { psdPath: out }),
+                method: params.method,
+                smartObject: true,
+                cropToSubject: !params.keepBackground,
+                closeAfter: true
+              },
               { timeoutMs: 300000, undoGroup: "MCP: Remove background" }
             )
-          ).data as { subject?: { x: number; y: number; width: number; height: number }; size?: number[]; file?: { path?: string } | string; warnings?: string[] };
-          const png = typeof cut.file === "string" ? cut.file : cut.file?.path;
-          if (!png) throw new Error("Photoshop did not write the cut-out PNG.");
-          steps.push(`Photoshop: background removed${params.keepBackground ? "" : " and trimmed to the subject"} → ${png}`);
-          ai.filePath = png;
+          ).data as { subject?: { x: number; y: number; width: number; height: number }; size?: number[]; file?: { path?: string } | string; psd?: string; warnings?: string[] };
+          const written = wantsPng ? (typeof cut.file === "string" ? cut.file : cut.file?.path) : cut.psd;
+          if (!written) throw new Error("Photoshop did not write the cut-out file.");
+          steps.push(`Photoshop: background removed as an editable mask${params.keepBackground ? "" : ", trimmed to the subject"} → ${written}`);
+          ai.filePath = written;
           if (params.keepBackground) {
             ai.backgroundFilePath = params.filePath;
             if (cut.subject && cut.size) {

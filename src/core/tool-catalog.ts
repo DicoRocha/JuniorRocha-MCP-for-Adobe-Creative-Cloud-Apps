@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { logUsage } from "./usage-log.js";
+import { rewritePsdInputs } from "./prefer-psd.js";
 import { checkSkillGate, skillGateNotice } from "./skill-gate.js";
 import { formatErrorResponse } from "./image-helper.js";
 
@@ -109,9 +110,18 @@ export function gateHandler(name: string, handler: CatalogToolHandler): CatalogT
     const blocked = checkSkillGate(name);
     if (blocked) return formatErrorResponse(blocked);
     const notice = skillGateNotice(name);
-    const result = await handler(input, extra);
-    if (notice && result && typeof result === "object" && Array.isArray((result as { content?: unknown }).content)) {
-      (result as { content: Array<{ type: string; text?: string }> }).content.push({ type: "text", text: notice });
+    // The PSD is the master: an image with a PSD of the same name goes in as the PSD (core/prefer-psd.ts).
+    const psd = rewritePsdInputs(name, input);
+    const result = await handler(psd.input, extra);
+    const notes: string[] = [];
+    if (notice) notes.push(notice);
+    if (psd.swaps.length) {
+      notes.push(
+        `PSD first: placed ${psd.swaps.map((s) => s.to).join(", ")} instead of ${psd.swaps.map((s) => s.from).join(", ")} (a later edit in Photoshop updates this file too; JRADB_MCP_PREFER_PSD=off to keep the export).`
+      );
+    }
+    if (notes.length && result && typeof result === "object" && Array.isArray((result as { content?: unknown }).content)) {
+      for (const text of notes) (result as { content: Array<{ type: string; text?: string }> }).content.push({ type: "text", text });
     }
     return result;
   };

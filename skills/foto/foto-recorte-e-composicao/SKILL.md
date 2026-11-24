@@ -9,8 +9,10 @@ Base: `docs/conhecimento/03`. Ver também `foto-produto`, `social-thumbnail`.
 
 ## 1. Recorte (sempre por máscara)
 
-Atalho: `ps_recipe_remove_background({ filePath | documentName, cropToSubject, padding, outputPath })` faz
-os passos 1–2 numa cópia do documento inteiro (Smart Object + máscara do Remover Fundo, PNG transparente),
+Atalho: `ps_recipe_remove_background({ filePath | documentName, cropToSubject, padding, psdPath })` faz
+os passos 1–2 numa cópia do documento inteiro (Smart Object + máscara do Remover Fundo) e **salva em PSD**
+(`<foto>_recorte.psd`): é esse PSD que entra no Illustrator, InDesign, After e Premiere. PNG (`outputPath`) só
+para entrega final na web,
 devolve a caixa do sujeito e avisa quando nada foi removido. As bordas difíceis (passo 4) continuam à mão.
 
 
@@ -52,10 +54,11 @@ preto → agrupar.
 
 `ai_recipe_pop_out({ filePath, keepBackground, shape, shapeColor, strokeColor, strokeWidth, overflow, cutAt, placeHeight })`
 
-O Remover Fundo do Illustrator não é acessível por script. Por isso o **Photoshop só recorta** e salva um PNG
-transparente; a imagem entra no documento do Illustrator e **as máscaras de recorte são feitas lá**:
+O Remover Fundo do Illustrator não é acessível por script. Por isso o **Photoshop só recorta** e salva um **PSD**
+com a máscara editável (`<foto>_recorte.psd`); o PSD entra **vinculado** no Illustrator e **as máscaras de recorte
+são feitas lá**. Ajuste a máscara depois no Photoshop e o Illustrator atualiza o vínculo:
 
-1. Photoshop: Remover Fundo → **trim** no assunto (`cropToSubject`) → PNG transparente. Menos sobra transparente
+1. Photoshop: Remover Fundo → **trim** no assunto (`cropToSubject`) → PSD. Menos sobra transparente
    = caixa da imagem justa, mais fácil de editar à mão depois.
 2. Illustrator, num grupo: **Subject top** (grupo de recorte: retângulo justo na parte visível — largura do
    assunto, do topo até a linha de corte — + a imagem) e **Subject** (grupo de recorte cuja máscara é a própria

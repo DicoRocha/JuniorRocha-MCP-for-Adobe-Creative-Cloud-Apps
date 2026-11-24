@@ -23,8 +23,8 @@ InDesign (impressos, pranchas) ← fotos, PSD, AI vinculados ──────�
 | LR → PS/AE/PR/ID (tela) | JPEG 2400 px sRGB, **sem nitidez** | `lr_export_photos` (coleção) para `01_fotos/` |
 | LR → impresso | TIFF/JPEG 100 no tamanho final a 300 ppi | idem |
 | PS → AE | **PSD em camadas** nomeadas | `ae_manage_project` import `compCroppedLayers` (comp com as posições) |
-| PS → ID | PSD vinculado | `id_place_file` (fit proportionally) |
-| PS → PR | JPG/PNG exportado | `pr_import_media` |
+| PS → ID | **PSD vinculado** (nunca a exportação PNG/JPG dele) | `id_place_file` (fit proportionally) |
+| PS → PR | **PSD** (o mesmo que foi editado; entra mesclado e atualiza quando o PSD muda) | `pr_import_media` |
 | AI → PS | PNG transparente da prancheta | `ai_export_assets` png → inserir como camada |
 | AI → AE | .ai ou PNG | importar; ligar rasterização contínua se escalar |
 | AI → ID | **.ai vinculado** | `id_place_file` |
@@ -34,6 +34,16 @@ InDesign (impressos, pranchas) ← fotos, PSD, AI vinculados ──────�
 | PR → entrega | MP4 H.264 | Media Encoder (`video-cor-e-export`) |
 
 `jradb_bridge_transfer` faz PS→AE numa chamada (exporta e importa).
+
+## Regra do PSD mestre (24/11/2026)
+
+Toda imagem que passou por ajuste no Photoshop (recorte de fundo, retoque, cor, composição) é **salva em PSD**, e
+**esse PSD** é o arquivo usado no Illustrator, InDesign, After e Premiere — vinculado, não uma exportação PNG/JPG.
+Assim, uma alteração feita à mão depois no PSD chega a todas as peças (atualizar vínculos no ID/AI, recarregar
+no AE; o Premiere atualiza sozinho). PNG/JPG só para a entrega final (web, rede social, cliente).
+As ferramentas que colocam ou importam imagem (`id_place_file`, receitas do InDesign, `pr_import_media`,
+`ae_manage_project` import, `ai_recipe_pop_out`) trocam sozinhas uma imagem pelo PSD de mesmo nome na mesma pasta
+e avisam ("PSD first"); desligue com `JRADB_MCP_PREFER_PSD=off` só se a pessoa pedir.
 
 ## 3. Vínculo, não cópia
 
@@ -62,6 +72,7 @@ contato e entrega.
 ```
 [ ] Cada passagem no formato da tabela
 [ ] Impressos com PSD/AI vinculados; vínculos atualizados
+[ ] Imagem ajustada no Photoshop entra como o PSD (não PNG/JPG) no AI, ID, AE e PR
 [ ] Comps do AE no Premiere por Dynamic Link (ou render existente)
 [ ] Uma peça alterada → todas as dependentes atualizadas
 ```

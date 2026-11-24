@@ -11,7 +11,7 @@ function fakeRelease(dir: string, version: string): void {
   fs.mkdirSync(dir, { recursive: true });
   writeZip(path.join(dir, `jr-adb-mcp-bridge-${version}.mcpb`), [{ name: "dist/index.js", data: Buffer.from("x") }]);
   for (const f of [
-    "jr-adb-mcp-bridge-photoshop-uxp-1.4.17.ccx",
+    "jr-adb-mcp-bridge-photoshop-uxp-1.4.18.ccx",
     "jr-adb-mcp-bridge-premiere-uxp-1.4.2.ccx",
     "jr-adb-mcp-bridge-indesign-uxp-1.0.7.ccx",
     "jr-adb-mcp-bridge-bridges-kit-1.4.9.zip",
@@ -51,7 +51,7 @@ describe("complete download (one zip with every installer)", () => {
     for (const f of [
       "INSTALL.txt",
       "1-server/jr-adb-mcp-bridge-9.9.9.mcpb",
-      "2-plugins/jr-adb-mcp-bridge-photoshop-uxp-1.4.17.ccx",
+      "2-plugins/jr-adb-mcp-bridge-photoshop-uxp-1.4.18.ccx",
       "2-plugins/jr-adb-mcp-bridge-premiere-uxp-1.4.2.ccx",
       "2-plugins/jr-adb-mcp-bridge-indesign-uxp-1.0.7.ccx",
       "3-bridges-kit/INSTALL-BRIDGES.bat",

@@ -45,11 +45,14 @@ Leia só as skills que o pedido toca: `jradb_get_skill({ name })`.
    (`jradb_find_skills`), não reaproveite a lista do pedido anterior. O servidor cobra isso: ferramenta de um app
    que nenhuma skill consultada cobre (pedido de foto que vira vídeo) ou depois de 60 min parado responde
    `SKILLS_REQUIRED` de novo.
-10. **Arquivo organizado (obrigatório em PS, AI e ID):** o que pertence junto pelo sentido vai num grupo
+10. **PSD mestre:** imagem ajustada no Photoshop (recorte, retoque, cor) é salva em PSD, e é esse PSD que entra
+   vinculado no Illustrator, InDesign, After e Premiere — nunca uma exportação PNG/JPG dele. PNG/JPG só na entrega
+   final. Detalhes em `pipeline-entre-apps`.
+11. **Arquivo organizado (obrigatório em PS, AI e ID):** o que pertence junto pelo sentido vai num grupo
    com nome (ícone + texto, texto sobre shape, listas, cards); objeto sozinho fica solto. No After,
    pré-comp por cena, nulo pai e rótulos; no Premiere, bins e trilhas por função. Skill
    `craft-organizacao-camadas`; ferramentas `ps_organize_layers`, `ai_organize_objects`, `id_organize_objects`.
-11. **Briefing depois dos assets:** primeiro analise o material (fotos, vídeos, logo, guia de marca);
+12. **Briefing depois dos assets:** primeiro analise o material (fotos, vídeos, logo, guia de marca);
    só então pergunte se a pessoa quer **responder um briefing curto** (as perguntas que a análise
    levantou, de `plan-briefing`) ou se prefere que você **faça como julgar melhor**. No segundo caso,
    escreva as suposições em `00_briefing/` e siga. Não pergunte o que os assets já respondem.

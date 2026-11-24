@@ -495,7 +495,7 @@ Recipe: 'out of bounds' / pop-out portrait built with clipping masks in the OPEN
 | `imageName` | string |  | Name of an image already in the document (already without background). |
 | `cutout` | `auto` · `yes` · `no` |  | auto: Photoshop removes the background unless the file is a PNG/PSD/WebP/TIFF with transparency expected; yes: always; no: place the file as it is. |
 | `method` | `removeBackground` · `selectSubject` |  |  |
-| `cutoutPath` | string |  | Where Photoshop writes the transparent PNG (default: <photo>_cutout.png next to the photo). |
+| `cutoutPath` | string |  | Where Photoshop writes the cut-out: default <photo>_recorte.psd next to the photo (editable mask, linked by Illustrator); a .png path writes a PNG instead. |
 | `keepBackground` | boolean |  | Show the original photo, background included, inside the shape. |
 | `shape` | `circle` · `ellipse` · `rectangle` · `roundedRectangle` |  | Default circle. |
 | `shapeColor` | string |  | '#RRGGBB' fill of the shape (default #C8783C). |

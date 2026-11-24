@@ -2941,7 +2941,7 @@ function __psDispatch(action, params, _options) {
       var outB = __psRecipeWrite(DB, params, warnB, !params.background);
       var nameB = String(DB.name);
       var sizeB = [DB.width.as("px"), DB.height.as("px")];
-      if (params.closeAfter === true && outB.file) {
+      if (params.closeAfter === true && (outB.file || outB.psd)) {
         DB.close(SaveOptions.DONOTSAVECHANGES);
         return {
           document: null,

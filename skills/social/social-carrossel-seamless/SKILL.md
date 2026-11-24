@@ -62,8 +62,10 @@ borda externa do card 1 (esquerda) e do último (direita) fica calma, sem elemen
 3. `ps_recipe_carousel_split` `{ outputFolder, prefix, format: "png" }` — o script interno: confere a
    largura (múltiplo exato de 1080), procura texto/logo nas emendas (`seamIssues`; nomes com
    logo/marca/brand contam como logo), duplica o documento, achata, corta card a card em pixel inteiro e
-   exporta `<prefixo>_01.png …` sem mexer no PSD de trabalho. Com problema nas emendas ele avisa; corrija
-   e rode de novo (`allowTextOnSeams: true` só se a pessoa quiser assim).
+   exporta `<prefixo>_01.png …` sem mexer no PSD de trabalho. Texto ou logo **cruzando** uma emenda: a
+   receita **não exporta nada** e diz qual camada mover; mova para dentro de um card e rode de novo
+   (`allowTextOnSeams: true` só se a pessoa quiser assim). Encostar na margem de 80 px só gera aviso
+   (`seamIssues`). Testado ao vivo em 24/11/2026.
 4. **Nunca use a ferramenta Fatia (Slice) nem fatias do Salvar para Web:** têm limite de largura (8192 px) e
    não servem para carrossel longo. O corte é sempre duplicar → achatar → recortar cada card → exportar,
    como faz `ps_recipe_carousel_split`.

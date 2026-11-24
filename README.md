@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="#download"><img src="docs/assets/banner.svg" alt="Run your creative apps from a chat: 227 tools, 6 apps, 91 skills, 387 tests" width="100%"></a>
+  <a href="#download"><img src="docs/assets/banner.svg" alt="Run your creative apps from a chat: 232 tools, 6 apps, 91 skills, 392 tests" width="100%"></a>
 </p>
 
 # JuniorRocha MCP for Adobe Creative Cloud
@@ -81,7 +81,7 @@ See [Install from source](#install-from-source).
 - **Skills first.** The assistant looks up the skills a request needs, tells you which ones it will follow and
   asks once before it starts. Tools that create or change work stay locked until it has. See
   [Skills first](#skills-first).
-- **Tested.** 387 automated tests run on every setup, including a simulated app and the Lightroom plug-in.
+- **Tested.** 392 automated tests run on every setup, including a simulated app and the Lightroom plug-in.
 
 ## Some examples of what you can ask
 
@@ -210,15 +210,15 @@ desk, and it is faster to correct a piece than to rebuild it in twelve sizes.
 
 | Mode | What the client sees | When to use |
 |---|---|---|
-| `code` (default) | 7 tools: `jradb_get_status`, `jradb_code`, `jradb_api`, `jradb_find_skills`, `jradb_get_skill`, `jradb_launch_app`, `jradb_usage` | Everyday use. `jradb_code` runs a short script that can call any of the 227 tools and return only what matters. |
-| `full` | All 227 tools | Clients without good scripting, or when you want each call visible and approved one by one. |
+| `code` (default) | 7 tools: `jradb_get_status`, `jradb_code`, `jradb_api`, `jradb_find_skills`, `jradb_get_skill`, `jradb_launch_app`, `jradb_usage` | Everyday use. `jradb_code` runs a short script that can call any of the 232 tools and return only what matters. |
+| `full` | All 232 tools | Clients without good scripting, or when you want each call visible and approved one by one. |
 
 Switch with `--tools full` or `JRADB_MCP_TOOLS=full`. In the Claude Desktop extension it is the *tool mode*
 setting.
 
 ## On-demand loading
 
-A server with 227 tools and 91 skills would normally fill the conversation before any work starts. This one
+A server with 232 tools and 91 skills would normally fill the conversation before any work starts. This one
 loads only what the job in front of it needs, for commands and for skills alike.
 
 <p align="center">
@@ -588,7 +588,7 @@ previews returned by the tools, follows that client's own policy.
 
 | Page | What is in it |
 |---|---|
-| [`docs/tools/`](docs/tools/README.md) | All 227 tools with parameters, one page per app |
+| [`docs/tools/`](docs/tools/README.md) | All 232 tools with parameters, one page per app |
 | [`docs/SKILLS.md`](docs/SKILLS.md) | The 91 skills and the purpose of each |
 | [`docs/MACOS.md`](docs/MACOS.md) | macOS installation, what was validated and what was not |
 | [`docs/KNOWN-ISSUES.md`](docs/KNOWN-ISSUES.md) | What is not available, and open items |

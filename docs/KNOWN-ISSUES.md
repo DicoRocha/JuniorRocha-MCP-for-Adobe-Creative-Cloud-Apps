@@ -1,6 +1,6 @@
 # Known issues and open items
 
-Last reviewed on 23 November 2026, version 1.11.0. Items are grouped by where they show up.
+Last reviewed on 23 November 2026, version 1.12.0. Items are grouped by where they show up.
 
 ## Not available through the server
 
@@ -28,7 +28,7 @@ Last reviewed on 23 November 2026, version 1.11.0. Items are grouped by where th
 | Text creation in Photoshop and Illustrator | With the World-Ready text engine as the app preference, new point text is laid out to the left of the anchor. The tools do not force the composer or the alignment yet |
 | Hub port | Fixed in the panels (31001 since 1.9.0; it was 3001, a port many development servers use). If another program holds it, no bridge connects |
 
-## New and fixed in 1.11.0 (23 November 2026), to confirm live
+## New and fixed in 1.11.0 and 1.12.0 (23 November 2026), to confirm live
 
 | Tool | Was | Now |
 |---|---|---|

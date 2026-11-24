@@ -60,6 +60,8 @@ recortar, não para organizar.
   Não pré-componha o que precisa ser animado por fora (perde o acesso rápido às chaves).
 - Ícone + texto que andam juntos: **nulo pai** `CTRL Item 1` (as chaves ficam no nulo).
 - Rótulo de cor por função (texto, forma, controle, áudio) e nomes claros (`Título`, `CTRL Cena 2`).
+- **Menos camadas:** fill e stroke da mesma forma numa camada só; formas que andam juntas como grupos dentro de
+  uma shape layer. Camada nova só quando precisa de efeito, matte, pai ou 3D próprios.
 - Projeto em pastas: `01 Comps`, `02 Pré-comps`, `03 Mídia`, `04 Áudio`, `05 Sólidos`.
 
 **Premiere:** organização é de bins e trilhas:

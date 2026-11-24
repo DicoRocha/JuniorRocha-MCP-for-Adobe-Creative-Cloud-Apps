@@ -33,7 +33,7 @@ Compositions, layers, keyframes, easing, effects, text animators, transitions an
 | [`ae_create_transition`](#ae_create_transition) | Recipe: transition kit in one call — scene A → scene B (two placeholder precomps to replace) with one move in the brand colours: wipe (accent band crosses the frame), circle… |
 | [`ae_get_layers`](#ae_get_layers) | List all layers in an After Effects composition (1-based index, name, type, timing, 3D status, parent, effect count). |
 | [`ae_create_layer`](#ae_create_layer) | Create a new Text, Solid, Adjustment, Null, Camera, Light, or empty Shape layer in an After Effects composition. |
-| [`ae_create_shape_layer`](#ae_create_shape_layer) | Create a parametric or custom Bezier vector Shape Layer in After Effects with Fill, Stroke, and optional Trim Paths. |
+| [`ae_create_shape_layer`](#ae_create_shape_layer) | Create a parametric or custom Bezier vector Shape Layer in After Effects. |
 | [`ae_modify_layer`](#ae_modify_layer) | Update layer transform (position, scale, rotation, opacity, anchorPoint), timing (inPoint, outPoint, startTime, stretch), parenting, 3D state, motionBlur, or duplicate/delete a… |
 | [`ae_get_property_tree`](#ae_get_property_tree) | Universal Property Navigator: Recursively inspect all PropertyGroups and Properties on an After Effects layer (Transform, Effects, Masks, Vector Contents, Text Animators,… |
 | [`ae_set_property`](#ae_set_property) | Set the static value of any property or deep sub-property (effect parameter, shape transform, mask feather, text property, 3D material) by its propertyPath. |
@@ -530,7 +530,7 @@ Create a new Text, Solid, Adjustment, Null, Camera, Light, or empty Shape layer 
 
 ## `ae_create_shape_layer`
 
-Create a parametric or custom Bezier vector Shape Layer in After Effects with Fill, Stroke, and optional Trim Paths.
+Create a parametric or custom Bezier vector Shape Layer in After Effects. Fill and stroke go in the SAME layer, each with its own colour, opacity and blend mode (never one layer for the fill and another for the outline); optional Trim Paths on the outline only.
 
 | Parameter | Type | Required | Description |
 |---|---|:---:|---|
@@ -552,6 +552,13 @@ Create a parametric or custom Bezier vector Shape Layer in After Effects with Fi
 | `fillOpacity` | number |  |  |
 | `strokeColor` | number[] |  | Normalized RGB array [r, g, b] where each channel is between 0.0 and 1.0. |
 | `strokeWidth` | number |  |  |
+| `strokeOpacity` | number |  |  |
+| `fillBlendMode` | `normal` · `darken` · `multiply` · `colorBurn` · `linearBurn` · `darkerColor` · `lighten` · `screen` · `colorDodge` · `linearDodge` · `lighterColor` · `overlay` · `softLight` · `hardLight` · `linearLight` · `vividLight` · `pinLight` · `hardMix` · `difference` · `exclusion` · `subtract` · `divide` · `hue` · `saturation` · `color` · `luminosity` |  |  |
+| `strokeBlendMode` | `normal` · `darken` · `multiply` · `colorBurn` · `linearBurn` · `darkerColor` · `lighten` · `screen` · `colorDodge` · `linearDodge` · `lighterColor` · `overlay` · `softLight` · `hardLight` · `linearLight` · `vividLight` · `pinLight` · `hardMix` · `difference` · `exclusion` · `subtract` · `divide` · `hue` · `saturation` · `color` · `luminosity` |  |  |
+| `lineCap` | integer |  | 1 butt, 2 round, 3 projecting. |
+| `lineJoin` | integer |  | 1 miter, 2 round, 3 bevel. |
+| `paintOrder` | `strokeOverFill` · `fillOverStroke` |  | strokeOverFill (default) shows the whole stroke width; fillOverStroke hides its inner half. Default: `"strokeOverFill"`. |
+| `trimTarget` | `stroke` · `all` |  | With fill + stroke + trimPaths: 'stroke' (default) draws on only the outline (its own group in the same layer); 'all' trims the fill too. Default: `"stroke"`. |
 | `trimPaths` | object |  |  |
 | `position` | number[] |  |  |
 

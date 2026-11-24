@@ -961,6 +961,49 @@ function __mcpDispatch(action, params, _options) {
     };
   }
 
+  if (action === "ae.shapes.redundant") {
+    // Pairs of shape layers that draw the same shape, one with only a fill and one with only a stroke: they
+    // should be one layer with both paints (ae_create_shape_layer does that).
+    var compR = __aeFindComp(params.compName, params.compIndex);
+    var sigs = [];
+    var paintsOf = function (grp, acc) {
+      for (var q = 1; q <= grp.numProperties; q++) {
+        var pr = grp.property(q);
+        var mn = pr.matchName;
+        if (mn === "ADBE Vector Graphic - Fill") acc.fill++;
+        else if (mn === "ADBE Vector Graphic - Stroke") acc.stroke++;
+        else if (mn === "ADBE Vector Shape - Rect" || mn === "ADBE Vector Shape - Ellipse" || mn === "ADBE Vector Shape - Star" || mn === "ADBE Vector Shape - Group") {
+          acc.paths++;
+          var vals = [mn];
+          for (var r = 1; r <= pr.numProperties; r++) {
+            try {
+              var v = pr.property(r).value;
+              vals.push(v && v.vertices ? String(v.vertices) : String(v));
+            } catch (_eV) {}
+          }
+          acc.shape = vals.join("|");
+        } else if (mn === "ADBE Vector Group") paintsOf(pr.property("ADBE Vectors Group"), acc);
+      }
+    };
+    for (var li = 1; li <= compR.numLayers; li++) {
+      var L = compR.layer(li);
+      if (!(L instanceof ShapeLayer)) continue;
+      var acc = { fill: 0, stroke: 0, paths: 0, shape: "" };
+      paintsOf(L.property("ADBE Root Vectors Group"), acc);
+      if (acc.paths !== 1 || acc.fill + acc.stroke !== 1) continue;
+      var t = L.property("ADBE Transform Group");
+      var key = [acc.shape, String(t.property("ADBE Position").value), String(t.property("ADBE Scale").value), String(t.property("ADBE Rotate Z").value), String(t.property("ADBE Anchor Point").value), L.parent ? L.parent.index : 0].join("#");
+      sigs.push({ index: li, name: L.name, key: key, paint: acc.fill ? "fill" : "stroke" });
+    }
+    var pairs = [];
+    for (var a1 = 0; a1 < sigs.length; a1++) {
+      for (var a2 = a1 + 1; a2 < sigs.length; a2++) {
+        if (sigs[a1].key === sigs[a2].key && sigs[a1].paint !== sigs[a2].paint) pairs.push([sigs[a1].name, sigs[a2].name]);
+      }
+    }
+    return { compName: compR.name, pairs: pairs };
+  }
+
   if (action === "ae.layer.createShape") {
     var compS = __aeFindComp(params.compName, params.compIndex);
     var shapeLayer = compS.layers.addShape();
@@ -993,25 +1036,68 @@ function __mcpDispatch(action, params, _options) {
       pathGroup.property("ADBE Vector Shape").setValue(myShape);
     }
 
-    if (params.fillColor) {
-      var fill = vectors.addProperty("ADBE Vector Graphic - Fill");
-      fill.property("ADBE Vector Fill Color").setValue(params.fillColor);
-      if (typeof params.fillOpacity === "number") {
-        fill.property("ADBE Vector Fill Opacity").setValue(params.fillOpacity);
+    // Fill and stroke live in ONE shape layer (23/11/2026: a card with fill + outline was built as two layers).
+    // Contents render top-down: the stroke goes above the fill unless paintOrder is "fillOverStroke", so the
+    // whole stroke width shows. Each paint has its own colour, opacity and blend mode.
+    var hasFill = !!params.fillColor;
+    var hasStroke = !!(params.strokeColor || params.strokeWidth);
+    var trimStrokeOnly = !!(params.trimPaths && hasFill && hasStroke && params.trimTarget !== "all");
+    var blendIndex = function (name) {
+      var order = ["normal", "darken", "multiply", "colorBurn", "linearBurn", "darkerColor", "lighten", "screen", "colorDodge", "linearDodge", "lighterColor", "overlay", "softLight", "hardLight", "linearLight", "vividLight", "pinLight", "hardMix", "difference", "exclusion", "subtract", "divide", "hue", "saturation", "color", "luminosity"];
+      for (var b = 0; b < order.length; b++) if (order[b] === name) return b + 1;
+      return 1;
+    };
+    var addStroke = function (into) {
+      var st = into.addProperty("ADBE Vector Graphic - Stroke");
+      if (params.strokeColor) st.property("ADBE Vector Stroke Color").setValue(params.strokeColor);
+      if (typeof params.strokeWidth === "number") st.property("ADBE Vector Stroke Width").setValue(params.strokeWidth);
+      if (typeof params.strokeOpacity === "number") st.property("ADBE Vector Stroke Opacity").setValue(params.strokeOpacity);
+      if (params.strokeBlendMode) { try { st.property("ADBE Vector Blend Mode").setValue(blendIndex(params.strokeBlendMode)); } catch (_eSb) {} }
+      if (typeof params.lineCap === "number") st.property("ADBE Vector Stroke Line Cap").setValue(params.lineCap);
+      if (typeof params.lineJoin === "number") st.property("ADBE Vector Stroke Line Join").setValue(params.lineJoin);
+      return st;
+    };
+    var addFill = function (into) {
+      var fl = into.addProperty("ADBE Vector Graphic - Fill");
+      fl.property("ADBE Vector Fill Color").setValue(params.fillColor);
+      if (typeof params.fillOpacity === "number") fl.property("ADBE Vector Fill Opacity").setValue(params.fillOpacity);
+      if (params.fillBlendMode) { try { fl.property("ADBE Vector Blend Mode").setValue(blendIndex(params.fillBlendMode)); } catch (_eFb) {} }
+      return fl;
+    };
+    var addTrim = function (into) {
+      var tm = into.addProperty("ADBE Vector Filter - Trim");
+      if (typeof params.trimPaths.start === "number") tm.property("ADBE Vector Trim Start").setValue(params.trimPaths.start);
+      if (typeof params.trimPaths.end === "number") tm.property("ADBE Vector Trim End").setValue(params.trimPaths.end);
+      if (typeof params.trimPaths.offset === "number") tm.property("ADBE Vector Trim Offset").setValue(params.trimPaths.offset);
+      return tm;
+    };
+    if (trimStrokeOnly) {
+      // Trim Paths trims every path above it in its group, fill included: the outline gets its own group in the
+      // same layer, with a copy of the path, so only the line draws on and the fill stays whole.
+      var src = vectors.property(1);
+      var srcMatch = src.matchName;
+      var srcValues = [];
+      for (var pi = 1; pi <= src.numProperties; pi++) {
+        try { srcValues.push([src.property(pi).matchName, src.property(pi).value]); } catch (_eRd) {}
       }
-    }
-
-    if (params.strokeColor || params.strokeWidth) {
-      var stroke = vectors.addProperty("ADBE Vector Graphic - Stroke");
-      if (params.strokeColor) stroke.property("ADBE Vector Stroke Color").setValue(params.strokeColor);
-      if (typeof params.strokeWidth === "number") stroke.property("ADBE Vector Stroke Width").setValue(params.strokeWidth);
-    }
-
-    if (params.trimPaths) {
-      var trim = vectors.addProperty("ADBE Vector Filter - Trim");
-      if (typeof params.trimPaths.start === "number") trim.property("ADBE Vector Trim Start").setValue(params.trimPaths.start);
-      if (typeof params.trimPaths.end === "number") trim.property("ADBE Vector Trim End").setValue(params.trimPaths.end);
-      if (typeof params.trimPaths.offset === "number") trim.property("ADBE Vector Trim Offset").setValue(params.trimPaths.offset);
+      addFill(vectors);
+      var outline = rootVectors.addProperty("ADBE Vector Group");
+      outline.name = "Contorno";
+      var ov = outline.property("ADBE Vectors Group");
+      var copyPath = ov.addProperty(srcMatch);
+      for (var pv = 0; pv < srcValues.length; pv++) {
+        try { copyPath.property(srcValues[pv][0]).setValue(srcValues[pv][1]); } catch (_eCp) {}
+      }
+      addTrim(ov);
+      addStroke(ov);
+      // the outline above the fill (moveTo invalidates the references taken before it)
+      rootVectors.property(rootVectors.numProperties).moveTo(1);
+    } else {
+      var strokeOnTop = params.paintOrder !== "fillOverStroke";
+      if (strokeOnTop && hasStroke) addStroke(vectors);
+      if (hasFill) addFill(vectors);
+      if (!strokeOnTop && hasStroke) addStroke(vectors);
+      if (params.trimPaths) addTrim(vectors);
     }
 
     if (params.position) {

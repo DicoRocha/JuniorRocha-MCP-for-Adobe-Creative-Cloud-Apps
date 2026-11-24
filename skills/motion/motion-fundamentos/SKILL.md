@@ -88,6 +88,12 @@ Texto nasce alinhado à esquerda no ponto: para centralizar, script livre curto
 - Script longo que edita várias comps **e** salva no fim (travou o AE em 13/11): um passo por chamada; salvar à parte.
 - Pedir prévia pesada sem salvar.
 - Declarar pronto sem olhar quadros.
+- **Uma camada para preenchimento e outra para contorno da mesma forma.** Uma shape layer tem fill e stroke
+  juntos, cada um com cor, opacidade e modo de mesclagem próprios (`ae_create_shape_layer` com `fillColor` e
+  `strokeColor`). Contorno que se desenha (Trim Paths) fica num grupo próprio **na mesma camada**
+  (`trimTarget: "stroke"`). Várias formas que andam juntas (ícone de 3 partes) = vários grupos numa camada só.
+  Camada separada só quando precisa de algo que é da camada: efeito ou estilo só nela, matte, pai ou 3D diferente,
+  desfoque de movimento diferente. `ae_audit_motion` avisa `SPLIT_FILL_STROKE`.
 
 ## 8. Portão
 

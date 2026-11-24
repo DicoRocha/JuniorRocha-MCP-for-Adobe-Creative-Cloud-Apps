@@ -41,6 +41,7 @@ Last reviewed on 23 November 2026, version 1.11.0. Items are grouped by where th
 | `ps_organize_layers`, `ai_organize_objects`, `id_organize_objects` (new) | Files came out as flat stacks of layers | Groups by meaning (text on a shape, icon + text, lists, rows of buttons), plan first, stacking-safe; `ps_audit_document` warns `UNGROUPED_RELATED` |
 | `pr_duplicate_sequence` (new) | Copies were made with scripts | Duplicates, renames, moves to a bin and activates |
 | `media_build_captions` | Names were fixed by hand each time | `kitPath`: the kit's `termos`, `glossario` and client name fix the spelling |
+| `ae_create_shape_layer` | The stroke was added under the fill (half its width hidden); trimming a filled outline trimmed the fill too | Stroke above the fill by default (`paintOrder`), stroke opacity and blend modes per paint, `trimTarget: "stroke"` draws on only the outline in the same layer; `ae_audit_motion` warns `SPLIT_FILL_STROKE` for a fill layer + outline layer of the same shape (blend-mode indices to confirm live) |
 | `jradb_get_status`, panels | No word about new versions | A newer GitHub release is reported once a day at most, silent offline, never installed automatically (`JRADB_MCP_UPDATE_CHECK=off`) |
 
 Still open: `ae_manage_project` save that took ~70 s once and reconnected the panel (not reproduced yet).

@@ -26,7 +26,7 @@ Referência: `references/ae-matchnames.md`. Ofício: `motion-fundamentos`.
 | Projeto, importar (PSD como comp) | `ae_manage_project` (import `importAs: "comp"` mantém a tela inteira; `settings` + `bitsPerChannel: 16`) |
 | Texto do PSD editável | selecione as camadas → menu "Convert to Editable Text" (`app.findMenuCommandId`, id 3799) |
 | Comp | `ae_create_composition` · `ae_modify_composition` (pré-compor por `precomposeLayerNames` ou índices) · `ae_list_compositions` |
-| Camadas | `ae_create_layer` (text, solid, adjustment, null, camera, light) · `ae_create_shape_layer` (com `trimPaths`) · `ae_get_layers` |
+| Camadas | `ae_create_layer` (text, solid, adjustment, null, camera, light) · `ae_create_shape_layer` (fill **e** stroke na mesma camada, cada um com opacidade e modo de mesclagem; `trimPaths` só no contorno) · `ae_get_layers` |
 | Transformar / tempo / matte / blend | `ae_modify_layer` |
 | Chaves | `ae_set_keyframes` (easing, influence, speed, spatial) |
 | Easing nas chaves que já existem | `ae_set_easing` (easyEase, gentle, smooth, strong, snappy, linear, hold, custom; camadas inteiras ou uma propriedade; `side`, `fromTime`/`toTime`) |

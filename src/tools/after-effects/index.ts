@@ -59,6 +59,12 @@ async function withEffectSuggestions(router: BridgeRouter, err: unknown, wanted:
   }
 }
 
+const BlendModeSchema = z.enum([
+  "normal", "darken", "multiply", "colorBurn", "linearBurn", "darkerColor", "lighten", "screen", "colorDodge", "linearDodge",
+  "lighterColor", "overlay", "softLight", "hardLight", "linearLight", "vividLight", "pinLight", "hardMix", "difference",
+  "exclusion", "subtract", "divide", "hue", "saturation", "color", "luminosity"
+]);
+
 export function registerAfterEffectsTools(server: McpServer, router: BridgeRouter): void {
   server.tool(
     "ae_get_project_info",
@@ -397,6 +403,21 @@ export function registerAfterEffectsTools(server: McpServer, router: BridgeRoute
         const res = await router.dispatch("after-effects", "ae.audit", { compName: params.compName, compIndex: params.compIndex }, { timeoutMs: 60000 });
         const data = res.data as AeAuditData;
         const findings = auditAfterEffects(data, { secondsPerWord: params.secondsPerWord, holdSeconds: params.holdSeconds });
+        // Same shape drawn twice (fill layer + outline layer): one layer with both paints is enough.
+        try {
+          const rr = await router.dispatch("after-effects", "ae.shapes.redundant", { compName: params.compName, compIndex: params.compIndex }, { timeoutMs: 30000 });
+          const pairs = ((rr.data || {}) as { pairs?: string[][] }).pairs ?? [];
+          for (const [a, b] of pairs.slice(0, 10)) {
+            findings.push({
+              severity: "warn",
+              code: "SPLIT_FILL_STROKE",
+              message: `"${a}" and "${b}" draw the same shape, one with the fill and one with the stroke: make it one shape layer with both (ae_create_shape_layer fillColor + strokeColor).`,
+              target: a
+            });
+          }
+        } catch {
+          /* older panel without ae.shapes.redundant */
+        }
         return formatSuccessResponse({ compName: data.compName, ...summarize(findings), findings, layers: data.layers.length });
       } catch (err) {
         return formatErrorResponse(err);
@@ -1016,7 +1037,9 @@ export function registerAfterEffectsTools(server: McpServer, router: BridgeRoute
 
   server.tool(
     "ae_create_shape_layer",
-    "Create a parametric or custom Bezier vector Shape Layer in After Effects with Fill, Stroke, and optional Trim Paths.",
+    "Create a parametric or custom Bezier vector Shape Layer in After Effects. Fill and stroke go in the SAME layer, each " +
+      "with its own colour, opacity and blend mode (never one layer for the fill and another for the outline); optional Trim Paths " +
+      "on the outline only.",
     {
       compName: z.string().optional(),
       compIndex: z.number().int().positive().optional(),
@@ -1036,6 +1059,21 @@ export function registerAfterEffectsTools(server: McpServer, router: BridgeRoute
       fillOpacity: z.number().min(0).max(100).optional(),
       strokeColor: NormalizedColorSchema.optional(),
       strokeWidth: z.number().min(0).optional(),
+      strokeOpacity: z.number().min(0).max(100).optional(),
+      fillBlendMode: BlendModeSchema.optional(),
+      strokeBlendMode: BlendModeSchema.optional(),
+      lineCap: z.number().int().min(1).max(3).optional().describe("1 butt, 2 round, 3 projecting."),
+      lineJoin: z.number().int().min(1).max(3).optional().describe("1 miter, 2 round, 3 bevel."),
+      paintOrder: z
+        .enum(["strokeOverFill", "fillOverStroke"])
+        .optional()
+        .default("strokeOverFill")
+        .describe("strokeOverFill (default) shows the whole stroke width; fillOverStroke hides its inner half."),
+      trimTarget: z
+        .enum(["stroke", "all"])
+        .optional()
+        .default("stroke")
+        .describe("With fill + stroke + trimPaths: 'stroke' (default) draws on only the outline (its own group in the same layer); 'all' trims the fill too."),
       trimPaths: z
         .object({
           start: z.number().min(0).max(100).optional(),

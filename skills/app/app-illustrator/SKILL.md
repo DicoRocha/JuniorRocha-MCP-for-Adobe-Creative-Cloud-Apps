@@ -18,6 +18,7 @@ Referências: `references/bezier-and-menus.md` (círculos, arcos, comandos de me
 | Salvar | `ai_manage_document` save com `filePath` cria a pasta e **nunca abre a janela "Salvar como"**; confere o caminho (`SAVE_PATH_MISMATCH`) |
 | Título de documento novo | `title` em create (via DocumentPreset) |
 | Organização | Camadas por função e grupos por sentido dentro delas; objeto sozinho fica solto. `ai_organize_objects` (plano) → `apply: true`. Skill `craft-organizacao-camadas` |
+| PSD | Sempre **vinculado** (`placedItems`, sem `embed`). Incorporar só se a pessoa pedir ou o destino exigir, e então com camadas achatadas (`ai_recipe_pop_out embed: true` achata sozinho). |
 
 ## 2. Qual ferramenta
 

@@ -236,7 +236,7 @@ export function registerIllustratorRecipe(server: McpServer, router: BridgeRoute
       placeHeight: z.number().positive().optional().describe("Height of the placed image in pt (default 90 % of the artboard)."),
       centerX: z.number().optional().describe("Horizontal centre of the placed image, pt from the artboard's left (default: centred)."),
       top: z.number().optional().describe("Top of the placed image, pt from the artboard's top (default: centred)."),
-      embed: z.boolean().optional().describe("Embed the image (default true); false keeps it linked."),
+      embed: z.boolean().optional().describe("Default false: the image stays linked (a later edit of the PSD updates the layout). true embeds it, with a PSD's layers flattened."),
       groupName: z.string().optional()
     },
     async (params) => {

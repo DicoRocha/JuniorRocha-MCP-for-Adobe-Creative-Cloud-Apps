@@ -1,6 +1,6 @@
 {
   "name": "jr-adb-mcp-bridge",
-  "version": "1.13.4",
+  "version": "1.13.5",
   "description": "Unified local MCP server for Adobe Photoshop, Illustrator, InDesign, Lightroom Classic, After Effects and Premiere Pro: typed tools, recipes, audits, templates, campaign runner and skills (UXP, CEP, ExtendScript, COM)",
   "type": "module",
   "main": "dist/index.js",

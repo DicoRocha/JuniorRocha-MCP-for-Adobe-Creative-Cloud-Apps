@@ -18,6 +18,7 @@ Ofício: `print-fundamentos`, `print-flyer-cartaz`.
 | Salvar | `id_manage_document` save cria a pasta e confere o caminho |
 | Cor | amostra, `"#RRGGBB"`, `[r,g,b]` ou `[c,m,y,k]` (impresso) |
 | Organização | Camadas `Texto`/`Imagens`/`Fundo`; agrupe blocos que andam juntos (card, box com ícone). `id_organize_objects { page }` → `apply: true`. Skill `craft-organizacao-camadas` |
+| PSD | Sempre **vinculado** (`id_place_file` vincula; nunca desvincular/incorporar). Depois de mexer no PSD: `id_links` update. |
 
 ## 2. Qual ferramenta
 

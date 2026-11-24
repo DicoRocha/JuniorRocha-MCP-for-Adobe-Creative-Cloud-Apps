@@ -41,6 +41,9 @@ Toda imagem que passou por ajuste no Photoshop (recorte de fundo, retoque, cor, 
 **esse PSD** é o arquivo usado no Illustrator, InDesign, After e Premiere — vinculado, não uma exportação PNG/JPG.
 Assim, uma alteração feita à mão depois no PSD chega a todas as peças (atualizar vínculos no ID/AI, recarregar
 no AE; o Premiere atualiza sozinho). PNG/JPG só para a entrega final (web, rede social, cliente).
+No **Illustrator e no InDesign o PSD vai sempre vinculado** (link). Se por algum motivo precisar ser incorporado,
+incorpore com as **camadas achatadas** (o `ai_recipe_pop_out` com `embed: true` faz isso sozinho). Preferência:
+sempre vinculado.
 As ferramentas que colocam ou importam imagem (`id_place_file`, receitas do InDesign, `pr_import_media`,
 `ae_manage_project` import, `ai_recipe_pop_out`) trocam sozinhas uma imagem pelo PSD de mesmo nome na mesma pasta
 e avisam ("PSD first"); desligue com `JRADB_MCP_PREFER_PSD=off` só se a pessoa pedir.
@@ -72,7 +75,8 @@ contato e entrega.
 ```
 [ ] Cada passagem no formato da tabela
 [ ] Impressos com PSD/AI vinculados; vínculos atualizados
-[ ] Imagem ajustada no Photoshop entra como o PSD (não PNG/JPG) no AI, ID, AE e PR
+[ ] Imagem ajustada no Photoshop entra como o PSD (não PNG/JPG) no AI, ID, AE e PR — vinculada no AI e no ID
+    (incorporada só se preciso, achatada)
 [ ] Comps do AE no Premiere por Dynamic Link (ou render existente)
 [ ] Uma peça alterada → todas as dependentes atualizadas
 ```

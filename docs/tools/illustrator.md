@@ -510,5 +510,5 @@ Recipe: 'out of bounds' / pop-out portrait built with clipping masks in the OPEN
 | `placeHeight` | number |  | Height of the placed image in pt (default 90 % of the artboard). |
 | `centerX` | number |  | Horizontal centre of the placed image, pt from the artboard's left (default: centred). |
 | `top` | number |  | Top of the placed image, pt from the artboard's top (default: centred). |
-| `embed` | boolean |  | Embed the image (default true); false keeps it linked. |
+| `embed` | boolean |  | Default false: the image stays linked (a later edit of the PSD updates the layout). true embeds it, with a PSD's layers flattened. |
 | `groupName` | string |  |  |

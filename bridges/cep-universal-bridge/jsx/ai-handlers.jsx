@@ -60,6 +60,29 @@ function __aiRestoreDocPath(doc, original) {
   }
 }
 
+/**
+ * A PSD goes into Illustrator linked (author's rule 24/11/2026). When it must be embedded, its layers are flattened:
+ * Photoshop import options are set to "flatten" for the embed and put back after (embedding a layered PSD with
+ * "convert layers to objects" breaks the link to the master and can open the import dialog).
+ */
+function __aiEmbedFlat(placed) {
+  var isPsd = false;
+  try { isPsd = /\.(psd|psb)$/i.test(String(placed.file.name)); } catch (_eF) {}
+  var opts = null, oldPreserve = null;
+  if (isPsd) {
+    try {
+      opts = app.preferences.photoshopFileOptions;
+      oldPreserve = opts.preserveLayers;
+      opts.preserveLayers = false;
+    } catch (_eO) { opts = null; }
+  }
+  try {
+    placed.embed();
+  } finally {
+    if (opts) { try { opts.preserveLayers = oldPreserve; } catch (_eR) {} }
+  }
+}
+
 function __aiRequireDoc() {
   if (!app.documents || app.documents.length === 0 || !app.activeDocument) {
     throw new Error("No active document in Adobe Illustrator.");
@@ -1635,8 +1658,8 @@ function __mcpDispatch(action, params, _options) {
       if (!fP.exists) __mcpFail("NOT_FOUND", "File not found: " + params.filePath);
       var plP = docP.placedItems.add();
       plP.file = fP;
-      if (params.embed !== false) {
-        plP.embed();
+      if (params.embed === true) {
+        __aiEmbedFlat(plP);
         imgP = docP.selection && docP.selection.length ? docP.selection[0] : docP.rasterItems[0];
       } else {
         imgP = plP;
@@ -1697,8 +1720,8 @@ function __mcpDispatch(action, params, _options) {
       if (!fBg.exists) __mcpFail("NOT_FOUND", "File not found: " + params.backgroundFilePath);
       var plBg = docP.placedItems.add();
       plBg.file = fBg;
-      if (params.embed !== false) {
-        plBg.embed();
+      if (params.embed === true) {
+        __aiEmbedFlat(plBg);
         bgP = docP.selection && docP.selection.length ? docP.selection[0] : docP.rasterItems[0];
       } else {
         bgP = plBg;

@@ -67,7 +67,12 @@ describe("seamless carousel plan", () => {
     ]);
     expect(es.maxRight).toBe(5400);
     expect(es.boxes.map((b) => b.name)).toEqual(["Erro", "Logo"]);
-    const uxp = seamBoxesFromTree([{ name: "T", kind: "text", visible: true, bounds: { left: 1000, top: 0, right: 1200, bottom: 50 } }]);
+    const uxp = seamBoxesFromTree([
+      { name: "Card 01 - textos", kind: "group", visible: true, bounds: {} as never },
+      { name: "T", kind: "text", visible: true, bounds: { left: 1000, top: 0, right: 1200, bottom: 50 } },
+      { name: "Fundo", kind: "pixel", visible: true, bounds: { left: 0, top: 0, right: 4320, bottom: 1440 } }
+    ]);
+    expect(uxp.maxRight).toBe(4320);
     expect(seamIssues(uxp.boxes, { seams: [1080], margin: 80 })[0].problem).toBe("crosses");
   });
 

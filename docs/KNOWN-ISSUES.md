@@ -1,6 +1,6 @@
 # Known issues and open items
 
-Last reviewed on 24 November 2026, version 1.14.3. Items are grouped by where they show up.
+Last reviewed on 24 November 2026, version 1.14.4. Items are grouped by where they show up.
 
 ## Not available through the server
 

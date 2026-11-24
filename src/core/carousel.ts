@@ -152,8 +152,9 @@ interface TreeLayer {
 
 function boxOf(b: TreeLayer["bounds"]): [number, number, number, number] | null {
   if (!b) return null;
-  if (Array.isArray(b)) return b.length >= 4 ? [Number(b[0]), Number(b[1]), Number(b[2]), Number(b[3])] : null;
-  return [Number(b.left), Number(b.top), Number(b.right), Number(b.bottom)];
+  const box: number[] = Array.isArray(b) ? b.slice(0, 4).map(Number) : [Number(b.left), Number(b.top), Number(b.right), Number(b.bottom)];
+  // Empty groups come back with bounds {} (UXP, tested 24/11/2026): no box.
+  return box.length === 4 && box.every((v) => Number.isFinite(v)) ? (box as [number, number, number, number]) : null;
 }
 
 /**

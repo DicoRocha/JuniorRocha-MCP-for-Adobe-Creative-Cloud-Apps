@@ -587,6 +587,56 @@ function __mcpDispatch(action, params, _options) {
     return outImp;
   }
 
+  if (action === "pr.organize") {
+    // Bins by type for the items at the root of the project (existing bins are left as they are).
+    var projO = __prRequireProject();
+    var applyO = params.apply === true;
+    var BINS = { seq: "01 Sequencias", video: "02 Video", audio: "03 Audio", graphics: "04 Graficos", images: "05 Imagens" };
+    var moves = [];
+    var binsO = {};
+    var getBin = function (name) {
+      if (binsO[name]) return binsO[name];
+      for (var b = 0; b < projO.rootItem.children.numItems; b++) {
+        var ch = projO.rootItem.children[b];
+        if (ch.type === ProjectItemType.BIN && ch.name === name) return (binsO[name] = ch);
+      }
+      return (binsO[name] = projO.rootItem.createBin(name));
+    };
+    var kindOf = function (it) {
+      try {
+        if (it.isSequence && it.isSequence()) return "seq";
+      } catch (_eSq) {}
+      var p = "";
+      try { p = String(it.getMediaPath() || ""); } catch (_eP) {}
+      if (/\.(wav|mp3|aif|aiff|m4a|aac|flac|ogg)$/i.test(p)) return "audio";
+      if (/\.(png|jpe?g|tiff?|webp|bmp|gif|heic)$/i.test(p)) return "images";
+      if (/\.(psd|ai|eps|svg|aep|mogrt|prtl)$/i.test(p) || (it.isMGT && it.isMGT())) return "graphics";
+      if (p) return "video";
+      return null;
+    };
+    var roots = [];
+    for (var r = 0; r < projO.rootItem.children.numItems; r++) {
+      var ri = projO.rootItem.children[r];
+      if (ri.type !== ProjectItemType.BIN) roots.push(ri);
+    }
+    for (var m = 0; m < roots.length; m++) {
+      var k = kindOf(roots[m]);
+      if (!k) continue;
+      moves.push({ item: String(roots[m].name), bin: BINS[k] });
+      if (applyO) roots[m].moveBin(getBin(BINS[k]));
+    }
+    // Tracks: report what each one holds so the names can follow the rule (V1 video, V2 cover, V3 graphics; A1 voice, A2 music).
+    var tracks = [];
+    try {
+      var sq = projO.activeSequence;
+      if (sq) {
+        for (var v = 0; v < sq.videoTracks.numTracks; v++) tracks.push({ track: "V" + (v + 1), name: String(sq.videoTracks[v].name), clips: sq.videoTracks[v].clips.numItems });
+        for (var a = 0; a < sq.audioTracks.numTracks; a++) tracks.push({ track: "A" + (a + 1), name: String(sq.audioTracks[a].name), clips: sq.audioTracks[a].clips.numItems });
+      }
+    } catch (_eTr) {}
+    return { applied: applyO, moves: moves, tracks: tracks };
+  }
+
   if (action === "pr.sequence.duplicate") {
     // Work on a copy, never on the user's sequence (22/11/2026: V4 cuts were made on clones of his sequence).
     var projD = __prRequireProject();

@@ -26,7 +26,7 @@ describe("MCP tool input schemas", () => {
     await Promise.all([runtime.server.connect(serverTransport), client.connect(clientTransport)]);
     try {
       const { tools } = await client.listTools();
-      expect(tools.length).toBe(232);
+      expect(tools.length).toBe(234);
       const hits: string[] = [];
       for (const tool of tools) findTupleSchemas(tool.inputSchema, tool.name, hits);
       expect(hits).toEqual([]);

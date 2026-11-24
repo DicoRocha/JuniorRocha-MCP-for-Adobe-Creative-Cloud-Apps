@@ -174,6 +174,25 @@ export function registerPremiereTools(server: McpServer, router: BridgeRouter): 
   );
 
   server.tool(
+    "pr_organize_project",
+    "Organise a Premiere project: items at the root go into bins by type (01 Sequencias, 02 Video, 03 Audio, 04 " +
+      "Graficos, 05 Imagens; created when missing, existing bins untouched). Also lists the tracks of the active sequence " +
+      "with their clip counts, to check the rule V1 main video, V2 cover, V3 graphics; A1 voice, A2 music, A3 effects. " +
+      "apply: false (default) only reports.",
+    { apply: z.boolean().optional().default(false) },
+    async (params) => {
+      try {
+        const res = await router.dispatch("premiere", "pr.organize", params, { undoGroup: "MCP: Organize project", timeoutMs: 60000 });
+        const d = (res.data || {}) as Record<string, unknown>;
+        if (!params.apply) d.next = "Call again with apply: true to move the items into the bins.";
+        return formatSuccessResponse(d);
+      } catch (err) {
+        return formatErrorResponse(err);
+      }
+    }
+  );
+
+  server.tool(
     "pr_duplicate_sequence",
     "Duplicate a sequence (default: the active one) to work on a copy and leave the user's edit untouched; renames it, " +
       "optionally moves it to a bin (created if missing) and makes it active. Effects, Color Mode and nests come along.",

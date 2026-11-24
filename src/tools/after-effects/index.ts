@@ -1036,6 +1036,38 @@ export function registerAfterEffectsTools(server: McpServer, router: BridgeRoute
   );
 
   server.tool(
+    "ae_organize_project",
+    "Organise an After Effects project without changing the picture: root items into folders by type (01 Comps, " +
+      "02 Pre-comps, 03 Midia, 04 Audio, 05 Solidos; existing folders untouched), label colours by layer role (text " +
+      "yellow, shape blue, footage aqua, pre-comp sandstone, null/control purple, adjustment lavender, audio sea foam, " +
+      "camera/light orange) and names for layers left with default names (null -> CTRL <child>, shape -> its group name, " +
+      "pre-comp -> its comp). Also lists fill/outline pairs that should be one shape layer. apply: false (default) only reports.",
+    {
+      compName: z.string().optional().describe("Only this comp for labels and names (default: every comp)."),
+      compIndex: z.number().int().positive().optional(),
+      apply: z.boolean().optional().default(false)
+    },
+    async (params) => {
+      try {
+        const res = await router.dispatch("after-effects", "ae.organize", params, { undoGroup: "MCP: Organize project", timeoutMs: 60000 });
+        const d = (res.data || {}) as Record<string, unknown>;
+        if (params.compName || params.compIndex) {
+          try {
+            const rr = await router.dispatch("after-effects", "ae.shapes.redundant", { compName: params.compName, compIndex: params.compIndex }, { timeoutMs: 30000 });
+            d.splitFillStroke = ((rr.data || {}) as { pairs?: unknown[] }).pairs ?? [];
+          } catch {
+            /* older panel */
+          }
+        }
+        if (!params.apply) d.next = "Call again with apply: true to move, label and rename.";
+        return formatSuccessResponse(d);
+      } catch (err) {
+        return formatErrorResponse(err);
+      }
+    }
+  );
+
+  server.tool(
     "ae_create_shape_layer",
     "Create a parametric or custom Bezier vector Shape Layer in After Effects. Fill and stroke go in the SAME layer, each " +
       "with its own colour, opacity and blend mode (never one layer for the fill and another for the outline); optional Trim Paths " +

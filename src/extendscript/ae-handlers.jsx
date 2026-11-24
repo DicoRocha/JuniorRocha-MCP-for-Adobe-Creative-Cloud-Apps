@@ -961,6 +961,106 @@ function __mcpDispatch(action, params, _options) {
     };
   }
 
+  if (action === "ae.organize") {
+    // Organisation without changing the picture: project folders by type, label colours by layer role, layer
+    // names that say what they are. apply false = only the plan.
+    var apply = params.apply === true;
+    var proj = app.project;
+    var plan = { folders: [], labels: [], renames: [] };
+    var FOLD = { comps: "01 Comps", pre: "02 Pre-comps", media: "03 Midia", audio: "04 Audio", solids: "05 Solidos" };
+    var usedAsLayer = {};
+    var i, j;
+    for (i = 1; i <= proj.numItems; i++) {
+      var it = proj.item(i);
+      if (!(it instanceof CompItem)) continue;
+      for (j = 1; j <= it.numLayers; j++) {
+        try {
+          var src = it.layer(j).source;
+          if (src && src instanceof CompItem) usedAsLayer[src.id] = true;
+        } catch (_eSrc) {}
+      }
+    }
+    var folderOf = function (it2) {
+      if (it2 instanceof CompItem) return usedAsLayer[it2.id] ? FOLD.pre : FOLD.comps;
+      if (it2 instanceof FootageItem) {
+        try {
+          if (it2.mainSource instanceof SolidSource) return FOLD.solids;
+        } catch (_eS) {}
+        if (it2.hasAudio && !it2.hasVideo) return FOLD.audio;
+        return FOLD.media;
+      }
+      return null;
+    };
+    var rootItems = [];
+    for (i = 1; i <= proj.numItems; i++) {
+      var ri = proj.item(i);
+      if (ri.parentFolder === proj.rootFolder && !(ri instanceof FolderItem)) rootItems.push(ri);
+    }
+    var folders = {};
+    var getFolder = function (name) {
+      if (folders[name]) return folders[name];
+      for (var f = 1; f <= proj.numItems; f++) {
+        var fi = proj.item(f);
+        if (fi instanceof FolderItem && fi.name === name && fi.parentFolder === proj.rootFolder) return (folders[name] = fi);
+      }
+      return (folders[name] = proj.items.addFolder(name));
+    };
+    for (i = 0; i < rootItems.length; i++) {
+      var fname = folderOf(rootItems[i]);
+      if (!fname) continue;
+      plan.folders.push({ item: rootItems[i].name, folder: fname });
+      if (apply) rootItems[i].parentFolder = getFolder(fname);
+    }
+    // Labels and names inside the comp(s)
+    var LABEL = { text: 2, shape: 8, footage: 3, precomp: 15, control: 10, adjustment: 5, audio: 7, cameraLight: 11 };
+    var DEFAULT_NAME = /^(Shape Layer|Camada de forma|Forma|Null|Nulo|Layer|Camada|Medium Gray|Cinza|Black Solid|Solido preto|Adjustment Layer|Camada de ajuste)\b/i;
+    var comps = [];
+    if (params.compName || params.compIndex) comps.push(__aeFindComp(params.compName, params.compIndex));
+    else for (i = 1; i <= proj.numItems; i++) if (proj.item(i) instanceof CompItem) comps.push(proj.item(i));
+    for (var c = 0; c < comps.length && c < 40; c++) {
+      var comp = comps[c];
+      for (j = 1; j <= comp.numLayers; j++) {
+        var L = comp.layer(j);
+        var role = null;
+        if (L instanceof TextLayer) role = "text";
+        else if (L instanceof ShapeLayer) role = "shape";
+        else if (L instanceof CameraLayer || L instanceof LightLayer) role = "cameraLight";
+        else if (L.nullLayer) role = "control";
+        else if (L.adjustmentLayer) role = "adjustment";
+        else if (L instanceof AVLayer && L.source instanceof CompItem) role = "precomp";
+        else if (L instanceof AVLayer && L.hasAudio && !L.hasVideo) role = "audio";
+        else if (L instanceof AVLayer) role = "footage";
+        if (role && L.label !== LABEL[role]) {
+          plan.labels.push({ comp: comp.name, layer: L.name, role: role, label: LABEL[role] });
+          if (apply) L.label = LABEL[role];
+        }
+        if (DEFAULT_NAME.test(L.name)) {
+          var nn = null;
+          if (role === "control") {
+            for (var k = 1; k <= comp.numLayers; k++) {
+              if (comp.layer(k).parent === L) {
+                nn = "CTRL " + comp.layer(k).name;
+                break;
+              }
+            }
+          } else if (role === "shape") {
+            try {
+              var g1 = L.property("ADBE Root Vectors Group").property(1);
+              if (g1 && !/^(Shape|Group|Grupo|Forma|Retangulo|Rectangle|Elipse|Ellipse)\b/i.test(g1.name)) nn = g1.name;
+            } catch (_eG) {}
+          } else if (role === "precomp") nn = L.source.name;
+          if (nn && nn !== L.name) {
+            plan.renames.push({ comp: comp.name, from: L.name, to: nn });
+            if (apply) L.name = nn;
+          } else {
+            plan.renames.push({ comp: comp.name, from: L.name, to: null, note: "default name: give it a name that says what it is" });
+          }
+        }
+      }
+    }
+    return { applied: apply, folders: plan.folders, labels: plan.labels.length, labelChanges: plan.labels.slice(0, 40), renames: plan.renames.slice(0, 60) };
+  }
+
   if (action === "ae.shapes.redundant") {
     // Pairs of shape layers that draw the same shape, one with only a fill and one with only a stroke: they
     // should be one layer with both paints (ae_create_shape_layer does that).

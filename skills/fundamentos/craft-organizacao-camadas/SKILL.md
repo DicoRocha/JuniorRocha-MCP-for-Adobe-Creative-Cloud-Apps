@@ -18,7 +18,7 @@ pelo sentido forma grupo; um objeto sozinho não.**
 | Ícone + título + descrição embaixo | os três | `Item – Entrega rápida` |
 | Vários itens iguais em coluna (lista) | grupo pai com um grupo por item | `Lista (3 itens)` |
 | Vários botões lado a lado | grupo pai com os rótulos | `Botões (2 botões)` |
-| Card (fundo do card + foto + textos dele) | tudo do card | `Card – Plano Pro` |
+| Card (fundo do card + foto + textos dele) | tudo do card | `Card – Plano Pro` (automático) |
 | Vários cards iguais | grupo pai | `Cards (3)` |
 | Cabeçalho (logo + menu), rodapé (contatos + redes) | por bloco | `Cabeçalho`, `Rodapé` |
 | Logo feito de várias partes (símbolo + nome) | as partes | `Logo` |
@@ -42,7 +42,8 @@ pelo sentido forma grupo; um objeto sozinho não.**
 
 ## 4. Como fazer em cada app
 
-**Photoshop:** `ps_organize_layers { documentName }` mostra o plano (dry-run); confira e rode com
+**Photoshop:** as receitas (`ps_recipe_social_set`, receitas do InDesign) já saem agrupadas. Peça montada
+à mão: `ps_organize_layers { documentName }` mostra o plano (dry-run); confira e rode com
 `apply: true`. Cada grupo é um passo de histórico. Ao **criar** a peça, já crie dentro de grupos
 (`ps_create_layer layerType: "group"` e depois mova as camadas para dentro) em vez de organizar no fim.
 `ps_audit_document` avisa `UNGROUPED_RELATED` quando sobram camadas relacionadas soltas.
@@ -62,10 +63,13 @@ recortar, não para organizar.
 - Rótulo de cor por função (texto, forma, controle, áudio) e nomes claros (`Título`, `CTRL Cena 2`).
 - **Menos camadas:** fill e stroke da mesma forma numa camada só; formas que andam juntas como grupos dentro de
   uma shape layer. Camada nova só quando precisa de efeito, matte, pai ou 3D próprios.
-- Projeto em pastas: `01 Comps`, `02 Pré-comps`, `03 Mídia`, `04 Áudio`, `05 Sólidos`.
+- Projeto em pastas: `01 Comps`, `02 Pre-comps`, `03 Midia`, `04 Audio`, `05 Solidos`.
+- `ae_organize_project` (plano) → `apply: true`: pastas por tipo, rótulos de cor por função, nomes no lugar dos
+  padrões (`CTRL …` para nulos) e lista de pares preenchimento/contorno que deviam ser uma camada.
 
 **Premiere:** organização é de bins e trilhas:
-- Bins: `01 Sequências`, `02 Vídeo`, `03 Áudio`, `04 Gráficos`, `05 Exportações`.
+- Bins: `01 Sequencias`, `02 Video`, `03 Audio`, `04 Graficos`, `05 Imagens` — `pr_organize_project` (plano) →
+  `apply: true` move o que está solto na raiz; bins que já existem ficam como estão.
 - Trilhas com função fixa: V1 vídeo principal, V2 cobertura (B-roll), V3 gráficos e legendas;
   A1 voz, A2 trilha, A3 efeitos. Nomeie as trilhas assim.
 - Sequência com nome do formato e versão (`Reels 9x16 v2`).

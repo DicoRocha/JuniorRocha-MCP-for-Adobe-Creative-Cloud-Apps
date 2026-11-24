@@ -3,6 +3,7 @@
  * audited on the way out (id.audit → auditInDesign), with a page preview and optional .indd / PDF.
  */
 import { z } from "zod";
+import { ID_ORGANIZE, runOrganize } from "../shared/organize.js";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
@@ -65,7 +66,8 @@ const KitShape = {
   pdfPath: z.string().optional().describe("Export a PDF here."),
   pdfPreset: z.string().optional().describe("Default '[High Quality Print]' (cmyk) or '[Smallest File Size]' (rgb)."),
   cropMarks: z.boolean().optional().describe("Crop/bleed marks in the PDF (ask the print shop)."),
-  previewPath: z.string().optional()
+  previewPath: z.string().optional(),
+  organize: z.boolean().optional().default(true).describe("Group cards, buttons and icon + text blocks on each page (id_organize_objects).")
 };
 
 type KitParams = {
@@ -85,6 +87,7 @@ type KitParams = {
   pdfPreset?: string;
   cropMarks?: boolean;
   previewPath?: string;
+  organize?: boolean;
 };
 
 async function runIdRecipe(
@@ -112,6 +115,20 @@ async function runIdRecipe(
   const data = res.data as Record<string, unknown>;
   const audit = (await router.dispatch("indesign", "id.audit", { units: "mm" }, { timeoutMs: 180000 })).data as IdAuditData;
   const findings = auditInDesign(audit);
+  // Cards, buttons and icon + text blocks come out grouped (user rule 23/11/2026), page by page, before saving.
+  if (p.organize !== false) {
+    let made = 0;
+    const errors: string[] = [];
+    for (let page = 1; page <= Math.min(Number(audit.pages) || 1, 40); page++) {
+      try {
+        const org = await runOrganize(router, ID_ORGANIZE, { page }, { apply: true });
+        made += ((org.created as unknown[] | undefined) ?? []).length;
+      } catch (eOrg) {
+        errors.push(`page ${page}: ${(eOrg as Error).message.slice(0, 120)}`);
+      }
+    }
+    data.organized = { groups: made, ...(errors.length ? { errors } : {}) };
+  }
   const files: Record<string, string> = {};
   if (p.savePath) {
     await router.dispatch("indesign", "id.doc.manage", { operation: "save", filePath: p.savePath }, { timeoutMs: 120000 });

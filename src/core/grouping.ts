@@ -5,7 +5,8 @@
  * Rules (the user's): what belongs together by meaning forms a group, a lone object does not.
  *  - text on a shape (button, tag, badge)            -> "Rótulo"
  *  - icon next to (or above) its text, plus the text lines stacked under that text -> "Item"
- *  - two or more items/labels of the same size aligned in a column or a row          -> "Lista" / "Botões"
+ *  - a shape holding two or more items (image, texts) above it                      -> "Card"
+ *  - two or more items/labels/cards of the same size aligned in a column or a row  -> "Lista" / "Botões" / "Cards"
  *  - background (covers most of the canvas), adjustment layers and lone objects stay as they are.
  * A group is not proposed when a layer outside it sits between its members in the stack and overlaps it:
  * grouping would move that layer above or below and change the picture.
@@ -27,7 +28,7 @@ export interface LayoutItem {
 
 export interface GroupProposal {
   name: string;
-  role: "label" | "item" | "list" | "row";
+  role: "label" | "item" | "card" | "list" | "row";
   /** Item ids (leaves) directly in this group. */
   members: Array<number | string>;
   children: GroupProposal[];
@@ -50,7 +51,7 @@ const cx = (b: B) => (b[0] + b[2]) / 2;
 const cy = (b: B) => (b[1] + b[3]) / 2;
 
 interface Unit {
-  role: "single" | "label" | "item";
+  role: "single" | "label" | "item" | "card";
   ids: Array<number | string>;
   child?: Unit;
   bounds: B;
@@ -72,10 +73,23 @@ export function proposeGroups(itemsIn: LayoutItem[], canvas: { width: number; he
   const used = new Set<number | string>();
   const label = (it: LayoutItem) => short(it.text || it.name);
 
-  // 1. Text on a shape.
   const units: Unit[] = [];
   const texts = candidates.filter((it) => it.kind === "text");
   const graphics = candidates.filter((it) => it.kind !== "text" && it.kind !== "group");
+
+  // 0. Card: a shape (not the background) holding two or more other items above it, at least one a text.
+  const cards: Unit[] = [];
+  for (const s0 of [...graphics].sort((a, b) => area(a.bounds) - area(b.bounds))) {
+    if (used.has(s0.id) || area(s0.bounds) > 0.4 * canvasArea) continue;
+    const inside = candidates.filter((o) => o.id !== s0.id && !used.has(o.id) && o.z < s0.z! && inter(o.bounds, s0.bounds) >= 0.9 * area(o.bounds) && area(o.bounds) < 0.8 * area(s0.bounds));
+    if (inside.length < 2 || !inside.some((o) => o.kind === "text")) continue;
+    for (const o of inside) used.add(o.id);
+    used.add(s0.id);
+    const firstText = inside.filter((o) => o.kind === "text").sort((a, b) => a.bounds[1] - b.bounds[1])[0];
+    cards.push({ role: "card", ids: [...inside.map((o) => o.id), s0.id], bounds: s0.bounds, title: label(firstText), zs: [...inside.map((o) => o.z!), s0.z!] });
+  }
+
+  // 1. Text on a shape.
   for (const t of texts) {
     const hosts = graphics
       .filter((s) => !used.has(s.id) && s.z! > t.z!)
@@ -135,12 +149,12 @@ export function proposeGroups(itemsIn: LayoutItem[], canvas: { width: number; he
     }
   }
   const labelsLeft = units.filter((u) => !items2.some((it) => it.child === u));
-  const all: Unit[] = [...items2, ...labelsLeft];
+  const all: Unit[] = [...cards, ...items2, ...labelsLeft];
 
   // 3. Repeated units aligned in a column or a row.
   const lists: Array<{ role: "list" | "row"; members: Unit[] }> = [];
   const inList = new Set<Unit>();
-  for (const role of ["item", "label"] as const) {
+  for (const role of ["card", "item", "label"] as const) {
     const pool = all.filter((u) => u.role === role);
     const similar = (a: Unit, b: Unit) => Math.abs(H(a.bounds) - H(b.bounds)) <= 0.35 * Math.max(H(a.bounds), H(b.bounds));
     for (const seed of pool) {
@@ -169,8 +183,8 @@ export function proposeGroups(itemsIn: LayoutItem[], canvas: { width: number; he
   const leafIds = (u: Unit): Array<number | string> => [...u.ids, ...(u.child ? leafIds(u.child) : [])];
   const allZs = (u: Unit): number[] => [...u.zs];
   const toProposal = (u: Unit): GroupProposal => ({
-    name: u.role === "label" ? `${pt ? "Rótulo" : "Label"} – ${u.title}` : `${pt ? "Item" : "Item"} – ${u.title}`,
-    role: u.role === "label" ? "label" : "item",
+    name: u.role === "label" ? `${pt ? "Rótulo" : "Label"} – ${u.title}` : u.role === "card" ? `Card – ${u.title}` : `Item – ${u.title}`,
+    role: u.role === "label" ? "label" : u.role === "card" ? "card" : "item",
     members: u.ids,
     children: u.child ? [toProposal(u.child)] : [],
     bounds: u.bounds
@@ -181,7 +195,12 @@ export function proposeGroups(itemsIn: LayoutItem[], canvas: { width: number; he
     const zs = l.members.flatMap(allZs);
     const b = union(l.members.map((m) => m.bounds));
     const isButtons = l.members.every((m) => m.role === "label");
-    const name = pt ? `${isButtons ? "Botões" : "Lista"} (${l.members.length} ${isButtons ? "botões" : "itens"})` : `${isButtons ? "Buttons" : "List"} (${l.members.length})`;
+    const isCards = l.members.every((m) => m.role === "card");
+    const name = isCards
+      ? `Cards (${l.members.length})`
+      : pt
+        ? `${isButtons ? "Botões" : "Lista"} (${l.members.length} ${isButtons ? "botões" : "itens"})`
+        : `${isButtons ? "Buttons" : "List"} (${l.members.length})`;
     if (crossesStack(ids, zs, b)) {
       skipped.push({ name, reason: "another layer sits between its members in the stack and overlaps them" });
       continue;
@@ -224,16 +243,23 @@ export function planTree(nodes: TreeNode[], canvas: { width: number; height: num
   const plans: Array<{ container: string; proposals: GroupProposal[] }> = [];
   const skipped: GroupingResult["skipped"] = [];
   let ungrouped = 0;
-  const walk = (list: TreeNode[], container: string) => {
+  // Inside an artboard or a group, sizes are judged against that container, not the whole canvas (a document
+  // with four artboards would otherwise see each artboard's background as a small shape).
+  const walk = (list: TreeNode[], container: string, box: { width: number; height: number } = canvas) => {
     const items: LayoutItem[] = list
       .map((n, i) => ({ n, i }))
       .filter(({ n }) => n.bounds && n.visible !== false)
       .map(({ n, i }) => ({ id: n.id, name: n.name, kind: n.kind, bounds: n.bounds as [number, number, number, number], z: i, text: n.text }));
-    const r = proposeGroups(items, canvas, opts);
+    const r = proposeGroups(items, box, opts);
     if (r.proposals.length) plans.push({ container, proposals: r.proposals });
     skipped.push(...r.skipped);
     ungrouped += r.ungroupedRelated;
-    for (const n of list) if (n.kind === "group" && n.children?.length) walk(n.children, `${container}/${n.name}`);
+    for (const n of list) {
+      if (n.kind !== "group" || !n.children?.length) continue;
+      const b = n.bounds;
+      const inner = b && b[2] - b[0] > 0 && b[3] - b[1] > 0 ? { width: b[2] - b[0], height: b[3] - b[1] } : box;
+      walk(n.children, `${container}/${n.name}`, inner);
+    }
   };
   walk(nodes, "");
   return { plans, skipped, ungroupedRelated: ungrouped };

@@ -90,3 +90,37 @@ describe("planTree (Illustrator layers, InDesign pages)", () => {
     expect(r.plans).toEqual([{ container: "/Camada 1", proposals: [expect.objectContaining({ name: "Rótulo – Comprar", members: ["a", "b"] })] }]);
   });
 });
+
+describe("planTree inside artboards", () => {
+  it("judges sizes against the artboard: its background stays alone", () => {
+    const board = (x: number) => ({
+      id: `ab${x}`,
+      name: `feed ${x}`,
+      kind: "group" as const,
+      bounds: [x, 0, x + 1080, 1350] as [number, number, number, number],
+      children: [
+        { id: `t${x}`, name: "Titulo", kind: "text" as const, text: "Titulo", bounds: [x + 100, 100, x + 980, 300] as [number, number, number, number] },
+        { id: `bg${x}`, name: "Fundo", kind: "pixel" as const, bounds: [x, 0, x + 1080, 1350] as [number, number, number, number] }
+      ]
+    });
+    const r = planTree([board(0), board(1200), board(2400), board(3600)], { width: 4680, height: 1350 });
+    expect(r.plans).toEqual([]);
+  });
+});
+
+describe("cards", () => {
+  it("a card (background shape + photo + texts) is one group; three cards in a row form Cards (3)", () => {
+    const card = (x: number): LayoutItem[] => [
+      L("text", `Produto ${x}`, [x + 20, 520, x + 280, 560]),
+      L("text", `R$ ${x}`, [x + 20, 580, x + 200, 620]),
+      L("pixel", `foto ${x}`, [x + 20, 220, x + 280, 500]),
+      L("shape", `card ${x}`, [x, 200, x + 300, 650])
+    ];
+    const items = [...card(40), ...card(390), ...card(740), L("pixel", "fundo", [0, 0, 1080, 1350])];
+    const r = proposeGroups(items, canvas);
+    expect(r.proposals).toHaveLength(1);
+    expect(r.proposals[0].name).toBe("Cards (3)");
+    expect(r.proposals[0].children.map((c) => c.members.length)).toEqual([4, 4, 4]);
+    expect(r.proposals[0].children[0].name).toBe("Card – Produto 40");
+  });
+});

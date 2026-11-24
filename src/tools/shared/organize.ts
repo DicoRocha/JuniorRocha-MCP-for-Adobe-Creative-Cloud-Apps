@@ -29,24 +29,36 @@ export function registerOrganizeTool(
     async (params: Record<string, unknown>) => {
       try {
         const { apply, language, ...rest } = params as { apply?: boolean; language?: "pt" | "en" } & Record<string, unknown>;
-        const info = await router.dispatch(o.app, o.infoAction, { ...rest, ...(o.fixed ?? {}) });
-        const d = (info.data || {}) as { documentName?: string; width?: number; height?: number; layers?: TreeNode[] };
-        const plan = planTree(d.layers ?? [], { width: Number(d.width) || 1, height: Number(d.height) || 1 }, { language });
-        const groups = plan.plans.flatMap((p) => p.proposals.map((g) => ({ container: p.container || "(top)", name: g.name, children: g.children.map((c) => c.name), items: countLeaves(g) })));
-        if (!apply || !plan.plans.length) {
-          return formatSuccessResponse({
-            documentName: d.documentName,
-            applied: false,
-            groups,
-            skipped: plan.skipped,
-            ...(plan.plans.length ? { next: "Call again with apply: true to create these groups." } : { verdict: "nothing to group" })
-          });
-        }
-        const res = await router.dispatch(o.app, o.planAction, { ...rest, ...(o.fixed ?? {}), groups: plan.plans.flatMap((p) => p.proposals) }, { undoGroup: "MCP: Organize", timeoutMs: 60000 });
-        return formatSuccessResponse({ documentName: d.documentName, applied: true, groups, skipped: plan.skipped, ...((res.data || {}) as object) });
+        return formatSuccessResponse(await runOrganize(router, o, rest, { apply, language }));
       } catch (err) {
         return formatErrorResponse(err);
       }
     }
   );
 }
+
+/** Plans (and with apply: true creates) the semantic groups through an app's layout actions. */
+export async function runOrganize(
+  router: BridgeRouter,
+  o: { app: AdobeAppId; infoAction: string; planAction: string; fixed?: Record<string, unknown> },
+  target: Record<string, unknown>,
+  opts: { apply?: boolean; language?: "pt" | "en" } = {}
+): Promise<Record<string, unknown>> {
+  const info = await router.dispatch(o.app, o.infoAction, { ...target, ...(o.fixed ?? {}) });
+  const d = (info.data || {}) as { documentName?: string; width?: number; height?: number; layers?: TreeNode[] };
+  const plan = planTree(d.layers ?? [], { width: Number(d.width) || 1, height: Number(d.height) || 1 }, { language: opts.language });
+  const groups = plan.plans.flatMap((p) => p.proposals.map((g) => ({ container: p.container || "(top)", name: g.name, children: g.children.map((c) => c.name), items: countLeaves(g) })));
+  if (!opts.apply || !plan.plans.length) {
+    return {
+      documentName: d.documentName,
+      applied: false,
+      groups,
+      skipped: plan.skipped,
+      ...(plan.plans.length ? { next: "Call again with apply: true to create these groups." } : { verdict: "nothing to group" })
+    };
+  }
+  const res = await router.dispatch(o.app, o.planAction, { ...target, ...(o.fixed ?? {}), groups: plan.plans.flatMap((p) => p.proposals) }, { undoGroup: "MCP: Organize", timeoutMs: 60000 });
+  return { documentName: d.documentName, applied: true, groups, skipped: plan.skipped, ...((res.data || {}) as object) };
+}
+
+export const ID_ORGANIZE = { app: "indesign" as AdobeAppId, infoAction: "id.layout.info", planAction: "id.layout.groupPlan", fixed: { units: "pt" } };

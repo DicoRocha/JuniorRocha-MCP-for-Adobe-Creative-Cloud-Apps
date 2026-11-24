@@ -90,6 +90,34 @@ export async function activatePsDocument(router: BridgeRouter, documentName: str
   });
 }
 
+/** Plans (and with apply: true creates) the semantic groups of a Photoshop document. Used by ps_organize_layers and the recipes. */
+export async function organizePsDocument(
+  router: BridgeRouter,
+  documentName: string | undefined,
+  opts: { apply?: boolean; language?: "pt" | "en" } = {}
+): Promise<Record<string, unknown>> {
+  const info = await router.dispatch("photoshop", "ps.layers.layoutInfo", { documentName });
+  const d = (info.data || {}) as { documentName?: string; width?: number; height?: number; layers?: Array<Record<string, unknown>> };
+  const plan = planTree(psTreeToNodes(d.layers ?? []), { width: Number(d.width) || 1, height: Number(d.height) || 1 }, { language: opts.language });
+  const groups = plan.plans.flatMap((p) => p.proposals.map((g) => ({ container: p.container || "(top)", name: g.name, children: g.children.map((c) => c.name), layers: countLeaves(g) })));
+  if (!opts.apply || !plan.plans.length) {
+    return {
+      documentName: d.documentName,
+      applied: false,
+      groups,
+      skipped: plan.skipped,
+      ...(plan.plans.length ? { next: "Call again with apply: true to create these groups." } : { verdict: "nothing to group" })
+    };
+  }
+  const res = await router.dispatch(
+    "photoshop",
+    "ps.layers.groupPlan",
+    { documentName: d.documentName, groups: plan.plans.flatMap((p) => p.proposals) },
+    { undoGroup: "MCP: Organize layers", timeoutMs: 60000 }
+  );
+  return { documentName: d.documentName, applied: true, groups, skipped: plan.skipped, ...((res.data || {}) as object) };
+}
+
 export function registerPhotoshopTools(realServer: McpServer, router: BridgeRouter): void {
   // Every tool that works on "the active document" also takes documentName: the user may switch tabs in
   // Photoshop while the agent works, and a save or an edit would then land in the wrong file.
@@ -375,26 +403,7 @@ export function registerPhotoshopTools(realServer: McpServer, router: BridgeRout
     },
     async (params) => {
       try {
-        const info = await router.dispatch("photoshop", "ps.layers.layoutInfo", { documentName: params.documentName });
-        const d = (info.data || {}) as { documentName?: string; width?: number; height?: number; layers?: Array<Record<string, unknown>> };
-        const plan = planTree(psTreeToNodes(d.layers ?? []), { width: Number(d.width) || 1, height: Number(d.height) || 1 }, { language: params.language });
-        const summary = plan.plans.flatMap((p) => p.proposals.map((g) => ({ container: p.container || "(top)", name: g.name, children: g.children.map((c) => c.name), layers: countLeaves(g) })));
-        if (!params.apply || !plan.plans.length) {
-          return formatSuccessResponse({
-            documentName: d.documentName,
-            applied: false,
-            groups: summary,
-            skipped: plan.skipped,
-            ...(plan.plans.length ? { next: "Call again with apply: true to create these groups." } : { verdict: "nothing to group" })
-          });
-        }
-        const res = await router.dispatch(
-          "photoshop",
-          "ps.layers.groupPlan",
-          { documentName: d.documentName, groups: plan.plans.flatMap((p) => p.proposals) },
-          { undoGroup: "MCP: Organize layers", timeoutMs: 60000 }
-        );
-        return formatSuccessResponse({ documentName: d.documentName, applied: true, groups: summary, skipped: plan.skipped, ...((res.data || {}) as object) });
+        return formatSuccessResponse(await organizePsDocument(router, params.documentName, { apply: params.apply, language: params.language }));
       } catch (err) {
         return formatErrorResponse(err);
       }
@@ -914,7 +923,8 @@ export function registerPhotoshopTools(realServer: McpServer, router: BridgeRout
         .describe("Focal point in the key art (0–1). Default: upper third of a layer named Motiv/sujeito/produto, else centre."),
       outputFolder: z.string().optional(),
       exportFormat: z.enum(["png", "jpg", "webp"]).optional().default("png").describe("Social exports are PNG by default (user rule)."),
-      quality: z.number().int().min(1).max(100).optional()
+      quality: z.number().int().min(1).max(100).optional(),
+      organize: z.boolean().optional().default(true).describe("Group related layers by meaning in each artboard (ps_organize_layers) before exporting.")
     },
     async (params) => {
       try {
@@ -964,6 +974,14 @@ export function registerPhotoshopTools(realServer: McpServer, router: BridgeRout
           return { artboard: a.name, size: `${a.rect.width}×${a.rect.height}`, placed: a.placed.map((p) => `${p.name} (${p.role}, ${p.scale} %)`), ...summarize(kept), findings: kept };
         });
         const out: Record<string, unknown> = { document: data.document, source: data.source, errors, warnings, artboards: boards };
+        if (params.organize !== false) {
+          try {
+            const org = await organizePsDocument(router, data.document, { apply: true });
+            out.organized = { groups: (org.groups as unknown[] | undefined)?.length ?? 0, skipped: org.skipped };
+          } catch (eOrg) {
+            out.organized = { error: (eOrg as Error).message.slice(0, 200), hint: "Run ps_organize_layers on the new document." };
+          }
+        }
         if (params.outputFolder) {
           const ex = await router.dispatch(
             "photoshop",

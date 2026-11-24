@@ -44,3 +44,12 @@ describe("old presets", () => {
     expect(p.settings).toMatchObject({ Contrast2012: 74, WhiteBalance: "Custom" });
   });
 });
+
+import { withGrayscaleProfile } from "../../src/media/legacy-preset.js";
+describe("black and white in Lightroom 16", () => {
+  it("adds the Adobe Monochrome profile when ConvertToGrayscale is on and no Look was given", () => {
+    expect((withGrayscaleProfile({ ConvertToGrayscale: true }) as { Look: { Name: string } }).Look.Name).toBe("Adobe Monochrome");
+    expect(withGrayscaleProfile({ ConvertToGrayscale: false })).toEqual({ ConvertToGrayscale: false });
+    expect(withGrayscaleProfile({ ConvertToGrayscale: true, Look: { Name: "X" } }).Look).toEqual({ Name: "X" });
+  });
+});

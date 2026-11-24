@@ -127,3 +127,20 @@ export function scaleDevelopSettings(settings: Record<string, PresetValue>, k: n
   }
   return out;
 }
+
+/**
+ * Lightroom 16 renders colour when ConvertToGrayscale is set alone through the SDK: black and white also needs the
+ * monochrome profile (live, 23/11/2026). The Look table below is Adobe Monochrome as Camera Raw ships it.
+ */
+export const ADOBE_MONOCHROME_LOOK = {
+  Amount: 1,
+  Group: { "x-default": "Profiles" },
+  Name: "Adobe Monochrome",
+  UUID: "0CFE8F8AB5F63B2A73CE0B0077D20817",
+  Parameters: { CameraProfile: "Adobe Standard", Clarity2012: 8, ConvertToGrayscale: true, LookTable: "73ED6C18DDE909DD7EA2D771F5AC282D", ProcessVersion: "10.0" }
+};
+
+export function withGrayscaleProfile<T extends Record<string, unknown>>(settings: T): T & { Look?: unknown } {
+  if (settings.ConvertToGrayscale === true && settings.Look === undefined) return { ...settings, Look: ADOBE_MONOCHROME_LOOK };
+  return settings;
+}

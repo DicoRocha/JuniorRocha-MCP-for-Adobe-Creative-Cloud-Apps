@@ -1,6 +1,6 @@
 import { downscaleBase64 } from "../../media/downscale.js";
 import { z } from "zod";
-import { parsePreset, scaleDevelopSettings, translatePreset } from "../../media/legacy-preset.js";
+import { parsePreset, scaleDevelopSettings, translatePreset, withGrayscaleProfile } from "../../media/legacy-preset.js";
 import { REFERENCE_LOOKS, referenceLook } from "../../core/looks.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { BridgeRouter } from "../../core/bridge-router.js";
@@ -135,7 +135,7 @@ export function registerLightroomTools(server: McpServer, router: BridgeRouter):
     async (p) => {
       try {
         const l = referenceLook(p.look);
-        const settings = scaleDevelopSettings(l.lightroom, p.intensity);
+        const settings = withGrayscaleProfile(scaleDevelopSettings(l.lightroom, p.intensity));
         const targets = { ids: p.ids, useSelection: p.useSelection };
         await router.dispatch("lightroom", "lr.develop.snapshot", { ...targets, name: p.snapshotName ?? `Antes do look ${p.look}` }, { undoGroup: "MCP: snapshot before look" });
         const res = await router.dispatch("lightroom", "lr.develop.apply", { ...targets, settings, historyName: `MCP: look ${p.look} ${Math.round(p.intensity * 100)}%` }, { undoGroup: "MCP: look", timeoutMs: 300000 });
@@ -165,7 +165,7 @@ export function registerLightroomTools(server: McpServer, router: BridgeRouter):
         if (!p.apply) return formatSuccessResponse({ ...t, next: "Check the values, then call again with apply: true (a snapshot is made first)." });
         const targets = { ids: p.ids, useSelection: p.useSelection };
         await router.dispatch("lightroom", "lr.develop.snapshot", { ...targets, name: p.snapshotName }, { undoGroup: "MCP: snapshot before preset" });
-        const res = await router.dispatch("lightroom", "lr.develop.apply", { ...targets, settings: t.settings, historyName: `MCP: ${t.name ?? "preset"} ${Math.round(t.intensity * 100)}%` }, { undoGroup: "MCP: legacy preset", timeoutMs: 300000 });
+        const res = await router.dispatch("lightroom", "lr.develop.apply", { ...targets, settings: withGrayscaleProfile(t.settings), historyName: `MCP: ${t.name ?? "preset"} ${Math.round(t.intensity * 100)}%` }, { undoGroup: "MCP: legacy preset", timeoutMs: 300000 });
         return formatSuccessResponse({ ...t, applied: true, snapshot: p.snapshotName, result: res.data, next: "Compare with lr_photo_stats and media_zone_report; lower intensity if the skin clips." });
       } catch (err) {
         return formatErrorResponse(err);
@@ -235,18 +235,24 @@ export function registerLightroomTools(server: McpServer, router: BridgeRouter):
     "lr.develop.getSettings"
   );
 
-  tool(
-    server,
-    router,
+  server.tool(
     "lr_apply_develop_settings",
-    "Apply Develop settings to photos without leaving the current module (non-destructive, one history step per photo). " + DEVELOP_KEYS_HINT,
+    "Apply Develop settings to photos without leaving the current module (non-destructive, one history step per photo). " +
+      "ConvertToGrayscale: true also sets the Adobe Monochrome profile (alone it renders colour in Lightroom 16). " +
+      DEVELOP_KEYS_HINT,
     {
       ...PhotoTargets,
       settings: z.record(z.string(), z.unknown()).describe("Develop key → value."),
       historyName: z.string().optional().default("MCP")
     },
-    "lr.develop.apply",
-    300000
+    async (params) => {
+      try {
+        const res = await router.dispatch("lightroom", "lr.develop.apply", { ...params, settings: withGrayscaleProfile(params.settings) }, { undoGroup: "MCP: lr_apply_develop_settings", timeoutMs: 300000 });
+        return formatSuccessResponse(res.data);
+      } catch (err) {
+        return formatErrorResponse(err);
+      }
+    }
   );
 
   server.tool(

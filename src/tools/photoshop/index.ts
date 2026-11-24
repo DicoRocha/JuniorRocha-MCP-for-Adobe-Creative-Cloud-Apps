@@ -6,7 +6,7 @@ import { REFERENCE_LOOKS, referenceLook } from "../../core/looks.js";
 import { countLeaves, planTree, psTreeToNodes } from "../../core/grouping.js";
 import { auditPhotoshop, summarize, type PsAuditData } from "../../core/audit.js";
 import { FORMATS, resolveZones } from "../../core/formats.js";
-import { CAROUSEL_SIZES, planCarousel, suggestCardCount } from "../../core/carousel.js";
+import { CAROUSEL_SIZES, planCarousel, seamBoxesFromTree, seamIssues, suggestCardCount } from "../../core/carousel.js";
 import * as path from "node:path";
 import { loadRecords, fillPattern } from "../../core/records.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -442,7 +442,8 @@ export function registerPhotoshopTools(realServer: McpServer, router: BridgeRout
       "(<prefix>_01.png ... _NN) at exact whole pixels, without touching the working document (a flattened duplicate is " +
       "cut, card by card, so the 8192 px Save for Web limit does not apply; never use the Slice tool or Save for Web slices for this). Checks first that the width is an exact " +
       "multiple of the card width and that no text or logo layer (names with logo/marca/brand) crosses a seam or sits " +
-      "inside the margin next to one (reported in seamIssues). PNG is the default: JPEG blocks show at the seams.",
+      "inside the margin next to one: a crossing stops the export (nothing written) unless allowTextOnSeams; a margin touch " +
+      "is reported in seamIssues. PNG is the default: JPEG blocks show at the seams.",
     {
       documentName: z.string().optional(),
       outputFolder: z.string().describe("Folder for the cards."),
@@ -456,6 +457,24 @@ export function registerPhotoshopTools(realServer: McpServer, router: BridgeRout
     },
     async (params) => {
       try {
+        if (!params.allowTextOnSeams) {
+          // Refuse before exporting when a text or logo crosses a seam (a margin touch is only a warning).
+          if (params.documentName) await activatePsDocument(router, params.documentName);
+          const tree = await router.dispatch("photoshop", "ps.layer.getTree", { maxDepth: 8 });
+          const { boxes, maxRight } = seamBoxesFromTree(((tree.data as { layers?: unknown[] })?.layers ?? []) as never[]);
+          const cw = params.cardWidth ?? 1080;
+          const n = params.count ?? Math.max(1, Math.round(maxRight / cw));
+          const seams = Array.from({ length: Math.max(0, n - 1) }, (_, i) => (i + 1) * cw);
+          const crossing = seamIssues(boxes, { seams, margin: params.margin ?? 80 }).filter((i) => i.problem === "crosses");
+          if (crossing.length) {
+            return formatErrorResponse(
+              new Error(
+                `Nothing exported: ${crossing.length} text/logo layer(s) cross a seam (${crossing.map((c) => `'${c.name}' on seam ${c.seam}`).join(", ")}). ` +
+                  "A word or logo cut between two cards does not read: move it inside one card and run again, or pass allowTextOnSeams: true if the person wants it so."
+              )
+            );
+          }
+        }
         const res = await router.dispatch("photoshop", "ps.recipe.carouselSplit", params, { undoGroup: "MCP: Exportar carrossel", timeoutMs: 70000 });
         return formatSuccessResponse(res.data);
       } catch (err) {

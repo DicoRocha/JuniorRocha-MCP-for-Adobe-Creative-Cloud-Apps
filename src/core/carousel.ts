@@ -142,6 +142,44 @@ export function seamIssues(boxes: Array<{ name: string; bounds: [number, number,
   return out;
 }
 
+interface TreeLayer {
+  name?: string;
+  kind?: string;
+  visible?: boolean;
+  bounds?: number[] | { left: number; top: number; right: number; bottom: number } | null;
+  children?: TreeLayer[];
+}
+
+function boxOf(b: TreeLayer["bounds"]): [number, number, number, number] | null {
+  if (!b) return null;
+  if (Array.isArray(b)) return b.length >= 4 ? [Number(b[0]), Number(b[1]), Number(b[2]), Number(b[3])] : null;
+  return [Number(b.left), Number(b.top), Number(b.right), Number(b.bottom)];
+}
+
+/**
+ * Text and logo boxes of a Photoshop layer tree (ExtendScript or UXP shape), plus the widest right edge (the
+ * document width when a full-size background exists). A layer or group named logo/marca/brand counts as one logo.
+ */
+export function seamBoxesFromTree(layers: TreeLayer[]): { boxes: Array<{ name: string; bounds: [number, number, number, number] }>; maxRight: number } {
+  const boxes: Array<{ name: string; bounds: [number, number, number, number] }> = [];
+  let maxRight = 0;
+  const walk = (list: TreeLayer[]) => {
+    for (const it of list) {
+      const box = boxOf(it.bounds);
+      if (box) maxRight = Math.max(maxRight, box[2]);
+      const isMark = /logo|marca|brand|assinatura/i.test(String(it.name ?? ""));
+      if (it.children && it.children.length && !isMark) {
+        walk(it.children);
+        continue;
+      }
+      if (it.visible === false || !box || box[2] <= box[0]) continue;
+      if (isMark || /text/i.test(String(it.kind ?? ""))) boxes.push({ name: String(it.name), bounds: box });
+    }
+  };
+  walk(layers);
+  return { boxes, maxRight };
+}
+
 /** The question to ask before a carousel when the person did not say which kind. */
 export const CAROUSEL_KIND_QUESTION =
   "O carrossel vai ser de cards individuais (cada slide independente) ou sem emendas (seamless: um painel contínuo que passa de um card para o outro)? E quantos cards: você define ou eu decido pelo conteúdo?";

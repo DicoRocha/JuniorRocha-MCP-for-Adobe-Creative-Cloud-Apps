@@ -99,6 +99,30 @@ function __idPage(doc, pageRef) {
   }
 }
 
+/**
+ * Direct children of a page or group in stacking order, front first. pageItems comes grouped by type (rectangles,
+ * then text frames, then groups), not by stacking; allPageItems is in stacking order but also holds nested items
+ * (tested 24/11/2026), so keep only the ones whose parent is the container (for a page: its spread).
+ */
+function __idStackOrder(container, fallback) {
+  var out = [];
+  try {
+    var all = container.allPageItems;
+    var isPage = String(container.constructor.name) === "Page";
+    var parentId = isPage ? container.parent.id : container.id;
+    for (var i = 0; i < all.length; i++) {
+      var p = all[i].parent;
+      if (p && p.id === parentId && String(p.constructor.name) !== "Character") out.push(all[i]);
+    }
+  } catch (_eSo) {
+    out = [];
+  }
+  if (!out.length && fallback) {
+    for (var j = 0; j < fallback.length; j++) out.push(fallback[j]);
+  }
+  return out;
+}
+
 function __idTypeName(item) {
   // page.pageItems answers generic "PageItem" objects: getElements() gives the real one (TextFrame, Rectangle...).
   try {
@@ -614,12 +638,14 @@ function __idDispatch(action, params, _options) {
       }
       if (n.kind === "group" && depth < 6) {
         n.children = [];
-        for (var c = 0; c < it.pageItems.length; c++) n.children.push(nodeLI(it.pageItems[c], depth + 1));
+        var kids = __idStackOrder(it, it.pageItems);
+        for (var c = 0; c < kids.length; c++) n.children.push(nodeLI(kids[c], depth + 1));
       }
       return n;
     };
     var itemsLI = [];
-    for (var i = 0; i < pageLI.pageItems.length; i++) itemsLI.push(nodeLI(pageLI.pageItems[i], 0));
+    var topLI = __idStackOrder(pageLI, pageLI.pageItems);
+    for (var i = 0; i < topLI.length; i++) itemsLI.push(nodeLI(topLI[i], 0));
     var pb = pageLI.bounds;
     return { documentName: docLI.name, page: String(pageLI.name), width: pb[3] - pb[1], height: pb[2] - pb[0], layers: itemsLI };
   }

@@ -190,7 +190,7 @@ Seamless Instagram carousel (one continuous panel, also called panoramic or infi
 
 ## `ps_recipe_carousel_split`
 
-Seamless Instagram carousel, step 2: cut the wide document into its cards and export them in posting order (<prefix>_01.png ... _NN) at exact whole pixels, without touching the working document (a flattened duplicate is cut, card by card, so the 8192 px Save for Web limit does not apply; never use the Slice tool or Save for Web slices for this). Checks first that the width is an exact multiple of the card width and that no text or logo layer (names with logo/marca/brand) crosses a seam or sits inside the margin next to one (reported in seamIssues). PNG is the default: JPEG blocks show at the seams.
+Seamless Instagram carousel, step 2: cut the wide document into its cards and export them in posting order (<prefix>_01.png ... _NN) at exact whole pixels, without touching the working document (a flattened duplicate is cut, card by card, so the 8192 px Save for Web limit does not apply; never use the Slice tool or Save for Web slices for this). Checks first that the width is an exact multiple of the card width and that no text or logo layer (names with logo/marca/brand) crosses a seam or sits inside the margin next to one: a crossing stops the export (nothing written) unless allowTextOnSeams; a margin touch is reported in seamIssues. PNG is the default: JPEG blocks show at the seams.
 
 | Parameter | Type | Required | Description |
 |---|---|:---:|---|

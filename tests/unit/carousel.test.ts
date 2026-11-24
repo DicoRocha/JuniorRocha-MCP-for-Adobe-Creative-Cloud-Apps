@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import * as fs from "node:fs";
-import { planCarousel, seamIssues, suggestCardCount, CAROUSEL_KIND_QUESTION } from "../../src/core/carousel.js";
+import { planCarousel, seamBoxesFromTree, seamIssues, suggestCardCount, CAROUSEL_KIND_QUESTION } from "../../src/core/carousel.js";
 
 describe("seamless carousel plan", () => {
   it("makes the canvas an exact multiple of the card and cuts at whole pixels", () => {
@@ -59,6 +59,18 @@ describe("seamless carousel plan", () => {
     ]);
   });
 
+  it("reads text and logo boxes from both layer-tree shapes", () => {
+    const es = seamBoxesFromTree([
+      { name: "Fundo", kind: "LayerKind.NORMAL", visible: true, bounds: [0, 0, 5400, 1440] },
+      { name: "Card 03 - textos", children: [{ name: "Erro", kind: "LayerKind.TEXT", visible: true, bounds: [3000, 1200, 3500, 1260] }] },
+      { name: "Logo", children: [{ name: "simbolo", kind: "LayerKind.NORMAL", visible: true, bounds: [10, 10, 50, 50] }], bounds: [10, 10, 50, 50] }
+    ]);
+    expect(es.maxRight).toBe(5400);
+    expect(es.boxes.map((b) => b.name)).toEqual(["Erro", "Logo"]);
+    const uxp = seamBoxesFromTree([{ name: "T", kind: "text", visible: true, bounds: { left: 1000, top: 0, right: 1200, bottom: 50 } }]);
+    expect(seamIssues(uxp.boxes, { seams: [1080], margin: 80 })[0].problem).toBe("crosses");
+  });
+
   it("asks which kind of carousel in the skill and the router", () => {
     expect(CAROUSEL_KIND_QUESTION).toMatch(/individuais/);
     const skill = fs.readFileSync("skills/social/social-carrossel-seamless/SKILL.md", "utf8");
@@ -79,12 +91,19 @@ describe("seamless carousel plan", () => {
     expect(block).not.toMatch(/slice/i);
   });
 
+  it("InDesign layout info reads the stacking order, not the by-type pageItems", () => {
+    const id = fs.readFileSync("src/extendscript/id-handlers.jsx", "utf8");
+    expect(id).toContain("function __idStackOrder");
+    const start = id.indexOf('action === "id.layout.info"');
+    expect(id.slice(start, start + 2500)).toContain("__idStackOrder(pageLI");
+  });
+
   it("Photoshop and Illustrator handlers exist", () => {
     expect(fs.readFileSync("src/extendscript/ps-handlers.jsx", "utf8")).toContain('action === "ps.recipe.carouselSplit"');
     expect(fs.readFileSync("src/extendscript/ps-handlers.jsx", "utf8")).toContain('action === "ps.recipe.carouselSetup"');
     const ai = fs.readFileSync("src/extendscript/ai-handlers.jsx", "utf8");
     expect(ai).toContain('action === "ai.recipe.carouselArtboards"');
-    expect(ai).toMatch(/preA\.width = 10000/);
+    expect(ai).toMatch(/preA\.width = 20000/);
     expect(ai).toMatch(/scaleFactor/);
   });
 });

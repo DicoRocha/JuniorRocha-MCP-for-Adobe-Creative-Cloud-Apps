@@ -65,6 +65,11 @@ Ternário encadeado só com parênteses (`a ? x : (b ? y : z)`): sem eles o Exte
 - Fonte convertida em contorno não edita mais: guarde a versão em texto numa camada oculta.
 - Export SVG antigo (`exportFile`) renomeava o documento para .svg e travava o app — a ferramenta usa Export for Screens.
 
+- **Canvas largo (ao vivo 24/11/2026):** documento criado por script com mais de ~16 383 pt de largura
+  (`DocumentPreset.width = 20000`) abre no canvas largo; 10 000 px não basta. Nele `doc.scaleFactor` = 10 e o
+  DOM mede tudo dividido por 10 (prancheta de 1080 pt = 108 unidades); Exportar para telas a 100 % continua
+  dando PNG no tamanho real.
+
 ## 5. Portão
 
 ```

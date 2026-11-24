@@ -78,11 +78,11 @@ borda externa do card 1 (esquerda) e do último (direita) fica calma, sem elemen
 2. Desenhe as formas de fundo passando por cima das bordas das pranchetas; texto e logo dentro das guias.
 3. Exporte cada prancheta: `ai_export_assets` (PNG, 72 ppi, usar pranchetas) — 1 pt = 1 px.
 4. Foto no Illustrator: PSD vinculado (regra do PSD mestre).
-5. **Canvas largo:** a área normal tem ~16 383 pt (cabem 14 cards de 1080). Com mais cards a receita inicia
-   o documento com uma prancheta de 10 000 px, o que liga o canvas largo do Illustrator, e então cabem os
-   20 cards. No canvas largo o script trabalha na escala do documento (`scaleFactor`, devolvido pela
-   receita): as pranchetas continuam com 1080 px, mas coordenadas em scripts são pt ÷ scaleFactor.
-   Confira a largura dos PNG exportados (devem ter 1080 px).
+5. **Canvas largo:** a área normal tem ~16 383 pt (cabem 14 cards de 1080). Com mais cards a receita cria
+   o documento com 20 000 px de largura, o que liga o canvas largo do Illustrator (por script, 10 000 px não
+   basta: precisa passar de ~16 383), e então cabem os 20 cards. No canvas largo o script trabalha na escala do documento (`scaleFactor`, devolvido pela
+   receita): as pranchetas continuam com 1080 px, mas coordenadas em scripts são pt ÷ scaleFactor (um card
+   de 1080 pt mede 108 unidades). Exportar para telas a 100 % continua gerando PNG de 1080 px (testado).
 
 ## 5. Erros comuns
 

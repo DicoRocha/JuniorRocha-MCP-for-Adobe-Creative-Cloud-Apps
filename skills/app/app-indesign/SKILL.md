@@ -80,6 +80,10 @@ Ternário encadeado só com parênteses (`a ? x : (b ? y : z)`): sem eles o Exte
 - GREP com estilo de caractere: `id_find_change` mode grep `^0\d(?=\s)` + `applyCharacterStyle` numera passos.
 - Exportar PNG de várias páginas gera `nome.png`, `nome2.png`…
 
+- **Ordem de empilhamento (ao vivo 24/11/2026):** `page.pageItems` vem agrupado por tipo (retângulos, textos,
+  grupos), não pela ordem da frente para trás. A ordem real está em `allPageItems` (que também traz itens de
+  dentro de grupos e molduras): filtre pelos que têm o pai certo (para a página, o spread).
+
 ## 6. Portão
 
 ```

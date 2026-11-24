@@ -488,7 +488,7 @@ Recipe: logo delivery package from the OPEN Illustrator document (approved logo 
 
 ## `ai_recipe_carousel_artboards`
 
-Seamless Instagram carousel in Illustrator: a new document with count artboards side by side and NO space between them (named 01..NN, default 1080x1440 pt = px, 3:4), a layer 'Arte' and a locked layer 'Guias' with the safe margin of each card as guides. Draw the background and photos across the artboard edges; keep text and logo inside one artboard's margins. Export each artboard with ai_export_assets (PNG, 72 ppi, 'use artboards'). For independent cards (not seamless) ask first: then the artboards can keep a gap. Past ~14 cards of 1080 (or largeCanvas: true) the document starts with a 10000 px artboard so Illustrator opens it on the large canvas (up to 20 cards fit); there the script works in the document's scale (scaleFactor, returned) and the artboards are still 1080 px.
+Seamless Instagram carousel in Illustrator: a new document with count artboards side by side and NO space between them (named 01..NN, default 1080x1440 pt = px, 3:4), a layer 'Arte' and a locked layer 'Guias' with the safe margin of each card as guides. Draw the background and photos across the artboard edges; keep text and logo inside one artboard's margins. Export each artboard with ai_export_assets (PNG, 72 ppi, 'use artboards'). For independent cards (not seamless) ask first: then the artboards can keep a gap. Past ~14 cards of 1080 (or largeCanvas: true) the document is created 20000 px wide so Illustrator opens it on the large canvas (up to 20 cards fit); there the script works in the document's scale (scaleFactor, returned) and the artboards are still 1080 px.
 
 | Parameter | Type | Required | Description |
 |---|---|:---:|---|

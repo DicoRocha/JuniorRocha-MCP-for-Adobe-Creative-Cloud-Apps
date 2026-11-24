@@ -662,9 +662,10 @@ function __mcpDispatch(action, params, _options) {
     if (!bigA && nA * cwA > 16000) __mcpFail("INVALID_PARAMS", nA + " cards of " + cwA + " pt make " + (nA * cwA) + " pt: wider than the normal Illustrator canvas. Pass largeCanvas: true.");
     var docA = null;
     if (bigA) {
-      // A document that starts with a 10000 px artboard opens on Illustrator's large canvas (scale factor 10).
+      // A document created wider than the normal canvas (~16383 pt) opens on Illustrator's large canvas (scale
+      // factor 10). From a script 10000 px is not enough (tested 24/11/2026: 10000 -> scale 1, 20000 -> scale 10).
       var preA = new DocumentPreset();
-      preA.width = 10000;
+      preA.width = 20000;
       preA.height = chA;
       preA.colorMode = DocumentColorSpace.RGB;
       preA.units = RulerUnits.Pixels;
@@ -682,7 +683,7 @@ function __mcpDispatch(action, params, _options) {
     if (bigA && sfA === 1) {
       var rq = docA.artboards[0].artboardRect;
       var wq = rq[2] - rq[0];
-      if (wq > 0 && Math.round(10000 / wq) > 1) sfA = Math.round(10000 / wq);
+      if (wq > 0 && Math.round(20000 / wq) > 1) sfA = Math.round(20000 / wq);
     }
     if (bigA && sfA === 1 && nA * cwA > 16000) {
       docA.close(SaveOptions.DONOTSAVECHANGES);
@@ -721,7 +722,7 @@ function __mcpDispatch(action, params, _options) {
     gl.locked = true;
     docA.activeLayer = art;
     var outA = { document: docA.name, artboards: nA, cardWidth: cwA, cardHeight: chA, margin: mgA, totalWidth: nA * cwA, origin: [left0, top0], largeCanvas: sfA > 1, scaleFactor: sfA };
-    if (sfA > 1) outA.note = "Large canvas: script coordinates in this document are pt / " + sfA + " (a 1080 pt card is " + uA(1080) + " units). Check the width of the exported cards: a script export scaled by the DOM can come out " + sfA + "x smaller; then export at " + (sfA * 100) + " %.";
+    if (sfA > 1) outA.note = "Large canvas: script coordinates in this document are pt / " + sfA + " (a 1080 pt card is " + uA(1080) + " units). Export for Screens at 100 % still gives cards of " + cwA + " px (tested 24/11/2026).";
     if (params.filePath) {
       var prevUilA = app.userInteractionLevel;
       app.userInteractionLevel = UserInteractionLevel.DONTDISPLAYALERTS;
@@ -729,6 +730,7 @@ function __mcpDispatch(action, params, _options) {
         var tgt = __mcpPrepareOutputFile(params.filePath);
         docA.saveAs(tgt, new IllustratorSaveOptions());
         outA.filePath = tgt.fsName;
+        outA.document = docA.name;
       } finally {
         app.userInteractionLevel = prevUilA;
       }

@@ -289,6 +289,14 @@ function __idFormatText(doc, text, f, warnings) {
   }
 }
 
+/** First baseline offset of a text frame: ascent | capHeight | leading | xHeight | embox. */
+function __idCapCenter(frame, how) {
+  var map = { ascent: "ASCENT_OFFSET", capHeight: "CAP_HEIGHT", leading: "LEADING_OFFSET", xHeight: "X_HEIGHT", embox: "EMBOX_HEIGHT" };
+  try {
+    frame.textFramePreferences.firstBaselineOffset = FirstBaseline[map[how] || "CAP_HEIGHT"];
+  } catch (_eFb) {}
+}
+
 function __idApplyFrameOptions(frame, o) {
   if (!o) return;
   var prefs = frame.textFramePreferences;
@@ -299,6 +307,10 @@ function __idApplyFrameOptions(frame, o) {
     var va = { top: "TOP_ALIGN", center: "CENTER_ALIGN", bottom: "BOTTOM_ALIGN", justify: "JUSTIFY_ALIGN" }[o.verticalAlign];
     prefs.verticalJustification = VerticalJustification[va];
   }
+  // Text centred vertically (next to an icon, inside a shape) is centred on the cap height: first baseline offset
+  // Cap Height, as the user does by hand (24/11/2026). Explicit firstBaseline wins.
+  var fbo = o.firstBaseline || (o.verticalAlign === "center" ? "capHeight" : null);
+  if (fbo) __idCapCenter(frame, fbo);
   if (o.autoSize) {
     var as = { height: "HEIGHT_ONLY", width: "WIDTH_ONLY", both: "HEIGHT_AND_WIDTH", off: "OFF" }[o.autoSize];
     prefs.autoSizingType = AutoSizingTypeEnum[as];
@@ -483,6 +495,7 @@ function __idStyleProps(doc, kind, p) {
     if (p.verticalAlign) {
       var vjC = { top: "TOP_ALIGN", center: "CENTER_ALIGN", bottom: "BOTTOM_ALIGN", justify: "JUSTIFY_ALIGN" }[p.verticalAlign];
       if (vjC) props.verticalJustification = VerticalJustification[vjC];
+      if (p.verticalAlign === "center" && typeof FirstBaseline !== "undefined") props.firstBaselineOffset = FirstBaseline.CAP_HEIGHT;
     }
     var edges = ["top", "bottom", "left", "right"];
     for (var ce = 0; ce < edges.length; ce++) {
@@ -2344,7 +2357,7 @@ function __idRecipeFlyer(doc, params, C, F, W, H, b, m, s, warnings) {
   var logoW = c.logoPath ? Math.min(42 * s, colW * 0.35) : 0;
   if (c.footer) {
     made.rodape = __idRecipeFrame(page, "Rodape", { x: colX, y: footTop, width: colW - (logoW ? logoW + 4 : 0), height: footH - 4 });
-    made.rodape.textFramePreferences.verticalJustification = VerticalJustification.CENTER_ALIGN;
+    made.rodape.textFramePreferences.verticalJustification = VerticalJustification.CENTER_ALIGN; __idCapCenter(made.rodape, "capHeight");
     __idRecipeFill(made.rodape, [[c.footer, st.footer]]);
   }
   if (c.logoPath) {
@@ -2361,7 +2374,7 @@ function __idRecipeFlyer(doc, params, C, F, W, H, b, m, s, warnings) {
     made.cta = __idRecipeFrame(page, "CTA", { x: colX, y: footTop - ctaGap - 12 * s, width: colW * 0.8, height: 12 * s });
     made.cta.fillColor = C.accent;
     made.cta.textFramePreferences.insetSpacing = [3 * s, 5 * s, 3 * s, 5 * s];
-    made.cta.textFramePreferences.verticalJustification = VerticalJustification.CENTER_ALIGN;
+    made.cta.textFramePreferences.verticalJustification = VerticalJustification.CENTER_ALIGN; __idCapCenter(made.cta, "capHeight");
     __idRecipeFill(made.cta, [[c.cta, st.cta]]);
     try {
       made.cta.textFramePreferences.autoSizingReferencePoint = AutoSizingReferenceEnum.BOTTOM_LEFT_POINT;
@@ -2432,10 +2445,10 @@ function __idRecipeCatalog(doc, params, C, F, W, H, b, m, s, warnings) {
     if (C.bg) __idRecipeRect(page, "Fundo", { x: -b, y: -b, width: W + 2 * b, height: H + 2 * b }, C.bg);
     __idRecipeRect(page, "Faixa cabecalho", { x: -b, y: -b, width: W + 2 * b, height: headH + b }, C.band);
     var hf = __idRecipeFrame(page, "Cabecalho", { x: m, y: 4, width: W - 2 * m, height: headH - 6 });
-    hf.textFramePreferences.verticalJustification = VerticalJustification.CENTER_ALIGN;
+    hf.textFramePreferences.verticalJustification = VerticalJustification.CENTER_ALIGN; __idCapCenter(hf, "capHeight");
     __idRecipeFill(hf, [[params.headerSubtitle, st.headerSub], [params.title || "Cat\u00E1logo", st.header]]);
     var ff = __idRecipeFrame(page, "Rodape", { x: m, y: H - footH - Math.max(4, m * 0.3), width: W - 2 * m, height: footH });
-    ff.textFramePreferences.verticalJustification = VerticalJustification.CENTER_ALIGN;
+    ff.textFramePreferences.verticalJustification = VerticalJustification.CENTER_ALIGN; __idCapCenter(ff, "capHeight");
     __idRecipeFill(ff, [[(params.footer ? params.footer + "   \u00B7   " : "") + (p + 1) + "/" + nPages, st.footer]]);
     for (var k = 0; k < per; k++) {
       var ri = p * per + k;

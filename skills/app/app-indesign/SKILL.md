@@ -84,6 +84,10 @@ Ternário encadeado só com parênteses (`a ? x : (b ? y : z)`): sem eles o Exte
   grupos), não pela ordem da frente para trás. A ordem real está em `allPageItems` (que também traz itens de
   dentro de grupos e molduras): filtre pelos que têm o pai certo (para a página, o spread).
 
+- **Texto centralizado com ícone ou forma (regra do usuário, 24/11/2026):** caixa com o topo e a altura do
+  ícone, justificação vertical Centro e primeira linha de base em **Cap Height**. `verticalAlign: "center"`
+  nas ferramentas `id_*` já põe o Cap Height (`firstBaseline` muda); as receitas (CTA, rodapé, cabeçalho) também.
+
 ## 6. Portão
 
 ```

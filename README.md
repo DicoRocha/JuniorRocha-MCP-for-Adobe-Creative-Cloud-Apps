@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="#download"><img src="docs/assets/banner.svg" alt="Run your creative apps from a chat: 239 tools, 6 apps, 92 skills, 418 tests" width="100%"></a>
+  <a href="#download"><img src="docs/assets/banner.svg" alt="Run your creative apps from a chat: 239 tools, 6 apps, 92 skills, 419 tests" width="100%"></a>
 </p>
 
 # JuniorRocha MCP for Adobe Creative Cloud

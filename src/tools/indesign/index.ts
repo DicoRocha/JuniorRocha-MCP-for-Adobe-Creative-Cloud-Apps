@@ -54,7 +54,8 @@ const FrameOptions = z
     columns: z.number().int().positive().optional(),
     gutter: z.number().optional(),
     inset: z.number().optional(),
-    verticalAlign: z.enum(["top", "center", "bottom", "justify"]).optional(),
+    verticalAlign: z.enum(["top", "center", "bottom", "justify"]).optional().describe("center also sets the first baseline offset to Cap Height, so the text centres on its capitals (next to an icon, inside a shape)."),
+    firstBaseline: z.enum(["ascent", "capHeight", "leading", "xHeight", "embox"]).optional().describe("First baseline offset; default capHeight when verticalAlign is center."),
     autoSize: z.enum(["off", "height", "width", "both"]).optional()
   })
   .optional();

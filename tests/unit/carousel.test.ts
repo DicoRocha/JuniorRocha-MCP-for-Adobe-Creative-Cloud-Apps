@@ -98,6 +98,13 @@ describe("seamless carousel plan", () => {
     expect(id.slice(start, start + 2500)).toContain("__idStackOrder(pageLI");
   });
 
+  it("InDesign centres vertical text on the cap height (user rule)", () => {
+    const id = fs.readFileSync("src/extendscript/id-handlers.jsx", "utf8");
+    expect(id).toMatch(/o\.verticalAlign === "center" \? "capHeight"/);
+    expect(id).toContain('__idCapCenter(made.cta, "capHeight")');
+    expect(id).toContain("props.firstBaselineOffset = FirstBaseline.CAP_HEIGHT");
+  });
+
   it("Photoshop and Illustrator handlers exist", () => {
     expect(fs.readFileSync("src/extendscript/ps-handlers.jsx", "utf8")).toContain('action === "ps.recipe.carouselSplit"');
     expect(fs.readFileSync("src/extendscript/ps-handlers.jsx", "utf8")).toContain('action === "ps.recipe.carouselSetup"');

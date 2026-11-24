@@ -6,6 +6,7 @@ Documents, text frames, styles, tables, links, data merge, preflight and export.
 
 | Tool | What it does |
 |---|---|
+| [`id_organize_objects`](#id_organize_objects) | Organise an InDesign page in groups by meaning: text on a shape becomes a label group, an icon with its text (and the lines under it) an item group, repeated items/labels in a… |
 | [`id_get_document_info`](#id_get_document_info) | InDesign: open documents and, for the active one, page size, bleed, pages with their parent pages, layers, paragraph / character / object styles, swatches and counts. |
 | [`id_manage_document`](#id_manage_document) | Create (size, pages, facing pages, margins, columns, bleed, print or web intent), open, save or close an InDesign document. |
 | [`id_manage_pages`](#id_manage_pages) | Add pages (after a page or at the end, with a parent page), remove, duplicate, move, or apply a parent page (master). |
@@ -38,6 +39,16 @@ Documents, text frames, styles, tables, links, data merge, preflight and export.
 | [`id_recipe_flyer`](#id_recipe_flyer) | Recipe: a print-ready flyer/poster in one call, in a NEW InDesign document. |
 | [`id_recipe_catalog`](#id_recipe_catalog) | Recipe: product catalogue / price list from a spreadsheet in one call, in a NEW InDesign document. |
 | [`id_recipe_manual_skeleton`](#id_recipe_manual_skeleton) | Recipe: skeleton of a manual / handbook / guide in one call, in a NEW InDesign document (facing pages by default, white paper theme). |
+
+## `id_organize_objects`
+
+Organise an InDesign page in groups by meaning: text on a shape becomes a label group, an icon with its text (and the lines under it) an item group, repeated items/labels in a column or row one list group holding them. Lone objects and the background stay as they are; a group that would change the stacking is skipped. apply: false (default) only reports the plan; apply: true creates the groups (work on a copy of the user's file).
+
+| Parameter | Type | Required | Description |
+|---|---|:---:|---|
+| `page` | integer or string |  | Page number or name (default: active page). |
+| `apply` | boolean |  |  Default: `false`. |
+| `language` | `pt` · `en` |  | Language of the group names. Default: `"pt"`. |
 
 ## `id_get_document_info`
 

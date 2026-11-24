@@ -13,6 +13,7 @@ Documents, layers, masks, smart objects, adjustments, artboards, recipes and aud
 | [`ps_modify_canvas`](#ps_modify_canvas) | Crop, resize image, resize canvas, rotate, trim transparent pixels, or flatten the active Photoshop document. |
 | [`ps_get_canvas_snapshot`](#ps_get_canvas_snapshot) | Multimodal Visual Feedback: Render the active Photoshop document (downscaled to maxDimension) and return it as an inline image for visual inspection. |
 | [`ps_get_layer_tree`](#ps_get_layer_tree) | Retrieve the complete hierarchy of layers and groups in the active Photoshop document (IDs, names, types, bounds, opacity, blend modes, visibility). |
+| [`ps_organize_layers`](#ps_organize_layers) | Organise a Photoshop document in groups by meaning: text on a shape becomes a label group, an icon with its text (and the lines under it) an item group, repeated items/labels… |
 | [`ps_create_layer`](#ps_create_layer) | Create a new pixel layer, group (folder), solid color fill layer, or text layer in Photoshop. |
 | [`ps_edit_text_layer`](#ps_edit_text_layer) | Modify text contents, font, size, color, tracking, leading, or alignment on an existing text layer in Photoshop. |
 | [`ps_transform_and_manage_layer`](#ps_transform_and_manage_layer) | Transform (translate, scale, rotate, flip) or manage (rename, duplicate, delete, convert to Smart Object, rasterize, set opacity/blendMode/visibility) a layer in Photoshop. |
@@ -115,6 +116,16 @@ Retrieve the complete hierarchy of layers and groups in the active Photoshop doc
 |---|---|:---:|---|
 | `maxDepth` | integer |  |  Default: `5`. |
 | `documentName` | string |  | Open document to act on (brought to the front first). Default: the active document. |
+
+## `ps_organize_layers`
+
+Organise a Photoshop document in groups by meaning: text on a shape becomes a label group, an icon with its text (and the lines under it) an item group, repeated items/labels in a column or row one list group holding them. Lone objects, the background and adjustment layers stay as they are; a group that would change the stacking is skipped. apply: false (default) only reports the plan; apply: true creates the groups (one history step each; work on a copy of the user's file).
+
+| Parameter | Type | Required | Description |
+|---|---|:---:|---|
+| `documentName` | string |  |  |
+| `apply` | boolean |  |  Default: `false`. |
+| `language` | `pt` · `en` |  | Language of the group names. Default: `"pt"`. |
 
 ## `ps_create_layer`
 

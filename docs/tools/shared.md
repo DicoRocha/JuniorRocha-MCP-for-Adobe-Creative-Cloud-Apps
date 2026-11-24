@@ -143,7 +143,7 @@ Run many operations on ONE Adobe app in a single round-trip and as a single undo
 
 ## `jradb_code`
 
-Code mode: run an async JavaScript body that calls this MCP's tools and return only what you need. `await tools.<tool_name>(args)` calls any tool (args as in jradb_api; returns the parsed JSON). Helpers: log(...), show(i?) adds the last call's images to the answer, sleep(ms), readText/readJson/writeText/exists/mkdir/listDir(path), path.join/dirname/basename. End with `return {...}` (keep it small). Independent apps can run in parallel with Promise.all. A failed tool throws (catch it to continue). Long work: background: true returns a jobId at once; poll with { jobId }. Read jradb_api first for signatures.
+Code mode: run an async JavaScript body that calls this MCP's tools and return only what you need. `await tools.<tool_name>(args)` calls any tool (args as in jradb_api; returns the parsed JSON). Helpers: log(...), show(i?) adds the last call's images to the answer, sleep(ms), readText/readJson/writeText/exists/mkdir/listDir(path), path.join/dirname/basename. End with `return {...}` (keep it small). Independent apps can run in parallel with Promise.all. A failed tool throws (catch it to continue). Long work: background: true returns a jobId at once; poll with { jobId }. Inside a background job an app call waits as long as the job allows (no 60 s bridge timeout), so a long build followed by a render runs to the end. Read jradb_api first for signatures.
 
 | Parameter | Type | Required | Description |
 |---|---|:---:|---|

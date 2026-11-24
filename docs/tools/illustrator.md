@@ -6,6 +6,7 @@ Shapes, paths, pathfinder, gradients, live effects, swatches, artboards and expo
 
 | Tool | What it does |
 |---|---|
+| [`ai_organize_objects`](#ai_organize_objects) | Organise an Illustrator document (each layer) in groups by meaning: text on a shape becomes a label group, an icon with its text (and the lines under it) an item group,… |
 | [`ai_get_document_info`](#ai_get_document_info) | Retrieve active Adobe Illustrator document metadata, dimensions, color space, artboards, layers, and page item counts. |
 | [`ai_manage_document`](#ai_manage_document) | Create, open, save, save-as, or close an Adobe Illustrator document (.ai, .svg, .eps, .pdf). |
 | [`ai_manage_artboards`](#ai_manage_artboards) | Add, activate, or remove artboards in the active Illustrator document. |
@@ -36,6 +37,16 @@ Shapes, paths, pathfinder, gradients, live effects, swatches, artboards and expo
 | [`ai_execute_extendscript`](#ai_execute_extendscript) | Illustrator ExtendScript escape hatch: execute arbitrary .jsx ExtendScript code in Adobe Illustrator (works via CEP WebSocket or zero-plugin Windows COM DoJavaScript). |
 | [`ai_recipe_logo_package`](#ai_recipe_logo_package) | Recipe: logo delivery package from the OPEN Illustrator document (approved logo on one artboard; an artboard named 'simbolo'/'icone'/'symbol' is used for the square marks). |
 | [`ai_recipe_pop_out`](#ai_recipe_pop_out) | Recipe: 'out of bounds' / pop-out portrait built with clipping masks in the OPEN Illustrator document (also asked for as: person coming out of a circle, breaking the frame). |
+
+## `ai_organize_objects`
+
+Organise an Illustrator document (each layer) in groups by meaning: text on a shape becomes a label group, an icon with its text (and the lines under it) an item group, repeated items/labels in a column or row one list group holding them. Lone objects and the background stay as they are; a group that would change the stacking is skipped. apply: false (default) only reports the plan; apply: true creates the groups (work on a copy of the user's file).
+
+| Parameter | Type | Required | Description |
+|---|---|:---:|---|
+| `artboardIndex` | integer |  | Artboard whose top-left is the origin (default: active). |
+| `apply` | boolean |  |  Default: `false`. |
+| `language` | `pt` · `en` |  | Language of the group names. Default: `"pt"`. |
 
 ## `ai_get_document_info`
 

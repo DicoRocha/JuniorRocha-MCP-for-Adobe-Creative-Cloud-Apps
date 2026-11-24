@@ -10,6 +10,7 @@ Projects, sequences, clips, effects, transitions, captions, markers and export.
 | [`pr_manage_project`](#pr_manage_project) | Create a new project (operation 'new' + filePath .prproj), open, save, save-as, or create bins in Adobe Premiere Pro. |
 | [`pr_import_media`](#pr_import_media) | Import video, audio, graphics, or image sequences into the active Premiere Pro project. |
 | [`pr_get_sequence_state`](#pr_get_sequence_state) | Get the complete state of the active Premiere Pro sequence: frame size, playhead position, all video tracks (V1..Vn), audio tracks (A1..An), and clips with start/end/duration. |
+| [`pr_duplicate_sequence`](#pr_duplicate_sequence) | Duplicate a sequence (default: the active one) to work on a copy and leave the user's edit untouched; renames it, optionally moves it to a bin (created if missing) and makes it… |
 | [`pr_create_sequence`](#pr_create_sequence) | Create a new sequence in Premiere Pro without opening the New Sequence dialog: from an imported clip (its format), or from a sequence preset file (default: HD 1080p 29.97 fps;… |
 | [`pr_place_clip_on_timeline`](#pr_place_clip_on_timeline) | Insert (ripple) or overwrite a project clip onto a video/audio track in the active Premiere Pro sequence at a specified time in seconds. |
 | [`pr_modify_timeline_clip`](#pr_modify_timeline_clip) | Enable/disable, remove (with or without ripple), or modify intrinsic/effect component properties (Motion Position, Scale, Rotation, Opacity, Volume, etc.) of a clip on the… |
@@ -75,6 +76,17 @@ Import video, audio, graphics, or image sequences into the active Premiere Pro p
 Get the complete state of the active Premiere Pro sequence: frame size, playhead position, all video tracks (V1..Vn), audio tracks (A1..An), and clips with start/end/duration.
 
 No parameters.
+
+## `pr_duplicate_sequence`
+
+Duplicate a sequence (default: the active one) to work on a copy and leave the user's edit untouched; renames it, optionally moves it to a bin (created if missing) and makes it active. Effects, Color Mode and nests come along.
+
+| Parameter | Type | Required | Description |
+|---|---|:---:|---|
+| `sequenceName` | string |  | Sequence to copy (default: active). |
+| `newName` | string |  | Name of the copy (default: Premiere's 'Copy' name). |
+| `targetBinName` | string |  |  |
+| `activate` | boolean |  |  Default: `true`. |
 
 ## `pr_create_sequence`
 

@@ -773,6 +773,7 @@ Add a composition to the After Effects Render Queue, configure templates and out
 | `queueInAME` | boolean |  | Queue in Adobe Media Encoder instead of blocking AE UI. Default: `false`. |
 | `startRenderImmediately` | boolean |  |  Default: `false`. |
 | `overwrite` | boolean |  | An existing file at the output path is replaced (default). false: refuse with OUTPUT_EXISTS. Either way After Effects never stops on its 'Overwrite?' dialog. Default: `true`. |
+| `engine` | `auto` · `app` · `aerender` |  | Who renders. auto (default): aerender, a separate After Effects process, when the project is saved with no unsaved changes, so the app stays usable during the render; otherwise inside the app. app: always inside the app (blocks it). aerender: only aerender (error if the project has unsaved changes). Default: `"auto"`. |
 
 ## `ae_execute_menu_command`
 

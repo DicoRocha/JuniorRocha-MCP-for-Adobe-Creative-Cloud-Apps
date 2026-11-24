@@ -240,7 +240,7 @@ export function registerIllustratorRecipe(server: McpServer, router: BridgeRoute
           { count: plan.count, cardWidth: plan.cardWidth, cardHeight: plan.cardHeight, margin: plan.margin, filePath: params.filePath, largeCanvas },
           { timeoutMs: 70000 }
         );
-        return { content: [{ type: "text" as const, text: JSON.stringify({ ...((res.data || {}) as object), fileNames: plan.fileNames, warnings: plan.warnings }, null, 2) }] };
+        return { content: [{ type: "text" as const, text: JSON.stringify({ ...((res.data || {}) as object), fileNames: plan.fileNames, warnings: plan.warnings.filter((w) => !/Save for Web/.test(w)) }, null, 2) }] };
       } catch (err) {
         return formatErrorResponse(err);
       }

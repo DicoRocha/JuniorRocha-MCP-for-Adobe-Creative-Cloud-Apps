@@ -113,7 +113,8 @@ local function describePhotos(photos)
   photos = arrayOf(photos)
   if #photos == 0 then return {} end
   local raw = cat:batchGetRawMetadata(photos, {
-    "path", "rating", "pickStatus", "colorNameForLabel", "dateTimeOriginalISO8601", "dimensions", "fileFormat", "isVirtualCopy"
+    "path", "rating", "pickStatus", "colorNameForLabel", "dateTimeOriginalISO8601", "dimensions", "fileFormat", "isVirtualCopy",
+    "isoSpeedRating"
   })
   local fmt = cat:batchGetFormattedMetadata(photos, { "fileName", "keywordTags", "title", "copyName" })
   local list = {}
@@ -134,6 +135,8 @@ local function describePhotos(photos)
       width = type(dims) == "table" and dims.width or nil,
       height = type(dims) == "table" and dims.height or nil,
       captureDate = r.dateTimeOriginalISO8601,
+      -- ISO decides the noise reduction (foto-revelacao: noise by ISO)
+      iso = tonumber(r.isoSpeedRating),
       title = (f.title ~= "" and f.title) or nil,
       keywords = (f.keywordTags ~= "" and f.keywordTags) or nil
     }

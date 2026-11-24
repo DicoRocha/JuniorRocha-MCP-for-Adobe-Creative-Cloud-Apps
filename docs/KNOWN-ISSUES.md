@@ -45,6 +45,7 @@ Last reviewed on 23 November 2026, version 1.11.0. Items are grouped by where th
 | `jradb_get_status`, panels | No word about new versions | A newer GitHub release is reported once a day at most, silent offline, never installed automatically (`JRADB_MCP_UPDATE_CHECK=off`) |
 
 | Photoshop without a brush (new) | Dodge & burn and skin needed brush work the MCP cannot do | `ps_luminosity_masks`, `ps_recipe_zone_dodge_burn`, `ps_recipe_frequency_separation` (light, skin-tone mask), `ps_recipe_film_grain` (to confirm live: curves descriptor, Color Range skin tones) |
+| Lightroom (new) | Old presets (process 2010, .lrtemplate) applied as they were, too strong on today's files | `lr_read_legacy_preset` translates and scales them (snapshot first); `lr_find_photos` returns `iso` for noise reduction by ISO (to confirm live: tone curve arrays through applyDevelopSettings) |
 
 Still open: `ae_manage_project` save that took ~70 s once and reconnected the panel (not reproduced yet).
 

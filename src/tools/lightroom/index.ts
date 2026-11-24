@@ -1,5 +1,6 @@
 import { downscaleBase64 } from "../../media/downscale.js";
 import { z } from "zod";
+import { parsePreset, translatePreset } from "../../media/legacy-preset.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { BridgeRouter } from "../../core/bridge-router.js";
 import { buildImageToolResponse, formatErrorResponse, formatSuccessResponse } from "../../core/image-helper.js";
@@ -118,6 +119,33 @@ export function buildLrColorSettings(p: {
 }
 
 export function registerLightroomTools(server: McpServer, router: BridgeRouter): void {
+  server.tool(
+    "lr_read_legacy_preset",
+    "Read an old Lightroom / Camera Raw preset (.xmp, .lrtemplate) and turn it into current Develop settings: process 2010 " +
+      "keys (Exposure+Brightness, Contrast, Recovery, Fill Light, Blacks, Clarity) translated to the current process, strength " +
+      "controls scaled by intensity (default 0.6: old presets were made for small files), halo-prone sharpening tamed. " +
+      "apply: true makes a snapshot on the photos first, then applies. The preset file is only read, never copied.",
+    {
+      filePath: z.string(),
+      intensity: z.number().min(0).max(1).optional().default(0.6),
+      apply: z.boolean().optional().default(false),
+      snapshotName: z.string().optional().default("Antes do preset"),
+      ...PhotoTargets
+    },
+    async (p) => {
+      try {
+        const t = translatePreset(parsePreset(fs.readFileSync(p.filePath, "utf8")), { intensity: p.intensity });
+        if (!p.apply) return formatSuccessResponse({ ...t, next: "Check the values, then call again with apply: true (a snapshot is made first)." });
+        const targets = { ids: p.ids, useSelection: p.useSelection };
+        await router.dispatch("lightroom", "lr.develop.snapshot", { ...targets, name: p.snapshotName }, { undoGroup: "MCP: snapshot before preset" });
+        const res = await router.dispatch("lightroom", "lr.develop.apply", { ...targets, settings: t.settings, historyName: `MCP: ${t.name ?? "preset"} ${Math.round(t.intensity * 100)}%` }, { undoGroup: "MCP: legacy preset", timeoutMs: 300000 });
+        return formatSuccessResponse({ ...t, applied: true, snapshot: p.snapshotName, result: res.data, next: "Compare with lr_photo_stats and media_zone_report; lower intensity if the skin clips." });
+      } catch (err) {
+        return formatErrorResponse(err);
+      }
+    }
+  );
+
   tool(
     server,
     router,

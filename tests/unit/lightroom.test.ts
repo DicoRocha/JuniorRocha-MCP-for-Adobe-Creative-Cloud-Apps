@@ -39,7 +39,7 @@ describe("Lightroom Classic plug-in", () => {
       tool: (...args: unknown[]) => handlers.push(args[args.length - 1] as (p: Record<string, unknown>) => Promise<unknown>)
     } as unknown as McpServer;
     registerLightroomTools(fakeServer, fakeRouter);
-    expect(handlers.length).toBe(21);
+    expect(handlers.length).toBe(22);
     return Promise.all(handlers.map((h) => h({}))).then(() => {
       const lua = readFileSync(join(PLUGIN, "Handlers.lua"), "utf8");
       for (const a of actions) {

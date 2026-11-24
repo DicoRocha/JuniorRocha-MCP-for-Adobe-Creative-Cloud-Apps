@@ -6,6 +6,7 @@ Finding photos, develop settings, presets, snapshots, collections and export.
 
 | Tool | What it does |
 |---|---|
+| [`lr_read_legacy_preset`](#lr_read_legacy_preset) | Read an old Lightroom / Camera Raw preset (.xmp, .lrtemplate) and turn it into current Develop settings: process 2010 keys (Exposure+Brightness, Contrast, Recovery, Fill Light,… |
 | [`lr_get_catalog_info`](#lr_get_catalog_info) | Lightroom Classic: catalog path, number of photos, current module, active sources (folders/collections) and the selected photos. |
 | [`lr_find_photos`](#lr_find_photos) | Find photos in the Lightroom Classic catalog: from the selection, a folder, a collection or the whole catalog, filtered by file name, keyword, minimum rating, flag and colour… |
 | [`lr_select_photos`](#lr_select_photos) | Select photos in Lightroom Classic (makes the first one the active photo). |
@@ -29,6 +30,19 @@ Finding photos, develop settings, presets, snapshots, collections and export.
 | [`lr_execute_lua`](#lr_execute_lua) | Lightroom Classic escape hatch: run Lua 5.1 code inside the plug-in with `catalog`, `import`, `json`, `write(name, fn)` (catalog write access as one undo step), `LrTasks`,… |
 | [`lr_recipe_batch_develop`](#lr_recipe_batch_develop) | Recipe: develop a light group from one approved photo (fromId) or a preset, in one call. |
 | [`lr_build_mask_presets`](#lr_build_mask_presets) | Writes Lightroom/Camera Raw Develop presets that carry an AI mask of ONE part of the person (teeth, facial skin, iris, eye white, lips, hair, eyebrows, body skin, clothes) or… |
+
+## `lr_read_legacy_preset`
+
+Read an old Lightroom / Camera Raw preset (.xmp, .lrtemplate) and turn it into current Develop settings: process 2010 keys (Exposure+Brightness, Contrast, Recovery, Fill Light, Blacks, Clarity) translated to the current process, strength controls scaled by intensity (default 0.6: old presets were made for small files), halo-prone sharpening tamed. apply: true makes a snapshot on the photos first, then applies. The preset file is only read, never copied.
+
+| Parameter | Type | Required | Description |
+|---|---|:---:|---|
+| `filePath` | string | yes |  |
+| `intensity` | number |  |  Default: `0.6`. |
+| `apply` | boolean |  |  Default: `false`. |
+| `snapshotName` | string |  |  Default: `"Antes do preset"`. |
+| `ids` | integer[] |  | Photo ids (localIdentifier) from lr_find_photos. |
+| `useSelection` | boolean |  | Use the photos selected in Lightroom when no ids are given. Default: `true`. |
 
 ## `lr_get_catalog_info`
 

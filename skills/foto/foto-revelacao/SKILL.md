@@ -38,6 +38,41 @@ Medir em vez de achar: `lr_photo_stats` antes e depois — realces estourados �
 | Quente editorial | Temperatura +5–10% · laranja lum +5 · ColorGrade médios matiz 35–45 sat 8–12 · Contrast +8 |
 | P&B | ConvertToGrayscale true · GrayMixer laranja +10 (pele) · azul −20 (céu) · Contrast +15 |
 
+## 3b. Passo local: máscaras com âncora nas zonas
+
+Depois do tonal global e antes do look (skill `foto-zonas` para medir):
+1. Meça: `media_zone_report` na prévia. Decida o que cada área precisa em zonas ("céu em VII", "rosto em VI").
+2. `lr_masks`: céu (`sky`) → Realces −10 a −30 e Temperatura −3 a −8 se o céu passou de VIII; pessoa
+   (`people`/`subject`) → Exposição +0,1 a +0,4 se o rosto ficou abaixo da zona dele; fundo
+   (`background`) → Exposição −0,1 a −0,4 para separar o assunto. Uma máscara por chamada.
+3. Meça de novo. Máscara que mexe mais que ½ zona é exagero (borda aparece).
+
+## 3c. Ruído por ISO
+
+`lr_find_photos` traz `iso`. Ponto de partida (arquivo atual, sem a IA de ruído):
+
+| ISO | LuminanceSmoothing | ColorNoiseReduction | Nitidez |
+|---|---|---|---|
+| ≤ 400 | 0–5 | 25 (padrão) | 30–40 |
+| 800–1600 | 10–20 | 25–30 | 25–35, máscara 50+ |
+| 3200–6400 | 25–35 | 30–40 | 20–30, máscara 60+ |
+| ≥ 12800 | 40–50 (ou Denoise IA pela pessoa no app) | 40–50 | ≤ 20 |
+
+Pele com ruído alto: suavizar mais na máscara da pessoa, não no global. Celular: trate como ISO × 2.
+
+## 3d. Looks de referência (esportivo, P&B papel antigo, P&B vintage)
+
+Faixas próprias no processo atual; aplique e meça. Para um preset antigo de arquivo use
+`lr_read_legacy_preset` (traduz o processo 2010 e aplica com `intensity` 0,5–0,7, snapshot antes).
+
+| Look | Faixas |
+|---|---|
+| Esportivo dramático (cor apagada) | Exposição −0,2 a −0,4 · Contraste +35 a +55 · Sombras +25 a +40 · Pretos −15 a −25 · Claridade +30 a +50 (fora da pele) · Saturação −30 a −45 com Vibração +10 a +16 · HSL laranja/vermelho/amarelo luminância −10 a −18 · tom dividido sombras 230–235 / 8–11, realces 50–55 / 4–6 · vinheta −20 a −30 |
+| P&B papel antigo (sépia clara) | P&B · mistura vermelho +15, laranja −15, amarelo −20, verde −25, azul +10 · realces sépia (matiz 50–55, sat 40–60) e sombras frias leves (230 / 8) · vinheta **clara** +25 a +40 · grão 40–60, tamanho 50–70, aspereza 60–75 · curva de contraste médio |
+| P&B vintage escuro | P&B · Exposição −0,3 a −0,6 · Contraste +30 a +40 · Sombras +30 · mistura amarelo +30, verde −20, aqua −20 · sombras sépia (35 / 40–60), realces 60 / 15 · vinheta −40 a −60 (ponto médio 20–30) · grão 45–60, aspereza 70–85 |
+
+Valores antigos eram para arquivos de 10 MP: nitidez com raio 3 e claridade +80–100 viram halo hoje.
+
 ## 4. Pele e ética
 
 - Pele em RGB: R > G > B. Verde/magenta = balanço errado.

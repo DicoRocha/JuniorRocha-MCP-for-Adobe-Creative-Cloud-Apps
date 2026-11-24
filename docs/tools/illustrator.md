@@ -36,6 +36,7 @@ Shapes, paths, pathfinder, gradients, live effects, swatches, artboards and expo
 | [`ai_send_cpp_script_message`](#ai_send_cpp_script_message) | Native C++ SDK Bridge (`AIScriptMessageSuite` from Adobe Illustrator 2026 SDK): Send a message selector and JSON/string payload via `app.sendScriptMessage(pluginName, selector,… |
 | [`ai_execute_extendscript`](#ai_execute_extendscript) | Illustrator ExtendScript escape hatch: execute arbitrary .jsx ExtendScript code in Adobe Illustrator (works via CEP WebSocket or zero-plugin Windows COM DoJavaScript). |
 | [`ai_recipe_logo_package`](#ai_recipe_logo_package) | Recipe: logo delivery package from the OPEN Illustrator document (approved logo on one artboard; an artboard named 'simbolo'/'icone'/'symbol' is used for the square marks). |
+| [`ai_recipe_carousel_artboards`](#ai_recipe_carousel_artboards) | Seamless Instagram carousel in Illustrator: a new document with count artboards side by side and NO space between them (named 01..NN, default 1080x1350 pt = px), a layer 'Arte'… |
 | [`ai_recipe_pop_out`](#ai_recipe_pop_out) | Recipe: 'out of bounds' / pop-out portrait built with clipping masks in the OPEN Illustrator document (also asked for as: person coming out of a circle, breaking the frame). |
 
 ## `ai_organize_objects`
@@ -484,6 +485,19 @@ Recipe: logo delivery package from the OPEN Illustrator document (approved logo 
 | `minWidthPx` | integer |  |  Default: `120`. |
 | `usageSheet` | boolean |  |  Default: `true`. |
 | `pdf` | boolean |  |  Default: `true`. |
+
+## `ai_recipe_carousel_artboards`
+
+Seamless Instagram carousel in Illustrator: a new document with count artboards side by side and NO space between them (named 01..NN, default 1080x1350 pt = px), a layer 'Arte' and a locked layer 'Guias' with the safe margin of each card as guides. Draw the background and photos across the artboard edges; keep text and logo inside one artboard's margins. Export each artboard with ai_export_assets (PNG, 72 ppi, 'use artboards'). For independent cards (not seamless) ask first: then the artboards can keep a gap.
+
+| Parameter | Type | Required | Description |
+|---|---|:---:|---|
+| `count` | integer | yes |  |
+| `ratio` | `4:5` · `3:4` · `1:1` · `1.91:1` |  |  Default: `"4:5"`. |
+| `cardWidth` | integer |  |  |
+| `cardHeight` | integer |  |  |
+| `margin` | integer |  |  Default: `80`. |
+| `filePath` | string |  | Save the new document as this .ai right away. |
 
 ## `ai_recipe_pop_out`
 

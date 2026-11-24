@@ -10,6 +10,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { BridgeRouter } from "../../core/bridge-router.js";
 import { buildImageToolResponse, formatErrorResponse } from "../../core/image-helper.js";
 import { resolveKit, hexToRgb } from "../../core/brand-kit.js";
+import { CAROUSEL_SIZES, planCarousel } from "../../core/carousel.js";
 import { contactSheet, decodePng, encodePng, type RgbImage } from "../../core/png.js";
 
 /** File-name slug: lowercase, no accents, words joined by '-'. */
@@ -201,6 +202,38 @@ export function registerIllustratorRecipe(server: McpServer, router: BridgeRoute
         const res = formatErrorResponse(err);
         if (steps.length) res.content.push({ type: "text", text: `Etapas concluídas antes do erro:\n- ${steps.join("\n- ")}` });
         return res;
+      }
+    }
+  );
+
+  server.tool(
+    "ai_recipe_carousel_artboards",
+    "Seamless Instagram carousel in Illustrator: a new document with count artboards side by side and NO space between " +
+      "them (named 01..NN, default 1080x1350 pt = px), a layer 'Arte' and a locked layer 'Guias' with the safe margin " +
+      "of each card as guides. Draw the background and photos across the artboard edges; keep text and logo inside one " +
+      "artboard's margins. Export each artboard with ai_export_assets (PNG, 72 ppi, 'use artboards'). For independent " +
+      "cards (not seamless) ask first: then the artboards can keep a gap.",
+    {
+      count: z.number().int().min(2).max(20),
+      ratio: z.enum(["4:5", "3:4", "1:1", "1.91:1"]).optional().default("4:5"),
+      cardWidth: z.number().int().positive().optional(),
+      cardHeight: z.number().int().positive().optional(),
+      margin: z.number().int().min(0).max(300).optional().default(80),
+      filePath: z.string().optional().describe("Save the new document as this .ai right away.")
+    },
+    async (params) => {
+      try {
+        const size = CAROUSEL_SIZES[(params.ratio ?? "4:5") as keyof typeof CAROUSEL_SIZES];
+        const plan = planCarousel({ count: params.count, ratio: params.ratio, cardWidth: params.cardWidth ?? size.width, cardHeight: params.cardHeight ?? size.height, margin: params.margin });
+        const res = await router.dispatch(
+          "illustrator",
+          "ai.recipe.carouselArtboards",
+          { count: plan.count, cardWidth: plan.cardWidth, cardHeight: plan.cardHeight, margin: plan.margin, filePath: params.filePath },
+          { timeoutMs: 70000 }
+        );
+        return { content: [{ type: "text" as const, text: JSON.stringify({ ...((res.data || {}) as object), fileNames: plan.fileNames, warnings: plan.warnings }, null, 2) }] };
+      } catch (err) {
+        return formatErrorResponse(err);
       }
     }
   );

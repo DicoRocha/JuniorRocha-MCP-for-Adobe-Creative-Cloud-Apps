@@ -6,6 +6,7 @@ import { REFERENCE_LOOKS, referenceLook } from "../../core/looks.js";
 import { countLeaves, planTree, psTreeToNodes } from "../../core/grouping.js";
 import { auditPhotoshop, summarize, type PsAuditData } from "../../core/audit.js";
 import { FORMATS, resolveZones } from "../../core/formats.js";
+import { CAROUSEL_SIZES, planCarousel } from "../../core/carousel.js";
 import * as path from "node:path";
 import { loadRecords, fillPattern } from "../../core/records.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -389,6 +390,68 @@ export function registerPhotoshopTools(realServer: McpServer, router: BridgeRout
           { undoGroup: `MCP: Look ${params.look}`, timeoutMs: 60000 }
         );
         return formatSuccessResponse({ ...((res.data || {}) as object), description: l.description });
+      } catch (err) {
+        return formatErrorResponse(err);
+      }
+    }
+  );
+
+  server.tool(
+    "ps_recipe_carousel_setup",
+    "Seamless Instagram carousel (one continuous panel, also called panoramic or infinite carousel), step 1: a new " +
+      "wide document = count x card width (default 1080x1350, 4:5) with guides at every seam, at the safe margin inside " +
+      "each card and at the 3:4 profile-grid crop of card 1, a 'Fundo continuo' layer and one empty 'Card NN - textos' " +
+      "group per card. Background shapes and photos may cross the seams; text and logo stay inside one card's margins. " +
+      "For a carousel of independent cards use ps_artboards instead (ask the person which kind first). Then build the " +
+      "art and export with ps_recipe_carousel_split.",
+    {
+      count: z.number().int().min(2).max(20).describe("Number of cards (Instagram: 2-20; 5-10 is usual)."),
+      ratio: z.enum(["4:5", "3:4", "1:1", "1.91:1"]).optional().default("4:5").describe("4:5 = 1080x1350 (standard), 3:4 = 1080x1440."),
+      cardWidth: z.number().int().positive().optional().describe("Overrides the ratio's width (keep 1080 for Instagram)."),
+      cardHeight: z.number().int().positive().optional(),
+      margin: z.number().int().min(0).max(300).optional().default(80).describe("Safe margin in px from every card edge (and so from every seam)."),
+      name: z.string().optional().describe("Document name."),
+      psdPath: z.string().optional().describe("Save the new document as this PSD right away.")
+    },
+    async (params) => {
+      try {
+        const size = CAROUSEL_SIZES[(params.ratio ?? "4:5") as keyof typeof CAROUSEL_SIZES];
+        const plan = planCarousel({ count: params.count, ratio: params.ratio, cardWidth: params.cardWidth ?? size.width, cardHeight: params.cardHeight ?? size.height, margin: params.margin });
+        const res = await router.dispatch(
+          "photoshop",
+          "ps.recipe.carouselSetup",
+          { count: plan.count, cardWidth: plan.cardWidth, cardHeight: plan.cardHeight, margin: plan.margin, name: params.name, psdPath: params.psdPath },
+          { undoGroup: "MCP: Carrossel seamless", timeoutMs: 70000 }
+        );
+        return formatSuccessResponse({ ...((res.data || {}) as object), seams: plan.seams, warnings: plan.warnings, next: "Build the art, then ps_recipe_carousel_split." });
+      } catch (err) {
+        return formatErrorResponse(err);
+      }
+    }
+  );
+
+  server.tool(
+    "ps_recipe_carousel_split",
+    "Seamless Instagram carousel, step 2: cut the wide document into its cards and export them in posting order " +
+      "(<prefix>_01.png ... _NN) at exact whole pixels, without touching the working document (a flattened duplicate is " +
+      "cut, card by card, so the 8192 px Save for Web limit does not apply; never use the Slice tool or Save for Web slices for this). Checks first that the width is an exact " +
+      "multiple of the card width and that no text or logo layer (names with logo/marca/brand) crosses a seam or sits " +
+      "inside the margin next to one (reported in seamIssues). PNG is the default: JPEG blocks show at the seams.",
+    {
+      documentName: z.string().optional(),
+      outputFolder: z.string().describe("Folder for the cards."),
+      prefix: z.string().optional().describe("File name prefix (default: the document name)."),
+      count: z.number().int().min(2).max(20).optional().describe("Number of cards (default: width / cardWidth)."),
+      cardWidth: z.number().int().positive().optional().default(1080),
+      margin: z.number().int().min(0).max(300).optional().default(80).describe("Margin used for the seam check."),
+      format: z.enum(["png", "jpg", "webp"]).optional().default("png"),
+      quality: z.number().int().min(1).max(100).optional().default(92).describe("jpg/webp quality."),
+      allowTextOnSeams: z.boolean().optional().default(false).describe("Export even when text crosses a seam (normally a mistake).")
+    },
+    async (params) => {
+      try {
+        const res = await router.dispatch("photoshop", "ps.recipe.carouselSplit", params, { undoGroup: "MCP: Exportar carrossel", timeoutMs: 70000 });
+        return formatSuccessResponse(res.data);
       } catch (err) {
         return formatErrorResponse(err);
       }

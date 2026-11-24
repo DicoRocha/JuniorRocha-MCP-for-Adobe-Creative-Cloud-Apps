@@ -1697,6 +1697,133 @@ function __psDispatch(action, params, _options) {
     return { documentName: docLk.name, look: params.name, layers: madeLk, groupId: gLk, opacity: opLk };
   }
 
+  if (action === "ps.recipe.carouselSetup") {
+    // Seamless carousel: one wide document (count x card width), guides at every seam and at the safe margin of
+    // each card, and the 3:4 grid crop of the first card (the profile grid shows that crop). Background and
+    // images cross the seams; text and logo stay inside the margins of one card.
+    var cw = Number(params.cardWidth) || 1080;
+    var ch = Number(params.cardHeight) || 1350;
+    var n = Math.max(2, Math.min(20, Number(params.count) || 5));
+    var mg = typeof params.margin === "number" ? params.margin : 80;
+    var prevU = app.preferences.rulerUnits;
+    app.preferences.rulerUnits = Units.PIXELS;
+    try {
+      var dS = app.documents.add(UnitValue(cw * n, "px"), UnitValue(ch, "px"), 72, params.name || ("carrossel_seamless_" + n), NewDocumentMode.RGB, DocumentFill.WHITE);
+      var guides = 0;
+      for (var g = 0; g <= n; g++) {
+        dS.guides.add(Direction.VERTICAL, UnitValue(g * cw, "px"));
+        guides++;
+        if (g < n && mg > 0) {
+          dS.guides.add(Direction.VERTICAL, UnitValue(g * cw + mg, "px"));
+          dS.guides.add(Direction.VERTICAL, UnitValue((g + 1) * cw - mg, "px"));
+          guides += 2;
+        }
+      }
+      if (mg > 0) {
+        dS.guides.add(Direction.HORIZONTAL, UnitValue(mg, "px"));
+        dS.guides.add(Direction.HORIZONTAL, UnitValue(ch - mg, "px"));
+        guides += 2;
+      }
+      var gridW = Math.round(ch * 3 / 4);
+      var gridSide = gridW < cw ? Math.round((cw - gridW) / 2) : 0;
+      if (gridSide > 0 && params.gridGuides !== false) {
+        dS.guides.add(Direction.VERTICAL, UnitValue(gridSide, "px"));
+        dS.guides.add(Direction.VERTICAL, UnitValue(cw - gridSide, "px"));
+        guides += 2;
+      }
+      // Background layer named for the content that crosses the seams; one empty group per card for its text.
+      var bgL = dS.layers[dS.layers.length - 1];
+      try { bgL.isBackgroundLayer = false; } catch (_eBg) {}
+      bgL.name = "Fundo continuo";
+      var cards = [];
+      for (var c = n; c >= 1; c--) {
+        var setC = dS.layerSets.add();
+        setC.name = "Card " + (c < 10 ? "0" + c : c) + " - textos";
+        cards.push(setC.name);
+      }
+      var outS = { document: dS.name, width: cw * n, height: ch, cards: n, cardWidth: cw, cardHeight: ch, margin: mg, guides: guides, gridCropSide: gridSide, groups: cards.reverse() };
+      if (params.psdPath) {
+        var pf = __mcpPrepareOutputFile(params.psdPath);
+        dS.saveAs(pf, new PhotoshopSaveOptions(), false, Extension.LOWERCASE);
+        outS.psd = pf.fsName;
+      }
+      return outS;
+    } finally {
+      app.preferences.rulerUnits = prevU;
+    }
+  }
+
+  if (action === "ps.recipe.carouselSplit") {
+    // Export a seamless carousel: check the seams, flatten a duplicate, crop each card at exact whole pixels and
+    // write <prefix>_01..N. The working document is not changed.
+    var dX = __psRequireDoc();
+    if (params.documentName) dX = app.documents.getByName(params.documentName);
+    app.activeDocument = dX;
+    var prevUX = app.preferences.rulerUnits;
+    app.preferences.rulerUnits = Units.PIXELS;
+    var warnX = [];
+    try {
+      var W = Math.round(dX.width.as("px")), H = Math.round(dX.height.as("px"));
+      var cwX = Number(params.cardWidth) || 0;
+      var nX = Number(params.count) || 0;
+      if (!cwX && nX) cwX = W / nX;
+      if (!cwX) cwX = 1080;
+      if (!nX) nX = Math.round(W / cwX);
+      if (Math.abs(nX * cwX - W) > 0.5 || cwX !== Math.round(cwX)) {
+        __mcpFail("INVALID_PARAMS", "The document is " + W + " px wide: not " + nX + " cards of " + cwX + " px. Make the width an exact multiple of the card width (canvas size), never resize the cards after.");
+      }
+      if (nX > 20) warnX.push("Instagram takes at most 20 cards; this has " + nX + ".");
+      var mgX = typeof params.margin === "number" ? params.margin : 80;
+      // Seam check: text must not cross a seam and should keep the margin from it.
+      var layersX = __psCollectLayers(dX, 0, 8);
+      var crossing = [];
+      var walkX = function (list) {
+        for (var i = 0; i < list.length; i++) {
+          var it = list[i];
+          var isMark = /logo|marca|brand|assinatura/i.test(String(it.name));
+          if (it.children && !isMark) { walkX(it.children); continue; }
+          if (!it.visible || !it.bounds || (it.kind !== "LayerKind.TEXT" && !isMark)) continue;
+          var l = it.bounds[0], r = it.bounds[2];
+          for (var sI = 1; sI < nX; sI++) {
+            var sx = sI * cwX;
+            if (l < sx && r > sx) crossing.push({ layer: it.name, seam: sI, problem: "crosses the seam between card " + sI + " and " + (sI + 1) });
+            else if ((l >= sx && l < sx + mgX) || (r <= sx && r > sx - mgX)) crossing.push({ layer: it.name, seam: sI, problem: "inside the " + mgX + " px margin next to a seam" });
+          }
+        }
+      };
+      walkX(layersX);
+      if (crossing.length && params.allowTextOnSeams !== true) {
+        warnX.push(crossing.length + " text or logo layer(s) cross or touch a seam: a word or logo cut between two cards does not read. Move them inside one card, or pass allowTextOnSeams: true.");
+      }
+      var fmtX = String(params.format || "png").toLowerCase();
+      var folder = String(params.outputFolder);
+      var prefix = params.prefix || String(dX.name).replace(/\.[^.]+$/, "");
+      var flat = dX.duplicate("mcp_carrossel_flat", true);
+      var files = [];
+      try {
+        __psPrepareForWeb(flat, { srgb: params.srgb }, warnX);
+        for (var k = 0; k < nX; k++) {
+          var one = flat.duplicate("mcp_card_" + (k + 1), true);
+          try {
+            one.crop([UnitValue(k * cwX, "px"), UnitValue(0, "px"), UnitValue((k + 1) * cwX, "px"), UnitValue(H, "px")]);
+            var num = k + 1 < 10 ? "0" + (k + 1) : String(k + 1);
+            var fp = folder.replace(/[\\\/]+$/, "") + "/" + prefix + "_" + num + "." + fmtX;
+            var wr = __psWriteWeb(one, fp, fmtX, typeof params.quality === "number" ? params.quality : 92, { transparent: false, srgb: params.srgb });
+            files.push({ card: k + 1, path: new File(fp).fsName, width: one.width.as("px"), height: one.height.as("px"), bytes: wr && wr.bytes ? wr.bytes : new File(fp).length });
+          } finally {
+            one.close(SaveOptions.DONOTSAVECHANGES);
+          }
+        }
+      } finally {
+        flat.close(SaveOptions.DONOTSAVECHANGES);
+        app.activeDocument = dX;
+      }
+      return { document: dX.name, cards: nX, cardWidth: cwX, cardHeight: H, format: fmtX, files: files, seamIssues: crossing, warnings: warnX };
+    } finally {
+      app.preferences.rulerUnits = prevUX;
+    }
+  }
+
   if (action === "ps.layers.groupPlan") {
     // Builds the groups proposed by ps_organize_layers: children first, then the group that holds them.
     var docGP = __psRequireDoc();

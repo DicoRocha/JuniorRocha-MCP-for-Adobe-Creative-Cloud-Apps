@@ -17,6 +17,8 @@ Documents, layers, masks, smart objects, adjustments, artboards, recipes and aud
 | [`ps_recipe_zone_dodge_burn`](#ps_recipe_zone_dodge_burn) | Dodge & burn by zones without a brush: Curves layers masked by luminosity masks (lift the shadows on Sombras 2, hold the highlights on Luzes 2, optional midtone contrast on… |
 | [`ps_recipe_frequency_separation`](#ps_recipe_frequency_separation) | Light frequency separation for skin, no brush: Baixa frequencia (blur) + Alta frequencia (Apply Image, Linear Light) rebuild the photo exactly; Suavizar pele (edge-preserving… |
 | [`ps_recipe_look`](#ps_recipe_look) | Apply a reference look as editable adjustment layers in one group above everything (the photo is not touched): esportivo-dramatico, pb-papel-antigo, pb-vintage. |
+| [`ps_recipe_carousel_setup`](#ps_recipe_carousel_setup) | Seamless Instagram carousel (one continuous panel, also called panoramic or infinite carousel), step 1: a new wide document = count x card width (default 1080x1350, 4:5) with… |
+| [`ps_recipe_carousel_split`](#ps_recipe_carousel_split) | Seamless Instagram carousel, step 2: cut the wide document into its cards and export them in posting order (<prefix>_01.png ... |
 | [`ps_recipe_film_grain`](#ps_recipe_film_grain) | Film grain on top of the document: a 50 % grey layer in Overlay with monochrome Gaussian noise, slightly blurred. |
 | [`ps_organize_layers`](#ps_organize_layers) | Organise a Photoshop document in groups by meaning: text on a shape becomes a label group, an icon with its text (and the lines under it) an item group, repeated items/labels… |
 | [`ps_create_layer`](#ps_create_layer) | Create a new pixel layer, group (folder), solid color fill layer, or text layer in Photoshop. |
@@ -170,6 +172,36 @@ Apply a reference look as editable adjustment layers in one group above everythi
 | `documentName` | string |  |  |
 | `look` | `esportivo-dramatico` · `pb-papel-antigo` · `pb-vintage` | yes |  |
 | `intensity` | number |  |  Default: `0.7`. |
+
+## `ps_recipe_carousel_setup`
+
+Seamless Instagram carousel (one continuous panel, also called panoramic or infinite carousel), step 1: a new wide document = count x card width (default 1080x1350, 4:5) with guides at every seam, at the safe margin inside each card and at the 3:4 profile-grid crop of card 1, a 'Fundo continuo' layer and one empty 'Card NN - textos' group per card. Background shapes and photos may cross the seams; text and logo stay inside one card's margins. For a carousel of independent cards use ps_artboards instead (ask the person which kind first). Then build the art and export with ps_recipe_carousel_split.
+
+| Parameter | Type | Required | Description |
+|---|---|:---:|---|
+| `count` | integer | yes | Number of cards (Instagram: 2-20; 5-10 is usual). |
+| `ratio` | `4:5` · `3:4` · `1:1` · `1.91:1` |  | 4:5 = 1080x1350 (standard), 3:4 = 1080x1440. Default: `"4:5"`. |
+| `cardWidth` | integer |  | Overrides the ratio's width (keep 1080 for Instagram). |
+| `cardHeight` | integer |  |  |
+| `margin` | integer |  | Safe margin in px from every card edge (and so from every seam). Default: `80`. |
+| `name` | string |  | Document name. |
+| `psdPath` | string |  | Save the new document as this PSD right away. |
+
+## `ps_recipe_carousel_split`
+
+Seamless Instagram carousel, step 2: cut the wide document into its cards and export them in posting order (<prefix>_01.png ... _NN) at exact whole pixels, without touching the working document (a flattened duplicate is cut, card by card, so the 8192 px Save for Web limit does not apply; never use the Slice tool or Save for Web slices for this). Checks first that the width is an exact multiple of the card width and that no text or logo layer (names with logo/marca/brand) crosses a seam or sits inside the margin next to one (reported in seamIssues). PNG is the default: JPEG blocks show at the seams.
+
+| Parameter | Type | Required | Description |
+|---|---|:---:|---|
+| `documentName` | string |  |  |
+| `outputFolder` | string | yes | Folder for the cards. |
+| `prefix` | string |  | File name prefix (default: the document name). |
+| `count` | integer |  | Number of cards (default: width / cardWidth). |
+| `cardWidth` | integer |  |  Default: `1080`. |
+| `margin` | integer |  | Margin used for the seam check. Default: `80`. |
+| `format` | `png` · `jpg` · `webp` |  |  Default: `"png"`. |
+| `quality` | integer |  | jpg/webp quality. Default: `92`. |
+| `allowTextOnSeams` | boolean |  | Export even when text crosses a seam (normally a mistake). Default: `false`. |
 
 ## `ps_recipe_film_grain`
 

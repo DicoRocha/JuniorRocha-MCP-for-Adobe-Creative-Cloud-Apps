@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ExtensionManifest Version="11.0" ExtensionBundleId="com.jradbmcp.universal" ExtensionBundleVersion="1.4.19"
+<ExtensionManifest Version="11.0" ExtensionBundleId="com.jradbmcp.universal" ExtensionBundleVersion="1.4.20"
   ExtensionBundleName="Junior Rocha MCP" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <ExtensionList>
-    <Extension Id="com.jradbmcp.universal.panel" Version="1.4.19" />
-    <Extension Id="com.jradbmcp.universal.background" Version="1.4.19" />
+    <Extension Id="com.jradbmcp.universal.panel" Version="1.4.20" />
+    <Extension Id="com.jradbmcp.universal.background" Version="1.4.20" />
   </ExtensionList>
   <ExecutionEnvironment>
     <HostList>

@@ -9,6 +9,9 @@ Leia antes: `roteiro-carrossel` (o texto de cada slide), `craft-composicao`, `cr
 
 ## 0. Regras de 18/11/2026 (valem acima do resto desta skill)
 
+- **Pergunte o tipo** quando a pessoa não disser: "cards individuais ou sem emendas (seamless)?". Sem
+  emendas (um painel contínuo que atravessa os cards) segue `social-carrossel-seamless`; esta skill é a
+  dos cards individuais.
 - **Pergunte onde fazer** quando a pessoa não disser: carrossel pode ser feito no Photoshop ou no
   Illustrator. Uma pergunta, antes de começar.
 - **Um arquivo só.** No Photoshop o carrossel é **um PSD com uma prancheta por slide** (`01`…`N`), nunca
@@ -70,7 +73,7 @@ Use `jradb_batch` (app photoshop) para agrupar as edições de um slide numa só
 
 | Técnica | Como |
 |---|---|
-| Elemento que atravessa a borda | Documento panorâmico (N × 1080 de largura) com a forma ou a foto atravessando; recortar em N fatias com `ps_modify_canvas` crop em cópias |
+| Elemento que atravessa a borda | Carrossel sem emendas: `social-carrossel-seamless` (`ps_recipe_carousel_setup` → `ps_recipe_carousel_split`) |
 | Número grande | Camada "Numero" no mesmo canto, 160–240 px, cor de destaque com 20–40% de opacidade |
 | Barra de progresso | Retângulo na base com largura = slide/N × área útil |
 

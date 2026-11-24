@@ -651,6 +651,61 @@ function __mcpDispatch(action, params, _options) {
     return { documentName: docGP.name, created: madeGP, failed: failedGP };
   }
 
+  if (action === "ai.recipe.carouselArtboards") {
+    // Seamless carousel in Illustrator: N artboards side by side with no space between them (Rearrange All with
+    // spacing 0), named 01..N, plus a locked "Guias" layer with the seams and the safe margins as guides.
+    var cwA = Number(params.cardWidth) || 1080;
+    var chA = Number(params.cardHeight) || 1350;
+    var nA = Math.max(2, Math.min(20, Number(params.count) || 5));
+    var mgA = typeof params.margin === "number" ? params.margin : 80;
+    if (nA * cwA > 16000) __mcpFail("INVALID_PARAMS", nA + " cards of " + cwA + " pt make " + (nA * cwA) + " pt: wider than the Illustrator canvas (about 16383 pt). Use fewer cards here or build it in Photoshop (ps_recipe_carousel_setup).");
+    var docA = app.documents.add(DocumentColorSpace.RGB, cwA, chA);
+    var r0 = docA.artboards[0].artboardRect; // [left, top, right, bottom], y up
+    var left0 = r0[0], top0 = r0[1];
+    docA.artboards[0].artboardRect = [left0, top0, left0 + cwA, top0 - chA];
+    docA.artboards[0].name = "01";
+    for (var a = 1; a < nA; a++) {
+      var ab = docA.artboards.add([left0 + a * cwA, top0, left0 + (a + 1) * cwA, top0 - chA]);
+      ab.name = (a + 1 < 10 ? "0" : "") + (a + 1);
+    }
+    var art = docA.layers[0];
+    art.name = "Arte";
+    var gl = docA.layers.add();
+    gl.name = "Guias";
+    var guideLine = function (x1, y1, x2, y2) {
+      var pth = gl.pathItems.add();
+      pth.setEntirePath([[x1, y1], [x2, y2]]);
+      pth.guides = true;
+    };
+    var bottom0 = top0 - chA;
+    for (var s1 = 0; s1 < nA; s1++) {
+      var x0 = left0 + s1 * cwA;
+      if (mgA > 0) {
+        guideLine(x0 + mgA, top0, x0 + mgA, bottom0);
+        guideLine(x0 + cwA - mgA, top0, x0 + cwA - mgA, bottom0);
+      }
+    }
+    if (mgA > 0) {
+      guideLine(left0, top0 - mgA, left0 + nA * cwA, top0 - mgA);
+      guideLine(left0, bottom0 + mgA, left0 + nA * cwA, bottom0 + mgA);
+    }
+    gl.locked = true;
+    docA.activeLayer = art;
+    var outA = { document: docA.name, artboards: nA, cardWidth: cwA, cardHeight: chA, margin: mgA, totalWidth: nA * cwA, origin: [left0, top0] };
+    if (params.filePath) {
+      var prevUilA = app.userInteractionLevel;
+      app.userInteractionLevel = UserInteractionLevel.DONTDISPLAYALERTS;
+      try {
+        var tgt = __mcpPrepareOutputFile(params.filePath);
+        docA.saveAs(tgt, new IllustratorSaveOptions());
+        outA.filePath = tgt.fsName;
+      } finally {
+        app.userInteractionLevel = prevUilA;
+      }
+    }
+    return outA;
+  }
+
   if (action === "ai.batch") {
     return __mcpBatch(params, "ai");
   }

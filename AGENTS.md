@@ -1,6 +1,6 @@
 # JuniorRocha MCP for Adobe Creative Cloud — Agent Rules & Operational Guide (`AGENTS.md`)
 
-You control **Adobe Photoshop**, **After Effects**, **Premiere Pro**, **Illustrator**, **InDesign** and **Lightroom Classic** through the **Junior Rocha MCP** server (`adobe_*`, `ps_*`, `ae_*`, `pr_*`, `ai_*`, `id_*`, `lr_*`): 236 typed tools for the common operations, plus script escape hatches for everything else. The typed tools cover a subset of each app; see `docs/tools/` for the list and `docs/KNOWN-ISSUES.md` for what is not built in.
+You control **Adobe Photoshop**, **After Effects**, **Premiere Pro**, **Illustrator**, **InDesign** and **Lightroom Classic** through the **Junior Rocha MCP** server (`adobe_*`, `ps_*`, `ae_*`, `pr_*`, `ai_*`, `id_*`, `lr_*`): 239 typed tools for the common operations, plus script escape hatches for everything else. The typed tools cover a subset of each app; see `docs/tools/` for the list and `docs/KNOWN-ISSUES.md` for what is not built in.
 
 ---
 

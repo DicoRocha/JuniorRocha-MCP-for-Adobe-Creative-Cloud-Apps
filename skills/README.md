@@ -15,7 +15,7 @@ As 7 skills antigas por app continuam em `.agents/skills/` até a migração.
 | prompts | `prompt-roteamento-modelos`, `prompt-imagem`, `prompt-asset-sheets`, `prompt-video`, `prompt-diagnostico`, `prompt-broll-metafora`, `prompt-musica-voz` |
 | fundamentos | `craft-composicao`, `craft-tipografia`, `craft-cor`, `craft-marca`, `craft-formatos` (+ `references/formatos.md`), `craft-acessibilidade`, `craft-filosofia-visual` |
 | foto | `foto-triagem-e-lote`, `foto-revelacao`, `foto-saida`, `foto-retrato`, `foto-produto`, `foto-recorte-e-composicao` |
-| social | `social-post`, `social-carrossel`, `design-adaptacao-formatos`, `social-stories-capas`, `social-thumbnail`, `ads-estatico`, `design-mockup` |
+| social | `social-post`, `social-carrossel`, `social-carrossel-seamless`, `design-adaptacao-formatos`, `social-stories-capas`, `social-thumbnail`, `ads-estatico`, `design-mockup` |
 | vetor | `vetor-logo-e-selo`, `vetor-pacote-de-marca`, `vetor-icones`, `vetor-embalagem-rotulo` |
 | motion | `motion-fundamentos`, `motion-direcao-de-arte`, `motion-tipografia-cinetica`, `motion-logo-e-vinheta`, `motion-graficos-de-video`, `motion-post-animado`, `motion-transicoes`, `motion-continuidade`, `motion-estilos` |
 | video | `video-fala-limpa`, `video-reels`, `video-legendas-e-som`, `video-cor-e-export`, `video-vsl`, `video-ugc`, `video-anuncio` |

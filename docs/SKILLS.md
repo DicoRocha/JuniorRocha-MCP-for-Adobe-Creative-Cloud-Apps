@@ -71,6 +71,7 @@ Static pieces for feeds, stories and paid media.
 |---|---|
 | [`social-post`](../skills/social/social-post/SKILL.md) | A static post from brief to layered PSD and exported image, with treated photo, headline, call to action and brand, in one or several formats. |
 | [`social-carrossel`](../skills/social/social-carrossel/SKILL.md) | A carousel of five to ten slides from the script: template with named layers, continuity between slides and numbered export. |
+| [`social-carrossel-seamless`](../skills/social/social-carrossel-seamless/SKILL.md) | A seamless (panoramic) carousel: one wide canvas cut into 1080 px cards, imagery across the seams, text and logo inside the margins; Photoshop setup and split scripts, Illustrator artboards with no gap. |
 | [`social-stories-capas`](../skills/social/social-stories-capas/SKILL.md) | Stories sequences, Reels covers that work in the feed and in the grid, and highlight covers, respecting the interface zones. |
 | [`social-thumbnail`](../skills/social/social-thumbnail/SKILL.md) | A video thumbnail that reads at small size: one face, one emotion, up to four words, strong separation from the background, and test variations. |
 | [`ads-estatico`](../skills/social/ads-estatico/SKILL.md) | Static performance ads: the anatomy of hook, headline, proof, brand and call to action, a template per format and batch production from a sheet. |

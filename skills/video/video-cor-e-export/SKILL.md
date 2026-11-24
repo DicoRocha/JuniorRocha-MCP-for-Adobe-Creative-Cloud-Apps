@@ -14,7 +14,7 @@ description: Cor e exportação de vídeo no Premiere — correção antes do lo
 5. **Ajuste do usuário manda:** se ele já fez a cor (Color Mode, Lumetri, camada de ajuste), use o dele (aninhe a
    sequência dele) e não ponha look por cima.
 6. Looks com nome no `pr_color { look, intensity }`: `natural-limpo`, `cinematico-contido`, `quente-editorial`,
-   `frio-tecnologico`, `pb-contraste` (intensidade 0,5–0,8, depois da correção). Meça antes e depois num quadro
+   `frio-tecnologico`, `pb-contraste`, e os de foto `esportivo-dramatico`, `pb-papel-antigo`, `pb-vintage` (intensidade 0,5–0,8, depois da correção). Meça antes e depois num quadro
    (`media_zone_report`): o look tem de aparecer nos números.
 7. **Sequência-modelo:** a API não cria camada de ajuste. Para um padrão de marca, a pessoa monta uma vez uma
    sequência `Modelo` com as camadas de ajuste (cor, vinheta, legenda) e você duplica com `pr_duplicate_sequence`

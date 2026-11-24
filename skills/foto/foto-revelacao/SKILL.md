@@ -73,6 +73,11 @@ Faixas próprias no processo atual; aplique e meça. Para um preset antigo de ar
 
 Valores antigos eram para arquivos de 10 MP: nitidez com raio 3 e claridade +80–100 viram halo hoje.
 
+Os três looks já prontos nos três apps, com intensidade: `lr_apply_look { look }` (Lightroom, snapshot antes),
+`ps_recipe_look { look }` (Photoshop: camadas de ajuste num grupo, opacidade = intensidade) e
+`pr_color { look }` (Premiere; o tom sépia e a vinheta ficam com o Color Mode). Nomes: `esportivo-dramatico`,
+`pb-papel-antigo`, `pb-vintage`.
+
 ## 4. Pele e ética
 
 - Pele em RGB: R > G > B. Verde/magenta = balanço errado.

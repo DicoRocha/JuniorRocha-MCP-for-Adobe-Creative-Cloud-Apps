@@ -206,7 +206,7 @@ describe("Photoshop UXP bridge", () => {
     const main = read("bridges/uxp-photoshop/main.js");
     const missing = [...new Set(actions)].filter((a) => !main.includes(`"${a}"`));
     // These run in the ExtendScript handlers; the UXP panel answers ACTION_NOT_SUPPORTED and its hybrid mode runs them.
-    expect(missing.sort()).toEqual(["ps.cameraRaw", "ps.guides", "ps.layers.groupPlan", "ps.layers.layoutInfo", "ps.luminosityMasks", "ps.raw.executeExtendScript", "ps.recipe.filmGrain", "ps.recipe.frequencySeparation", "ps.recipe.zoneDodgeBurn"]);
+    expect(missing.sort()).toEqual(["ps.cameraRaw", "ps.guides", "ps.layers.groupPlan", "ps.layers.layoutInfo", "ps.luminosityMasks", "ps.raw.executeExtendScript", "ps.recipe.filmGrain", "ps.recipe.frequencySeparation", "ps.recipe.look", "ps.recipe.zoneDodgeBurn"]);
     const es = read("src/extendscript/ps-handlers.jsx");
     for (const a of ["ps.cameraRaw", "ps.guides", "ps.layers.groupPlan", "ps.layers.layoutInfo"]) expect(es).toContain(`action === "${a}"`);
   });

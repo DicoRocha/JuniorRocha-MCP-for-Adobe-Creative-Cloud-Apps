@@ -1,6 +1,7 @@
 import { downscaleBase64 } from "../../media/downscale.js";
 import { z } from "zod";
-import { parsePreset, translatePreset } from "../../media/legacy-preset.js";
+import { parsePreset, scaleDevelopSettings, translatePreset } from "../../media/legacy-preset.js";
+import { REFERENCE_LOOKS, referenceLook } from "../../core/looks.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { BridgeRouter } from "../../core/bridge-router.js";
 import { buildImageToolResponse, formatErrorResponse, formatSuccessResponse } from "../../core/image-helper.js";
@@ -119,6 +120,32 @@ export function buildLrColorSettings(p: {
 }
 
 export function registerLightroomTools(server: McpServer, router: BridgeRouter): void {
+  server.tool(
+    "lr_apply_look",
+    "Apply a reference look (same as ps_recipe_look and pr_color): " +
+      Object.keys(REFERENCE_LOOKS).join(", ") +
+      ". Strength controls scaled by intensity (default 0.7); a snapshot is made on the photos first. Apply after the " +
+      "technical and tonal correction (foto-revelacao), then measure.",
+    {
+      look: z.enum(Object.keys(REFERENCE_LOOKS) as [string, ...string[]]),
+      intensity: z.number().min(0).max(1.5).optional().default(0.7),
+      snapshotName: z.string().optional(),
+      ...PhotoTargets
+    },
+    async (p) => {
+      try {
+        const l = referenceLook(p.look);
+        const settings = scaleDevelopSettings(l.lightroom, p.intensity);
+        const targets = { ids: p.ids, useSelection: p.useSelection };
+        await router.dispatch("lightroom", "lr.develop.snapshot", { ...targets, name: p.snapshotName ?? `Antes do look ${p.look}` }, { undoGroup: "MCP: snapshot before look" });
+        const res = await router.dispatch("lightroom", "lr.develop.apply", { ...targets, settings, historyName: `MCP: look ${p.look} ${Math.round(p.intensity * 100)}%` }, { undoGroup: "MCP: look", timeoutMs: 300000 });
+        return formatSuccessResponse({ look: p.look, description: l.description, intensity: p.intensity, settings, result: res.data });
+      } catch (err) {
+        return formatErrorResponse(err);
+      }
+    }
+  );
+
   server.tool(
     "lr_read_legacy_preset",
     "Read an old Lightroom / Camera Raw preset (.xmp, .lrtemplate) and turn it into current Develop settings: process 2010 " +

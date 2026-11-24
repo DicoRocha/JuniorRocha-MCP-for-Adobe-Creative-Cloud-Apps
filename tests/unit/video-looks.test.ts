@@ -20,3 +20,25 @@ describe("video looks and peaks", () => {
     expect(hotSpots(a, sr, -1)).toEqual([2, 4.5]);
   });
 });
+
+import { REFERENCE_LOOKS } from "../../src/core/looks.js";
+import { VIDEO_LOOKS } from "../../src/core/video-looks.js";
+import { scaleDevelopSettings } from "../../src/media/legacy-preset.js";
+
+describe("reference looks in every app", () => {
+  it("each look has Lightroom keys, a Photoshop stack and pr_color values, and pr_color knows it", () => {
+    for (const [name, l] of Object.entries(REFERENCE_LOOKS)) {
+      expect(Object.keys(l.lightroom).length, name).toBeGreaterThan(5);
+      expect(Object.keys(l.photoshop).length, name).toBeGreaterThan(1);
+      expect(VIDEO_LOOKS[name], name).toBeTruthy();
+    }
+  });
+
+  it("intensity scales strength, keeps switches and hues", () => {
+    const s = scaleDevelopSettings(REFERENCE_LOOKS["pb-vintage"].lightroom, 0.5);
+    expect(s.ConvertToGrayscale).toBe(true);
+    expect(s.SplitToningShadowHue).toBe(35);
+    expect(s.PostCropVignetteAmount).toBe(-25);
+    expect(s.Exposure2012).toBeCloseTo(-0.22, 2);
+  });
+});

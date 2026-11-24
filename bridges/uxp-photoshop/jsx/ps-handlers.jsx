@@ -873,6 +873,30 @@ function __psMakeLuminosityMasks(doc, steps, names, withMid) {
   return made;
 }
 
+/** 50 % grey layer in Overlay with monochrome Gaussian noise, slightly blurred (film grain). */
+function __psGrainLayer(doc, name, amount, size, opacity) {
+  var gl = doc.artLayers.add();
+  gl.name = name;
+  var grey = new SolidColor();
+  grey.rgb.red = 128;
+  grey.rgb.green = 128;
+  grey.rgb.blue = 128;
+  doc.selection.selectAll();
+  doc.selection.fill(grey);
+  doc.selection.deselect();
+  gl.applyAddNoise(amount, NoiseDistribution.GAUSSIAN, true);
+  if (size > 0) gl.applyGaussianBlur(size);
+  gl.blendMode = BlendMode.OVERLAY;
+  gl.opacity = opacity;
+  return gl;
+}
+
+/** Adjustment layer of a type with actionJSON fields, above the active layer. */
+function __psAdjLayer(name, typeObj) {
+  __psRunDescriptor({ _obj: "make", _target: [{ _ref: "adjustmentLayer" }], using: { _obj: "adjustmentLayer", name: name, type: typeObj } });
+  return app.activeDocument.activeLayer;
+}
+
 /** Curves adjustment layer with points [[in,out],...] (0-255), masked by the current selection when there is one. */
 function __psCurvesLayer(name, points, opacity) {
   var curve = [];
@@ -1558,21 +1582,50 @@ function __psDispatch(action, params, _options) {
     if (params.documentName) docGr = app.documents.getByName(params.documentName);
     app.activeDocument = docGr;
     docGr.activeLayer = docGr.layers[0];
-    var gl = docGr.artLayers.add();
-    gl.name = params.name || "Grao";
-    var grey = new SolidColor();
-    grey.rgb.red = 128;
-    grey.rgb.green = 128;
-    grey.rgb.blue = 128;
-    docGr.selection.selectAll();
-    docGr.selection.fill(grey);
-    docGr.selection.deselect();
-    gl.applyAddNoise(typeof params.amount === "number" ? params.amount : 8, NoiseDistribution.GAUSSIAN, true);
+    var gl = __psGrainLayer(docGr, params.name || "Grao", typeof params.amount === "number" ? params.amount : 8, typeof params.size === "number" ? params.size : 0.6, typeof params.opacity === "number" ? params.opacity : 60);
     var sz = typeof params.size === "number" ? params.size : 0.6;
-    if (sz > 0) gl.applyGaussianBlur(sz);
-    gl.blendMode = BlendMode.OVERLAY;
-    gl.opacity = typeof params.opacity === "number" ? params.opacity : 60;
     return { documentName: docGr.name, layerId: gl.id, name: gl.name, amount: params.amount || 8, size: sz, opacity: gl.opacity };
+  }
+
+  if (action === "ps.recipe.look") {
+    // A look as a stack of adjustment layers in one group above everything: editable, and the group opacity is
+    // the intensity. The photo itself is not touched.
+    var docLk = __psRequireDoc();
+    if (params.documentName) docLk = app.documents.getByName(params.documentName);
+    app.activeDocument = docLk;
+    docLk.activeLayer = docLk.layers[0];
+    var stk = params.stack || {};
+    var idsLk = [];
+    var madeLk = [];
+    if (stk.blackAndWhite) {
+      var bw = stk.blackAndWhite;
+      var bwObj = { _obj: "blackAndWhite", presetKind: { _enum: "presetKindType", _value: "presetKindCustom" }, red: bw.red, yellow: bw.yellow, grain: bw.green, cyan: bw.cyan, blue: bw.blue, magenta: bw.magenta, useTint: !!bw.tint };
+      if (bw.tint) bwObj.tintColor = { _obj: "RGBColor", red: bw.tint[0], grain: bw.tint[1], blue: bw.tint[2] };
+      idsLk.push(__psAdjLayer("P&B", bwObj).id);
+      madeLk.push("P&B");
+    }
+    if (stk.saturation !== undefined && stk.saturation !== null) {
+      idsLk.push(__psAdjLayer("Saturacao", { _obj: "hueSaturation", presetKind: { _enum: "presetKindType", _value: "presetKindCustom" }, colorize: false, adjustment: [{ _obj: "hueSatAdjustmentV2", hue: 0, saturation: Number(stk.saturation), lightness: 0 }] }).id);
+      madeLk.push("Saturacao");
+    }
+    if (stk.colorBalance) {
+      idsLk.push(__psAdjLayer("Tom dividido", { _obj: "colorBalance", shadowLevels: stk.colorBalance.shadows, midtoneLevels: [0, 0, 0], highlightLevels: stk.colorBalance.highlights, preserveLuminosity: true }).id);
+      madeLk.push("Tom dividido");
+    }
+    if (stk.curve) {
+      idsLk.push(__psCurvesLayer("Contraste", stk.curve, 100).id);
+      madeLk.push("Contraste");
+    }
+    if (stk.grain) {
+      idsLk.push(__psGrainLayer(docLk, "Grao", stk.grain.amount, stk.grain.size, stk.grain.opacity).id);
+      madeLk.push("Grao");
+    }
+    if (!idsLk.length) __mcpFail("INVALID_PARAMS", "The look has no layers.");
+    var gLk = idsLk.length > 1 ? __psGroupLayerIds(idsLk, "Look \u2013 " + (params.name || "look")) : idsLk[0];
+    var grpLk = docLk.activeLayer;
+    var opLk = Math.max(0, Math.min(100, typeof params.opacity === "number" ? params.opacity : 70));
+    try { grpLk.opacity = opLk; } catch (_eOp) {}
+    return { documentName: docLk.name, look: params.name, layers: madeLk, groupId: gLk, opacity: opLk };
   }
 
   if (action === "ps.layers.groupPlan") {

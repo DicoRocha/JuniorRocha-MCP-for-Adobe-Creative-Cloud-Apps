@@ -2,6 +2,7 @@ import { withTrail } from "../../core/recipe-trail.js";
 import * as os from "node:os";
 import * as fs from "node:fs";
 import { z } from "zod";
+import { REFERENCE_LOOKS, referenceLook } from "../../core/looks.js";
 import { countLeaves, planTree, psTreeToNodes } from "../../core/grouping.js";
 import { auditPhotoshop, summarize, type PsAuditData } from "../../core/audit.js";
 import { FORMATS, resolveZones } from "../../core/formats.js";
@@ -362,6 +363,32 @@ export function registerPhotoshopTools(realServer: McpServer, router: BridgeRout
       try {
         const res = await router.dispatch("photoshop", "ps.recipe.frequencySeparation", params, { undoGroup: "MCP: Frequency separation", timeoutMs: 60000 });
         return formatSuccessResponse(res.data);
+      } catch (err) {
+        return formatErrorResponse(err);
+      }
+    }
+  );
+
+  server.tool(
+    "ps_recipe_look",
+    "Apply a reference look as editable adjustment layers in one group above everything (the photo is not touched): " +
+      Object.keys(REFERENCE_LOOKS).join(", ") +
+      ". The group opacity is the intensity (default 70 %). Same looks as lr_apply_look and pr_color.",
+    {
+      documentName: z.string().optional(),
+      look: z.enum(Object.keys(REFERENCE_LOOKS) as [string, ...string[]]),
+      intensity: z.number().min(0).max(1).optional().default(0.7)
+    },
+    async (params) => {
+      try {
+        const l = referenceLook(params.look);
+        const res = await router.dispatch(
+          "photoshop",
+          "ps.recipe.look",
+          { documentName: params.documentName, name: params.look, stack: l.photoshop, opacity: Math.round(params.intensity * 100) },
+          { undoGroup: `MCP: Look ${params.look}`, timeoutMs: 60000 }
+        );
+        return formatSuccessResponse({ ...((res.data || {}) as object), description: l.description });
       } catch (err) {
         return formatErrorResponse(err);
       }

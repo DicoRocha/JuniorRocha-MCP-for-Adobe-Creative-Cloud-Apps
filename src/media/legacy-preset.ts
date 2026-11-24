@@ -109,9 +109,7 @@ export function translatePreset(p: LegacyPreset, opts: { intensity?: number } = 
     if (Array.isArray(s.ToneCurve)) out.ToneCurvePV2012 = s.ToneCurve;
     notes.push("Process 2010 translated to the current process (Exposure+Brightness, Contrast, Recovery, Fill Light, Blacks, Clarity) with uncalibrated factors: check on the photo.");
   }
-  for (const [key, v] of Object.entries(out)) {
-    if (typeof v === "number" && SCALED.test(key)) out[key] = key === "Exposure2012" ? Math.round(v * k * 100) / 100 : Math.round(v * k);
-  }
+  Object.assign(out, scaleDevelopSettings(out, k));
   if (typeof out.Sharpness === "number" && typeof out.SharpenRadius === "number" && out.SharpenRadius > 1.5) {
     out.SharpenRadius = 1.0;
     notes.push("SharpenRadius above 1.5 makes halos on today's large files: set to 1.0.");
@@ -119,4 +117,13 @@ export function translatePreset(p: LegacyPreset, opts: { intensity?: number } = 
   if (typeof out.Clarity2012 === "number" && Math.abs(out.Clarity2012) > 40) notes.push(`Clarity ${out.Clarity2012} is strong: keep it off skin (mask) or lower the intensity.`);
   notes.push(`Strength controls scaled to ${Math.round(k * 100)} %; white balance, B&W and switches kept as they are.`);
   return { name: p.name, sourceProcess: is2010 ? "2010" : Number.isFinite(pv) ? "2012+" : "unknown", intensity: k, settings: out, notes };
+}
+
+/** Strength controls moved toward 0 by k (0..1.5); white balance, switches, hues and the rest unchanged. */
+export function scaleDevelopSettings(settings: Record<string, PresetValue>, k: number): Record<string, PresetValue> {
+  const out: Record<string, PresetValue> = { ...settings };
+  for (const [key, v] of Object.entries(out)) {
+    if (typeof v === "number" && SCALED.test(key)) out[key] = key === "Exposure2012" ? Math.round(v * k * 100) / 100 : Math.round(v * k);
+  }
+  return out;
 }

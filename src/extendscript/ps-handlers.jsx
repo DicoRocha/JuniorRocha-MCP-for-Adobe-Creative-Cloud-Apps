@@ -1575,14 +1575,40 @@ function __psDispatch(action, params, _options) {
     low.name = "Baixa frequencia";
     if (__psKindOf(low) === LayerKind.SMARTOBJECT) low.rasterize(RasterizeType.ENTIRELAYER);
     low.applyGaussianBlur(r);
+    // Suavizar pele: edge-preserving Surface Blur. A Gaussian blur pulled the grey background into the face edge
+    // and left a light halo around the head (live, 23/11/2026).
     var smooth = low.duplicate();
     smooth.name = "Suavizar pele";
-    smooth.applyGaussianBlur(r * 2);
+    docFS.activeLayer = smooth;
+    try {
+      var sbD = new ActionDescriptor();
+      sbD.putUnitDouble(charIDToTypeID("Rds "), charIDToTypeID("#Pxl"), r * 2);
+      sbD.putInteger(charIDToTypeID("Thsh"), 15);
+      executeAction(stringIDToTypeID("surfaceBlur"), sbD, DialogModes.NO);
+    } catch (_eSb) {
+      smooth.applyGaussianBlur(r);
+    }
     smooth.opacity = typeof params.smoothOpacity === "number" ? params.smoothOpacity : 30;
+    // Alta: Image > Apply Image (subtract the low layer, scale 2, offset 128; 16 bits: inverted add, scale 2) so
+    // Alta in Linear Light over Baixa rebuilds the photo exactly. High Pass was only close: up to 97 levels off
+    // at the edges, a halo around the head (live, 23/11/2026).
     var high = base.duplicate();
     high.name = "Alta frequencia";
     if (__psKindOf(high) === LayerKind.SMARTOBJECT) high.rasterize(RasterizeType.ENTIRELAYER);
-    high.applyHighPass(r);
+    docFS.activeLayer = high;
+    var is16 = docFS.bitsPerChannel === BitsPerChannelType.SIXTEEN;
+    var aiD = new ActionDescriptor();
+    var calc = new ActionDescriptor();
+    var aiR = new ActionReference();
+    aiR.putEnumerated(charIDToTypeID("Chnl"), charIDToTypeID("Chnl"), charIDToTypeID("RGB "));
+    aiR.putIdentifier(charIDToTypeID("Lyr "), low.id);
+    calc.putReference(charIDToTypeID("T   "), aiR);
+    if (is16) calc.putBoolean(charIDToTypeID("Invr"), true);
+    calc.putEnumerated(charIDToTypeID("Clcl"), charIDToTypeID("Clcn"), charIDToTypeID(is16 ? "Add " : "Sbtr"));
+    calc.putDouble(charIDToTypeID("Scl "), 2);
+    calc.putInteger(charIDToTypeID("Ofst"), is16 ? 0 : 128);
+    aiD.putObject(charIDToTypeID("With"), charIDToTypeID("Clcl"), calc);
+    executeAction(charIDToTypeID("AppI"), aiD, DialogModes.NO);
     high.blendMode = BlendMode.LINEARLIGHT;
     // stack: Alta (top) > Suavizar > Baixa > base
     low.move(base, ElementPlacement.PLACEBEFORE);

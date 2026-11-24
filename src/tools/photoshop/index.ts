@@ -347,8 +347,8 @@ export function registerPhotoshopTools(realServer: McpServer, router: BridgeRout
 
   server.tool(
     "ps_recipe_frequency_separation",
-    "Light frequency separation for skin, no brush: Baixa frequencia (blur) + Alta frequencia (high pass, Linear Light) " +
-      "rebuild the photo exactly; Suavizar pele (more blur, masked to skin tones, 25-40 % opacity) evens colour and tone and " +
+    "Light frequency separation for skin, no brush: Baixa frequencia (blur) + Alta frequencia (Apply Image, Linear Light) " +
+      "rebuild the photo exactly; Suavizar pele (edge-preserving surface blur, masked to skin tones, 25-40 % opacity) evens colour and tone and " +
       "keeps the texture. All in one group above the base layer. Radius defaults to the long side / 600.",
     {
       documentName: z.string().optional(),

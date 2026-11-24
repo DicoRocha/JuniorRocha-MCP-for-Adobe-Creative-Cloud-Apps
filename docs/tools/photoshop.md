@@ -15,7 +15,7 @@ Documents, layers, masks, smart objects, adjustments, artboards, recipes and aud
 | [`ps_get_layer_tree`](#ps_get_layer_tree) | Retrieve the complete hierarchy of layers and groups in the active Photoshop document (IDs, names, types, bounds, opacity, blend modes, visibility). |
 | [`ps_luminosity_masks`](#ps_luminosity_masks) | Create luminosity masks as alpha channels, no brush: Luzes 1..N (brightness of the composite, each step narrower), Sombras 1..N (the inverse) and Medios (neither). |
 | [`ps_recipe_zone_dodge_burn`](#ps_recipe_zone_dodge_burn) | Dodge & burn by zones without a brush: Curves layers masked by luminosity masks (lift the shadows on Sombras 2, hold the highlights on Luzes 2, optional midtone contrast on… |
-| [`ps_recipe_frequency_separation`](#ps_recipe_frequency_separation) | Light frequency separation for skin, no brush: Baixa frequencia (blur) + Alta frequencia (high pass, Linear Light) rebuild the photo exactly; Suavizar pele (more blur, masked… |
+| [`ps_recipe_frequency_separation`](#ps_recipe_frequency_separation) | Light frequency separation for skin, no brush: Baixa frequencia (blur) + Alta frequencia (Apply Image, Linear Light) rebuild the photo exactly; Suavizar pele (edge-preserving… |
 | [`ps_recipe_look`](#ps_recipe_look) | Apply a reference look as editable adjustment layers in one group above everything (the photo is not touched): esportivo-dramatico, pb-papel-antigo, pb-vintage. |
 | [`ps_recipe_film_grain`](#ps_recipe_film_grain) | Film grain on top of the document: a 50 % grey layer in Overlay with monochrome Gaussian noise, slightly blurred. |
 | [`ps_organize_layers`](#ps_organize_layers) | Organise a Photoshop document in groups by meaning: text on a shape becomes a label group, an icon with its text (and the lines under it) an item group, repeated items/labels… |
@@ -149,7 +149,7 @@ Dodge & burn by zones without a brush: Curves layers masked by luminosity masks 
 
 ## `ps_recipe_frequency_separation`
 
-Light frequency separation for skin, no brush: Baixa frequencia (blur) + Alta frequencia (high pass, Linear Light) rebuild the photo exactly; Suavizar pele (more blur, masked to skin tones, 25-40 % opacity) evens colour and tone and keeps the texture. All in one group above the base layer. Radius defaults to the long side / 600.
+Light frequency separation for skin, no brush: Baixa frequencia (blur) + Alta frequencia (Apply Image, Linear Light) rebuild the photo exactly; Suavizar pele (edge-preserving surface blur, masked to skin tones, 25-40 % opacity) evens colour and tone and keeps the texture. All in one group above the base layer. Radius defaults to the long side / 600.
 
 | Parameter | Type | Required | Description |
 |---|---|:---:|---|

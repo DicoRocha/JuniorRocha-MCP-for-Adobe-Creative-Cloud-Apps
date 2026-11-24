@@ -44,6 +44,8 @@ Last reviewed on 23 November 2026, version 1.11.0. Items are grouped by where th
 | `ae_create_shape_layer` | The stroke was added under the fill (half its width hidden); trimming a filled outline trimmed the fill too | Stroke above the fill by default (`paintOrder`), stroke opacity and blend modes per paint, `trimTarget: "stroke"` draws on only the outline in the same layer; `ae_audit_motion` warns `SPLIT_FILL_STROKE` for a fill layer + outline layer of the same shape (blend-mode indices to confirm live) |
 | `jradb_get_status`, panels | No word about new versions | A newer GitHub release is reported once a day at most, silent offline, never installed automatically (`JRADB_MCP_UPDATE_CHECK=off`) |
 
+| Photoshop without a brush (new) | Dodge & burn and skin needed brush work the MCP cannot do | `ps_luminosity_masks`, `ps_recipe_zone_dodge_burn`, `ps_recipe_frequency_separation` (light, skin-tone mask), `ps_recipe_film_grain` (to confirm live: curves descriptor, Color Range skin tones) |
+
 Still open: `ae_manage_project` save that took ~70 s once and reconnected the panel (not reproduced yet).
 
 ## Fixed in 1.10.0 (21 November 2026), to confirm live

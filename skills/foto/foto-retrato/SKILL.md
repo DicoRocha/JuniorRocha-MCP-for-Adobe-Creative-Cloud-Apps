@@ -27,11 +27,16 @@ Abra a exportação (`lr_export_photos` TIFF/PSD 16 bits sem nitidez → `ps_ope
 1. **Limpeza**: camada vazia, remover só o temporário (espinha, fio solto, mancha de sujeira).
    Pinta e marca de nascença ficam. Ferramenta de correção é da pessoa no app ou por
    `ps_batch_play` gravado; nunca liquify em rosto/corpo.
-2. **Dodge & burn sutil**: duas curvas (`ps_adjustment_layer` curves, +/− 10–15 %) com máscara
-   preta e pincel suave a 3–5 % — iguala manchas de luz, não esculpe.
-3. **Olhos**: curva +5 % só na íris e brilho dos olhos; branco dos olhos nunca branco puro.
-4. **Cor final**: `ps_adjustment_layer` hueSaturation / colorBalance com máscara na pele se preciso.
-5. Olhe a 100 % e a 25 % (`ps_get_canvas_snapshot`); compare com o original lado a lado.
+2. **Tom da pele sem pincel:** `ps_recipe_frequency_separation` (camada "Suavizar pele" a 25–40 %, máscara de
+   tons de pele) — iguala cor e manchas e mantém os poros. Olhe a 100 %: poro sumido = opacidade alta demais.
+3. **Dodge & burn por zonas, sem pincel:** `ps_recipe_zone_dodge_burn { strength: 30–50 }` (curvas com máscaras
+   de luminosidade: clareia Sombras 2, segura Luzes 2) e baixe a opacidade do grupo até ficar natural. Para
+   limitar a outra faixa, `ps_luminosity_masks` e carregue o canal como seleção antes da camada de ajuste.
+   Meça com `media_zone_report` antes e depois (skill `foto-zonas`): pele na zona dela, sem cortar luzes.
+4. **Olhos**: curva +5 % só na íris e brilho dos olhos; branco dos olhos nunca branco puro.
+5. **Cor final**: `ps_adjustment_layer` hueSaturation / colorBalance com máscara na pele se preciso.
+6. **Grão** (opcional, liga a pele ao resto e esconde degraus): `ps_recipe_film_grain { amount: 4–8 }`.
+7. Olhe a 100 % e a 25 % (`ps_get_canvas_snapshot`); compare com o original lado a lado.
 
 ## 3. Ética
 
@@ -79,9 +84,11 @@ CMYK no InDesign para impresso).
 
 Ordem: **manchas pontuais → tom da pele → luz e volume**, tudo não destrutivo e com parcimônia.
 1. Manchas pontuais: recuperação/carimbo numa **camada vazia** acima da foto, com "todas as camadas".
-2. Separação de frequência só para uniformizar tom mantendo poros; não use para "alisar".
-3. Dodge & burn: duas camadas de **Curvas** (clarear e escurecer) com máscara preta e pincel de fluxo
-   baixo; ou camada 50 % cinza em Sobrepor. Clarear onde a luz bate, escurecer sob maçãs e mandíbula.
+2. Separação de frequência só para uniformizar tom mantendo poros; não use para "alisar"
+   (`ps_recipe_frequency_separation`, opacidade 25–40 %).
+3. Dodge & burn: o MCP não pinta com pincel; use as curvas por máscara de luminosidade
+   (`ps_recipe_zone_dodge_burn`). Esculpir rosto à mão (clarear onde a luz bate, escurecer sob as maçãs) é
+   trabalho de pincel da pessoa: deixe a camada de curva com máscara preta pronta e diga isso.
 4. Base como Objeto Inteligente; filtros como filtros inteligentes; cor em camadas de ajuste; Mesclar se
    para limitar um ajuste a luzes ou sombras.
 Peça à pessoa quais marcas saem (pintas e sinais fazem parte do rosto).

@@ -818,6 +818,83 @@ function __psRecipeWrite(doc, p, warnings, transparent) {
   return out;
 }
 
+/** Alpha channel by name, or null. */
+function __psChannelByName(doc, name) {
+  for (var i = 0; i < doc.channels.length; i++) if (doc.channels[i].name === name) return doc.channels[i];
+  return null;
+}
+
+/**
+ * Luminosity masks as alpha channels (no brush): Luzes 1 = the composite's brightness, Luzes N = Luzes 1 intersected
+ * N-1 times with itself (narrower), Sombras N the same on the inverse, Medios = all minus Luzes 1 minus Sombras 1.
+ */
+function __psMakeLuminosityMasks(doc, steps, names, withMid) {
+  app.activeDocument = doc;
+  var made = [];
+  var store = function (name) {
+    var old = __psChannelByName(doc, name);
+    if (old) old.remove();
+    var ch = doc.channels.add();
+    ch.name = name;
+    doc.selection.store(ch, SelectionType.REPLACE);
+    made.push(name);
+    return ch;
+  };
+  // Lights
+  __psLoadChannelSelection("RGB ");
+  var l1 = store(names.lights + " 1");
+  for (var i = 2; i <= steps; i++) {
+    doc.selection.load(l1, SelectionType.REPLACE);
+    for (var k = 1; k < i; k++) doc.selection.load(l1, SelectionType.INTERSECT);
+    store(names.lights + " " + i);
+  }
+  // Darks
+  doc.selection.load(l1, SelectionType.REPLACE);
+  doc.selection.invert();
+  var d1 = store(names.darks + " 1");
+  for (var j = 2; j <= steps; j++) {
+    doc.selection.load(d1, SelectionType.REPLACE);
+    for (var m = 1; m < j; m++) doc.selection.load(d1, SelectionType.INTERSECT);
+    store(names.darks + " " + j);
+  }
+  if (withMid) {
+    doc.selection.selectAll();
+    doc.selection.load(l1, SelectionType.DIMINISH);
+    doc.selection.load(d1, SelectionType.DIMINISH);
+    store(names.mid);
+  }
+  doc.selection.deselect();
+  // channels.add() leaves the new alpha channel as the only visible target: show the composite again
+  try {
+    var comp = [];
+    for (var c = 0; c < doc.channels.length; c++) if (doc.channels[c].kind === ChannelType.COMPONENT) comp.push(doc.channels[c]);
+    doc.activeChannels = comp;
+  } catch (_eAc) {}
+  return made;
+}
+
+/** Curves adjustment layer with points [[in,out],...] (0-255), masked by the current selection when there is one. */
+function __psCurvesLayer(name, points, opacity) {
+  var curve = [];
+  for (var i = 0; i < points.length; i++) curve.push({ _obj: "paint", horizontal: points[i][0], vertical: points[i][1] });
+  __psRunDescriptor({
+    _obj: "make",
+    _target: [{ _ref: "adjustmentLayer" }],
+    using: {
+      _obj: "adjustmentLayer",
+      name: name,
+      type: {
+        _obj: "curves",
+        presetKind: { _enum: "presetKindType", _value: "presetKindCustom" },
+        adjustment: [{ _obj: "curvesAdjustment", channel: { _ref: "channel", _enum: "channel", _value: "composite" }, curve: curve }]
+      }
+    }
+  });
+  var lyr = app.activeDocument.activeLayer;
+  if (typeof opacity === "number") lyr.opacity = opacity;
+  return lyr;
+}
+
 /** Selects the layers with these ids and groups them (Layer > Group Layers). Returns the new group's id. */
 function __psGroupLayerIds(ids, name) {
   for (var i = 0; i < ids.length; i++) {
@@ -1382,6 +1459,120 @@ function __psDispatch(action, params, _options) {
       sourceHeight: srcH,
       previewMimeType: "image/png"
     };
+  }
+
+  if (action === "ps.luminosityMasks") {
+    var docLM = __psRequireDoc();
+    if (params.documentName) docLM = app.documents.getByName(params.documentName);
+    var namesLM = { lights: params.lightsName || "Luzes", darks: params.darksName || "Sombras", mid: params.midName || "Medios" };
+    var madeLM = __psMakeLuminosityMasks(docLM, Math.max(1, Math.min(5, params.steps || 3)), namesLM, params.midtones !== false);
+    return { documentName: docLM.name, channels: madeLM };
+  }
+
+  if (action === "ps.recipe.zoneDodgeBurn") {
+    // Dodge & burn by zones without a brush: curves masked by luminosity masks, in one group above everything.
+    var docDB = __psRequireDoc();
+    if (params.documentName) docDB = app.documents.getByName(params.documentName);
+    app.activeDocument = docDB;
+    var nm = { lights: "Luzes", darks: "Sombras", mid: "Medios" };
+    if (!__psChannelByName(docDB, "Luzes 2") || !__psChannelByName(docDB, "Sombras 2") || !__psChannelByName(docDB, "Medios")) {
+      __psMakeLuminosityMasks(docDB, 3, nm, true);
+    }
+    var st = Math.max(0, Math.min(100, typeof params.strength === "number" ? params.strength : 50));
+    var lift = Math.round(6 + 0.24 * st);
+    docDB.activeLayer = docDB.layers[0];
+    var madeDB = [];
+    var ids = [];
+    var mk = function (channel, name, pts) {
+      docDB.selection.load(__psChannelByName(docDB, channel), SelectionType.REPLACE);
+      var l = __psCurvesLayer(name, pts, 100);
+      docDB.selection.deselect();
+      madeDB.push(name);
+      ids.push(l.id);
+    };
+    if (params.liftShadows !== false) mk(params.shadowsMask || "Sombras 2", "Clarear sombras (" + (params.shadowsMask || "Sombras 2") + ")", [[0, 0], [64, 64 + lift], [128, 128 + Math.round(lift / 2)], [255, 255]]);
+    if (params.holdHighlights !== false) mk(params.highlightsMask || "Luzes 2", "Escurecer luzes (" + (params.highlightsMask || "Luzes 2") + ")", [[0, 0], [128, 128 - Math.round(lift / 2)], [192, 192 - lift], [255, 255]]);
+    if (params.midContrast === true) mk("Medios", "Contraste medios (Medios)", [[0, 0], [96, 96 - Math.round(lift / 2)], [160, 160 + Math.round(lift / 2)], [255, 255]]);
+    var gidDB = ids.length > 1 ? __psGroupLayerIds(ids, params.groupName || "Dodge & Burn por zonas") : null;
+    return { documentName: docDB.name, layers: madeDB, groupId: gidDB, strength: st, next: "Lower the group opacity to taste (30-70 %); compare with media_zone_report." };
+  }
+
+  if (action === "ps.recipe.frequencySeparation") {
+    // Light frequency separation with no brush: Baixa (blur) + Alta (high pass, Linear Light) rebuild the photo;
+    // "Suavizar pele" (more blur, masked to skin, low opacity) smooths only colour and tone, not texture.
+    var docFS = __psRequireDoc();
+    if (params.documentName) docFS = app.documents.getByName(params.documentName);
+    app.activeDocument = docFS;
+    var base = __psTargetLayer(docFS, params);
+    var baseKind = __psKindOf(base);
+    if (base.typename === "LayerSet" || (baseKind !== LayerKind.NORMAL && baseKind !== LayerKind.SMARTOBJECT)) {
+      __mcpFail("INVALID_PARAMS", "Frequency separation needs a pixel or smart object layer; '" + base.name + "' is not one.");
+    }
+    var r = typeof params.radius === "number" ? params.radius : Math.max(2, Math.round(Math.max(Number(docFS.width), Number(docFS.height)) / 600));
+    var low = base.duplicate();
+    low.name = "Baixa frequencia";
+    if (__psKindOf(low) === LayerKind.SMARTOBJECT) low.rasterize(RasterizeType.ENTIRELAYER);
+    low.applyGaussianBlur(r);
+    var smooth = low.duplicate();
+    smooth.name = "Suavizar pele";
+    smooth.applyGaussianBlur(r * 2);
+    smooth.opacity = typeof params.smoothOpacity === "number" ? params.smoothOpacity : 30;
+    var high = base.duplicate();
+    high.name = "Alta frequencia";
+    if (__psKindOf(high) === LayerKind.SMARTOBJECT) high.rasterize(RasterizeType.ENTIRELAYER);
+    high.applyHighPass(r);
+    high.blendMode = BlendMode.LINEARLIGHT;
+    // stack: Alta (top) > Suavizar > Baixa > base
+    low.move(base, ElementPlacement.PLACEBEFORE);
+    smooth.move(low, ElementPlacement.PLACEBEFORE);
+    high.move(smooth, ElementPlacement.PLACEBEFORE);
+    var skinMask = "none";
+    if (params.skinMask !== false) {
+      try {
+        docFS.activeLayer = base;
+        __psRunDescriptor({ _obj: "colorRange", colors: { _enum: "colors", _value: "skinTone" }, fuzziness: 40 });
+        if (__psSelectionBox(docFS)) {
+          docFS.activeLayer = smooth;
+          var mkS = new ActionDescriptor();
+          mkS.putClass(charIDToTypeID("Nw  "), charIDToTypeID("Chnl"));
+          var rS = new ActionReference();
+          rS.putEnumerated(charIDToTypeID("Chnl"), charIDToTypeID("Chnl"), charIDToTypeID("Msk "));
+          mkS.putReference(charIDToTypeID("At  "), rS);
+          mkS.putEnumerated(charIDToTypeID("Usng"), charIDToTypeID("UsrM"), charIDToTypeID("RvlS"));
+          executeAction(charIDToTypeID("Mk  "), mkS, DialogModes.NO);
+          skinMask = "skinTone";
+        }
+        docFS.selection.deselect();
+      } catch (_eSkin) {
+        try { docFS.selection.deselect(); } catch (_eDs) {}
+      }
+      if (skinMask === "none") smooth.opacity = Math.min(smooth.opacity, 20);
+    }
+    var gFS = __psGroupLayerIds([high.id, smooth.id, low.id], params.groupName || "Separacao de frequencia");
+    return { documentName: docFS.name, radius: r, layers: ["Alta frequencia", "Suavizar pele", "Baixa frequencia"], skinMask: skinMask, smoothOpacity: smooth.opacity, groupId: gFS, base: base.name };
+  }
+
+  if (action === "ps.recipe.filmGrain") {
+    // Grain as a 50 % grey layer in Overlay with monochrome noise: works on every Photoshop version.
+    var docGr = __psRequireDoc();
+    if (params.documentName) docGr = app.documents.getByName(params.documentName);
+    app.activeDocument = docGr;
+    docGr.activeLayer = docGr.layers[0];
+    var gl = docGr.artLayers.add();
+    gl.name = params.name || "Grao";
+    var grey = new SolidColor();
+    grey.rgb.red = 128;
+    grey.rgb.green = 128;
+    grey.rgb.blue = 128;
+    docGr.selection.selectAll();
+    docGr.selection.fill(grey);
+    docGr.selection.deselect();
+    gl.applyAddNoise(typeof params.amount === "number" ? params.amount : 8, NoiseDistribution.GAUSSIAN, true);
+    var sz = typeof params.size === "number" ? params.size : 0.6;
+    if (sz > 0) gl.applyGaussianBlur(sz);
+    gl.blendMode = BlendMode.OVERLAY;
+    gl.opacity = typeof params.opacity === "number" ? params.opacity : 60;
+    return { documentName: docGr.name, layerId: gl.id, name: gl.name, amount: params.amount || 8, size: sz, opacity: gl.opacity };
   }
 
   if (action === "ps.layers.groupPlan") {

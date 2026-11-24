@@ -13,6 +13,10 @@ Documents, layers, masks, smart objects, adjustments, artboards, recipes and aud
 | [`ps_modify_canvas`](#ps_modify_canvas) | Crop, resize image, resize canvas, rotate, trim transparent pixels, or flatten the active Photoshop document. |
 | [`ps_get_canvas_snapshot`](#ps_get_canvas_snapshot) | Multimodal Visual Feedback: Render the active Photoshop document (downscaled to maxDimension) and return it as an inline image for visual inspection. |
 | [`ps_get_layer_tree`](#ps_get_layer_tree) | Retrieve the complete hierarchy of layers and groups in the active Photoshop document (IDs, names, types, bounds, opacity, blend modes, visibility). |
+| [`ps_luminosity_masks`](#ps_luminosity_masks) | Create luminosity masks as alpha channels, no brush: Luzes 1..N (brightness of the composite, each step narrower), Sombras 1..N (the inverse) and Medios (neither). |
+| [`ps_recipe_zone_dodge_burn`](#ps_recipe_zone_dodge_burn) | Dodge & burn by zones without a brush: Curves layers masked by luminosity masks (lift the shadows on Sombras 2, hold the highlights on Luzes 2, optional midtone contrast on… |
+| [`ps_recipe_frequency_separation`](#ps_recipe_frequency_separation) | Light frequency separation for skin, no brush: Baixa frequencia (blur) + Alta frequencia (high pass, Linear Light) rebuild the photo exactly; Suavizar pele (more blur, masked… |
+| [`ps_recipe_film_grain`](#ps_recipe_film_grain) | Film grain on top of the document: a 50 % grey layer in Overlay with monochrome Gaussian noise, slightly blurred. |
 | [`ps_organize_layers`](#ps_organize_layers) | Organise a Photoshop document in groups by meaning: text on a shape becomes a label group, an icon with its text (and the lines under it) an item group, repeated items/labels… |
 | [`ps_create_layer`](#ps_create_layer) | Create a new pixel layer, group (folder), solid color fill layer, or text layer in Photoshop. |
 | [`ps_edit_text_layer`](#ps_edit_text_layer) | Modify text contents, font, size, color, tracking, leading, or alignment on an existing text layer in Photoshop. |
@@ -116,6 +120,57 @@ Retrieve the complete hierarchy of layers and groups in the active Photoshop doc
 |---|---|:---:|---|
 | `maxDepth` | integer |  |  Default: `5`. |
 | `documentName` | string |  | Open document to act on (brought to the front first). Default: the active document. |
+
+## `ps_luminosity_masks`
+
+Create luminosity masks as alpha channels, no brush: Luzes 1..N (brightness of the composite, each step narrower), Sombras 1..N (the inverse) and Medios (neither). Load one as a selection before an adjustment layer to touch only that tonal range. Replaces channels with the same names.
+
+| Parameter | Type | Required | Description |
+|---|---|:---:|---|
+| `documentName` | string |  |  |
+| `steps` | integer |  |  Default: `3`. |
+| `midtones` | boolean |  |  Default: `true`. |
+
+## `ps_recipe_zone_dodge_burn`
+
+Dodge & burn by zones without a brush: Curves layers masked by luminosity masks (lift the shadows on Sombras 2, hold the highlights on Luzes 2, optional midtone contrast on Medios) in one group. strength 0-100 sets the curve; lower the group opacity to taste. Creates the masks when missing.
+
+| Parameter | Type | Required | Description |
+|---|---|:---:|---|
+| `documentName` | string |  |  |
+| `strength` | number |  |  Default: `50`. |
+| `liftShadows` | boolean |  |  Default: `true`. |
+| `holdHighlights` | boolean |  |  Default: `true`. |
+| `midContrast` | boolean |  |  Default: `false`. |
+| `shadowsMask` | string |  | Channel for the shadow lift (default Sombras 2). |
+| `highlightsMask` | string |  | Channel for the highlight hold (default Luzes 2). |
+| `groupName` | string |  |  |
+
+## `ps_recipe_frequency_separation`
+
+Light frequency separation for skin, no brush: Baixa frequencia (blur) + Alta frequencia (high pass, Linear Light) rebuild the photo exactly; Suavizar pele (more blur, masked to skin tones, 25-40 % opacity) evens colour and tone and keeps the texture. All in one group above the base layer. Radius defaults to the long side / 600.
+
+| Parameter | Type | Required | Description |
+|---|---|:---:|---|
+| `documentName` | string |  |  |
+| `layerId` | integer |  |  |
+| `layerName` | string |  |  |
+| `radius` | number |  |  |
+| `smoothOpacity` | number |  |  Default: `30`. |
+| `skinMask` | boolean |  | Mask Suavizar pele with Select > Color Range > Skin Tones. Default: `true`. |
+| `groupName` | string |  |  |
+
+## `ps_recipe_film_grain`
+
+Film grain on top of the document: a 50 % grey layer in Overlay with monochrome Gaussian noise, slightly blurred. amount 2-20 (8 = subtle), size = blur radius (0.4-1.5), opacity 30-80. Works on any Photoshop version (the 27.4 grain adjustment is ps_adjustment_layer type grain).
+
+| Parameter | Type | Required | Description |
+|---|---|:---:|---|
+| `documentName` | string |  |  |
+| `amount` | number |  |  Default: `8`. |
+| `size` | number |  |  Default: `0.6`. |
+| `opacity` | number |  |  Default: `60`. |
+| `name` | string |  |  |
 
 ## `ps_organize_layers`
 

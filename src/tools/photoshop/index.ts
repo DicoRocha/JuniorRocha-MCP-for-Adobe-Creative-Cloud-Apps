@@ -272,6 +272,97 @@ export function registerPhotoshopTools(realServer: McpServer, router: BridgeRout
   );
 
   server.tool(
+    "ps_luminosity_masks",
+    "Create luminosity masks as alpha channels, no brush: Luzes 1..N (brightness of the composite, each step narrower), " +
+      "Sombras 1..N (the inverse) and Medios (neither). Load one as a selection before an adjustment layer to touch only " +
+      "that tonal range. Replaces channels with the same names.",
+    {
+      documentName: z.string().optional(),
+      steps: z.number().int().min(1).max(5).optional().default(3),
+      midtones: z.boolean().optional().default(true)
+    },
+    async (params) => {
+      try {
+        const res = await router.dispatch("photoshop", "ps.luminosityMasks", params, { undoGroup: "MCP: Luminosity masks", timeoutMs: 60000 });
+        return formatSuccessResponse(res.data);
+      } catch (err) {
+        return formatErrorResponse(err);
+      }
+    }
+  );
+
+  server.tool(
+    "ps_recipe_zone_dodge_burn",
+    "Dodge & burn by zones without a brush: Curves layers masked by luminosity masks (lift the shadows on Sombras 2, " +
+      "hold the highlights on Luzes 2, optional midtone contrast on Medios) in one group. strength 0-100 sets the curve; " +
+      "lower the group opacity to taste. Creates the masks when missing.",
+    {
+      documentName: z.string().optional(),
+      strength: z.number().min(0).max(100).optional().default(50),
+      liftShadows: z.boolean().optional().default(true),
+      holdHighlights: z.boolean().optional().default(true),
+      midContrast: z.boolean().optional().default(false),
+      shadowsMask: z.string().optional().describe("Channel for the shadow lift (default Sombras 2)."),
+      highlightsMask: z.string().optional().describe("Channel for the highlight hold (default Luzes 2)."),
+      groupName: z.string().optional()
+    },
+    async (params) => {
+      try {
+        const res = await router.dispatch("photoshop", "ps.recipe.zoneDodgeBurn", params, { undoGroup: "MCP: Zone dodge & burn", timeoutMs: 60000 });
+        return formatSuccessResponse(res.data);
+      } catch (err) {
+        return formatErrorResponse(err);
+      }
+    }
+  );
+
+  server.tool(
+    "ps_recipe_frequency_separation",
+    "Light frequency separation for skin, no brush: Baixa frequencia (blur) + Alta frequencia (high pass, Linear Light) " +
+      "rebuild the photo exactly; Suavizar pele (more blur, masked to skin tones, 25-40 % opacity) evens colour and tone and " +
+      "keeps the texture. All in one group above the base layer. Radius defaults to the long side / 600.",
+    {
+      documentName: z.string().optional(),
+      layerId: z.number().int().optional(),
+      layerName: z.string().optional(),
+      radius: z.number().min(1).max(50).optional(),
+      smoothOpacity: z.number().min(0).max(100).optional().default(30),
+      skinMask: z.boolean().optional().default(true).describe("Mask Suavizar pele with Select > Color Range > Skin Tones."),
+      groupName: z.string().optional()
+    },
+    async (params) => {
+      try {
+        const res = await router.dispatch("photoshop", "ps.recipe.frequencySeparation", params, { undoGroup: "MCP: Frequency separation", timeoutMs: 60000 });
+        return formatSuccessResponse(res.data);
+      } catch (err) {
+        return formatErrorResponse(err);
+      }
+    }
+  );
+
+  server.tool(
+    "ps_recipe_film_grain",
+    "Film grain on top of the document: a 50 % grey layer in Overlay with monochrome Gaussian noise, slightly blurred. " +
+      "amount 2-20 (8 = subtle), size = blur radius (0.4-1.5), opacity 30-80. Works on any Photoshop version (the 27.4 " +
+      "grain adjustment is ps_adjustment_layer type grain).",
+    {
+      documentName: z.string().optional(),
+      amount: z.number().min(0.5).max(40).optional().default(8),
+      size: z.number().min(0).max(4).optional().default(0.6),
+      opacity: z.number().min(0).max(100).optional().default(60),
+      name: z.string().optional()
+    },
+    async (params) => {
+      try {
+        const res = await router.dispatch("photoshop", "ps.recipe.filmGrain", params, { undoGroup: "MCP: Film grain", timeoutMs: 60000 });
+        return formatSuccessResponse(res.data);
+      } catch (err) {
+        return formatErrorResponse(err);
+      }
+    }
+  );
+
+  server.tool(
     "ps_organize_layers",
     "Organise a Photoshop document in groups by meaning: text on a shape becomes a label group, an icon with its text " +
       "(and the lines under it) an item group, repeated items/labels in a column or row one list group holding them. Lone " +

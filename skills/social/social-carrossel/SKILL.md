@@ -1,6 +1,6 @@
 ---
 name: social-carrossel
-description: Produzir carrossel (Instagram, LinkedIn, 5–10 slides, 4:5 ou 1:1) no Photoshop a partir do roteiro — template com camadas nomeadas, um slide por documento ou prancheta, continuidade entre slides, exportação numerada 01…N e folha de contato. Use depois de roteiro-carrossel, para qualquer carrossel.
+description: Produzir carrossel de cards individuais (Instagram, LinkedIn, 5–10 slides, 3:4 1080×1440 por padrão, 4:5 ou 1:1) no Photoshop ou Illustrator a partir do roteiro — pergunte antes se são cards individuais ou sem emendas (seamless → social-carrossel-seamless) e quantos cards; template com camadas nomeadas, uma prancheta por slide, continuidade entre slides, exportação numerada 01…N e folha de contato. Use depois de roteiro-carrossel, para qualquer carrossel.
 ---
 
 # social-carrossel — do roteiro aos PNG numerados

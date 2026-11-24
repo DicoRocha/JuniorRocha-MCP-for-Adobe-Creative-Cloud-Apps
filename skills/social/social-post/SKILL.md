@@ -1,6 +1,6 @@
 ---
 name: social-post
-description: Produzir post estático para Instagram, Facebook, LinkedIn ou anúncio simples no Photoshop — do briefing ao PSD em camadas e PNG/JPG, com foto tratada, título, CTA e marca, em um ou vários formatos (4:5, 1:1, 9:16). Use para qualquer peça estática de rede social.
+description: Produzir post estático para Instagram, Facebook, LinkedIn ou anúncio simples no Photoshop — do briefing ao PSD em camadas e PNG/JPG, com foto tratada, título, CTA e marca, em um ou vários formatos (3:4 1080×1440 por padrão, 4:5, 1:1, 9:16). Use para qualquer peça estática de rede social.
 ---
 
 # social-post — post estático no Photoshop

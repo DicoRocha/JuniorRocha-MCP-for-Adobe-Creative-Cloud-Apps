@@ -145,7 +145,8 @@ export const SERVER_INSTRUCTIONS = [
   "2. Tell the person which skills you will follow (name and one line each) and ask once whether to go ahead with them. With no answer, go ahead with them and say so in the report.",
   "3. Load each skill with jradb_get_skill { name } and follow its steps and its exit gate (qa-revisao-visual for every delivery).",
   "4. If no skill covers the request, say so before starting.",
-  "Tools that create or change work answer SKILLS_REQUIRED until skills were looked up in this session."
+  "5. Each new request looks its skills up again, even in the same conversation.",
+  "Tools that create or change work answer SKILLS_REQUIRED until skills were looked up, again when the work moves to an app no looked-up skill covers, and after a long pause."
 ].join("\n");
 
 export function createAdobeMcpServer(options: CreateAdobeMcpServerOptions = {}): AdobeMcpRuntime {

@@ -158,7 +158,7 @@ export function registerSkillTools(server: McpServer, root: string = resolveSkil
           });
         }
         const matches = findSkills(root, task, limit);
-        markSkillsConsulted({ search: task });
+        markSkillsConsulted({ search: task, matches: matches.map((m) => m.name) });
         // The exit gate applies to every deliverable (router rule 5); motion and video add their own review.
         const names = new Set(listSkills(root).map((s) => s.name));
         const always = ["qa-revisao-visual", ...(matches.some((m) => /^(motion|video)/.test(m.area)) ? ["qa-revisao-video"] : [])].filter(

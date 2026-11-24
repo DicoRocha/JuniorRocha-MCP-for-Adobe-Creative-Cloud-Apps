@@ -42,7 +42,9 @@ Leia só as skills que o pedido toca: `jradb_get_skill({ name })`.
    edição no Premiere → `video-fundamentos` primeiro; layout (post, flyer, página, slide) →
    `craft-composicao`. `craft-composicao` só entra quando o trabalho cria ou muda layout (não para tratar
    uma foto). Cada pedido novo e diferente na mesma conversa: procure as skills de novo
-   (`jradb_find_skills`), não reaproveite a lista do pedido anterior.
+   (`jradb_find_skills`), não reaproveite a lista do pedido anterior. O servidor cobra isso: ferramenta de um app
+   que nenhuma skill consultada cobre (pedido de foto que vira vídeo) ou depois de 60 min parado responde
+   `SKILLS_REQUIRED` de novo.
 10. **Arquivo organizado (obrigatório em PS, AI e ID):** o que pertence junto pelo sentido vai num grupo
    com nome (ícone + texto, texto sobre shape, listas, cards); objeto sozinho fica solto. No After,
    pré-comp por cena, nulo pai e rótulos; no Premiere, bins e trilhas por função. Skill

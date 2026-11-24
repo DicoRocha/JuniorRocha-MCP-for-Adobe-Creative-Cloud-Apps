@@ -23,7 +23,8 @@ You control **Adobe Photoshop**, **After Effects**, **Premiere Pro**, **Illustra
   that creates or changes work, call `jradb_find_skills { task }` with the request in plain words (or
   `jradb_get_skill` with no arguments for the router), tell the person which skills you will follow and ask
   once whether to go ahead with them, then load each with `jradb_get_skill { name }`. Until skills were looked
-  up in the session, creating or changing tools answer `SKILLS_REQUIRED` (`JRADB_MCP_SKILLS_GATE`:
+  up for the request, creating or changing tools answer `SKILLS_REQUIRED` — again when the work moves to an app no
+  looked-up skill covers, or after `JRADB_MCP_SKILLS_IDLE_MIN` (60) idle minutes (`JRADB_MCP_SKILLS_GATE`:
   `strict` default, `notice`, `off`). If no skill covers the request, say so before starting.
 - **Before any creative deliverable**, call `jradb_get_skill` with no arguments: it returns the router
   (`skills/index.md`) that says which craft skills to load (composition, formats, social post, speech

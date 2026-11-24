@@ -10,7 +10,8 @@ A tabela completa e datada está em `references/formatos.md`
 
 ## Regras de uso
 
-1. **Atalho:** imagem de feed **4:5 (1080×1350)**; vídeo e story **9:16 (1080×1920)**.
+1. **Atalho:** imagem de feed e carrossel **3:4 (1080×1440)** — 4:5 (1080×1350) só quando a publicação
+   vai por agendador/API da Meta; vídeo e story **9:16 (1080×1920)**.
    Cobre a maior parte das redes.
 2. **Mídia paga:** confirme a especificação no gerenciador de anúncios antes de produzir em
    lote. Plataformas mudam; a tabela tem data de revisão.
@@ -30,6 +31,7 @@ A tabela completa e datada está em `references/formatos.md`
 | Formato | Zona útil |
 |---|---|
 | 9:16 (1080×1920) | Fora de ~250 px do topo, ~400 px da base, ~120 px da lateral direita → área central ≈ 840×1270 |
+| Feed 3:4 (1080×1440) | Essencial a ≥ 60 px das bordas (é o mesmo recorte da grade do perfil) |
 | Feed 4:5 (1080×1350) | Essencial a ≥ 60 px das laterais (a grade do perfil mostra 3:4) |
 | Thumbnail YouTube | Nada importante no canto inferior direito (duração) |
 | Slide 16:9 | 90% central para títulos (80% se for para TV) |

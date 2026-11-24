@@ -13,20 +13,24 @@ Leia antes: `roteiro-carrossel` (o texto de cada card), `social-carrossel` (regr
 Quando a pessoa pedir um carrossel sem dizer qual, pergunte uma vez:
 
 > O carrossel vai ser de **cards individuais** (cada slide independente) ou **sem emendas** (seamless: um
-> painel contínuo que passa de um card para o outro)?
+> painel contínuo que passa de um card para o outro)? E **quantos cards**: você define ou eu decido pelo conteúdo?
 
 - Individuais → `social-carrossel` (pranchetas separadas, `ps_artboards`).
 - Sem emendas → esta skill. Depois pergunte onde fazer (Photoshop ou Illustrator) se a pessoa não disser.
+
+**Quando a IA decide a quantidade:** 1 capa (gancho) + 1 card por bloco do roteiro (ideia, passo, item) +
+1 card final (CTA) — `contentBlocks` nas receitas faz essa conta. Bloco longo demais para um card vira dois;
+dois blocos curtos podem dividir um card. Limite: **20 cards**. Diga o número escolhido antes de montar.
 
 ## 1. Números (Instagram)
 
 | Item | Valor |
 |---|---|
-| Card | **1080 × 1350** (4:5, padrão) · 1080 × 1440 (3:4, aceito) · 1080 × 1080 (1:1) |
-| Tela larga | **cards × 1080** de largura × altura do card (5 cards 4:5 = 5400 × 1350) |
-| Quantidade | 2 a 20 cards; o efeito aparece a partir de 4; 5–10 é o usual |
+| Card | **1080 × 1440** (3:4, padrão atual do Instagram) · 1080 × 1350 (4:5, só se publicar por agendador/API da Meta, que aceita no máximo 4:5) · 1080 × 1080 (1:1) |
+| Tela larga | **cards × 1080** de largura × altura do card (5 cards 3:4 = 5400 × 1440; 20 cards = 21 600 × 1440) |
+| Quantidade | 2 a **20** cards (limite do Instagram); o efeito aparece a partir de 4 |
 | Proporção | o primeiro card define a de todos |
-| Grade do perfil | mostra a capa cortada em 3:4: em 4:5 somem ~34 px de cada lado do card 1 |
+| Grade do perfil | célula 3:4: em 3:4 a capa aparece inteira; em 4:5 somem ~34 px de cada lado do card 1 |
 | Margem segura | **80 px** de cada borda do card (mínimo 64) — vale também dos dois lados de cada emenda |
 | Exportação | **PNG**, exatamente 1080 de largura, nomes `<prefixo>_01 … _NN` (zero à esquerda, ordem de postagem) |
 
@@ -50,7 +54,7 @@ borda externa do card 1 (esquerda) e do último (direita) fica calma, sem elemen
 
 ## 3. Photoshop (preferido para foto)
 
-1. `ps_recipe_carousel_setup` `{ count, ratio: "4:5", margin: 80, psdPath }` — cria a tela larga com guias
+1. `ps_recipe_carousel_setup` `{ count (ou contentBlocks), ratio: "3:4", margin: 80, psdPath }` — cria a tela larga com guias
    nas emendas, nas margens de cada card e no corte 3:4 da capa, a camada **Fundo continuo** e um grupo
    **Card NN - textos** por card. Salve o PSD mestre (`ps_save_document`) e `jradb_checkpoint`.
 2. Construa: fundo e fotos (Smart Object, regra do PSD mestre) por cima da tela inteira; textos e logo
@@ -68,13 +72,17 @@ borda externa do card 1 (esquerda) e do último (direita) fica calma, sem elemen
 
 ## 4. Illustrator (preferido para vetor)
 
-1. `ai_recipe_carousel_artboards` `{ count, ratio: "4:5", margin: 80, filePath }` — N pranchetas lado a
+1. `ai_recipe_carousel_artboards` `{ count (ou contentBlocks), ratio: "3:4", margin: 80, filePath }` — N pranchetas lado a
    lado **sem espaço** (01…NN), camada **Arte** e camada travada **Guias** com as margens. (Em arquivo
    existente: Objeto > Pranchetas > Reorganizar todas, espaçamento 0.)
 2. Desenhe as formas de fundo passando por cima das bordas das pranchetas; texto e logo dentro das guias.
 3. Exporte cada prancheta: `ai_export_assets` (PNG, 72 ppi, usar pranchetas) — 1 pt = 1 px.
 4. Foto no Illustrator: PSD vinculado (regra do PSD mestre).
-5. Limite: a área de trabalho tem ~16 383 pt; 15 cards de 1080 cabem, mais que isso faça no Photoshop.
+5. **Canvas largo:** a área normal tem ~16 383 pt (cabem 14 cards de 1080). Com mais cards a receita inicia
+   o documento com uma prancheta de 10 000 px, o que liga o canvas largo do Illustrator, e então cabem os
+   20 cards. No canvas largo o script trabalha na escala do documento (`scaleFactor`, devolvido pela
+   receita): as pranchetas continuam com 1080 px, mas coordenadas em scripts são pt ÷ scaleFactor.
+   Confira a largura dos PNG exportados (devem ter 1080 px).
 
 ## 5. Erros comuns
 

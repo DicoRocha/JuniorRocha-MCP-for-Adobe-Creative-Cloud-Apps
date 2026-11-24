@@ -77,7 +77,7 @@ formato/canal, prazo de marca (logo, cores, fontes). Sem objetivo ou formato, pe
 | Campanha com várias peças e apps | `plan-briefing` → `plan-campanha` → `plan-conceito-criativo` → `plan-copy` → `pipeline-entre-apps` → `jradb_campaign_run` (plano → execução com aprovações → relatório) → `qa-preflight-entrega` |
 | Textos (títulos, legendas, CTA, variações) | `plan-copy` |
 | Post estático (feed) | `craft-composicao` → `craft-tipografia` → `craft-cor` → `craft-formatos` → `social-post` → `craft-marca` → `craft-acessibilidade` → `craft-organizacao-camadas` → `qa-anti-generico` → `qa-revisao-visual` |
-| Carrossel (pergunte antes: **cards individuais ou sem emendas (seamless)?**) | Individuais: `roteiro-carrossel` → `social-carrossel` → `qa-revisao-visual` · Sem emendas: `roteiro-carrossel` → `social-carrossel-seamless` → `qa-revisao-visual` |
+| Carrossel (pergunte antes: **cards individuais ou sem emendas (seamless)?** e **quantos cards, ou se você decide pelo conteúdo**) | Individuais: `roteiro-carrossel` → `social-carrossel` → `qa-revisao-visual` · Sem emendas: `roteiro-carrossel` → `social-carrossel-seamless` → `qa-revisao-visual` |
 | Stories, capa de Reels, destaques | `social-stories-capas` |
 | Thumbnail de YouTube / capa horizontal | `social-thumbnail` → `foto-fundamentos` → `foto-recorte-e-composicao` |
 | Anúncios estáticos / variações para teste | `plan-anuncios` → `plan-copy` → `ads-estatico` (lote com `ps_batch_variants`) |

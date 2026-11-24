@@ -3,7 +3,9 @@
  *
  * - Canvas width = cards x card width, exactly; cards are cut at whole pixels (never resized after the cut).
  * - Instagram takes 2-20 cards; 7-10 is the usual sweet spot; the first card sets the aspect ratio of all.
- * - 1080 x 1350 (4:5) is the standard; 1080 x 1440 (3:4) is accepted; the profile grid crops to 3:4.
+ * - 1080 x 1440 (3:4) is the current Instagram default for feed posts and carousels (in the app since 2025, the
+ *   profile grid shows 3:4 tiles); 1080 x 1350 (4:5) is still accepted and is the tallest shape Meta's publishing
+ *   API (scheduling tools) takes.
  * - Text and logo stay inside one card, away from the seams; background and images may cross them.
  */
 
@@ -59,7 +61,7 @@ function pad(n: number, total: number): string {
 }
 
 export function planCarousel(input: CarouselInput): CarouselPlan {
-  const base = CAROUSEL_SIZES[input.ratio ?? "4:5"];
+  const base = CAROUSEL_SIZES[input.ratio ?? "3:4"];
   const cardWidth = Math.round(input.cardWidth ?? base.width);
   const cardHeight = Math.round(input.cardHeight ?? base.height);
   const count = Math.round(input.count);
@@ -71,7 +73,8 @@ export function planCarousel(input: CarouselInput): CarouselPlan {
   if (margin * 2 >= cardWidth) throw new Error(`A ${margin} px margin leaves no room inside a ${cardWidth} px card.`);
   if (cardWidth !== 1080) warnings.push(`Instagram shows carousels 1080 px wide; ${cardWidth} px cards are scaled on upload.`);
   const ratio = cardWidth / cardHeight;
-  if (ratio < 0.75 - 0.005) warnings.push("Taller than 3:4: Instagram crops it. Use 1080x1350 (4:5) or 1080x1440 (3:4).");
+  if (ratio < 0.75 - 0.005) warnings.push("Taller than 3:4: Instagram crops it. Use 1080x1440 (3:4) or 1080x1350 (4:5).");
+  if (Math.abs(ratio - 0.75) < 0.005) warnings.push("3:4 posts from the Instagram app; scheduling tools that publish through Meta's API take 4:5 at most (use ratio 4:5 there).");
   if (ratio > 1.91 + 0.01) warnings.push("Wider than 1.91:1: Instagram crops it.");
   if (count < 4) warnings.push("With fewer than 4 cards the continuous effect is hard to notice; 5-10 is the usual range.");
   const canvasWidth = count * cardWidth;
@@ -111,6 +114,15 @@ export function planCarousel(input: CarouselInput): CarouselPlan {
   };
 }
 
+/**
+ * Number of cards when the person lets the AI decide: a cover, one card per content block (idea, step, item of
+ * the script) and a closing card with the CTA, kept within Instagram's 2-20.
+ */
+export function suggestCardCount(contentBlocks: number, opts: { cover?: boolean; cta?: boolean } = {}): number {
+  const n = Math.max(0, Math.round(contentBlocks)) + (opts.cover === false ? 0 : 1) + (opts.cta === false ? 0 : 1);
+  return Math.min(CAROUSEL_MAX_CARDS, Math.max(2, n));
+}
+
 export interface SeamIssue {
   name: string;
   seam: number;
@@ -132,4 +144,7 @@ export function seamIssues(boxes: Array<{ name: string; bounds: [number, number,
 
 /** The question to ask before a carousel when the person did not say which kind. */
 export const CAROUSEL_KIND_QUESTION =
-  "O carrossel vai ser de cards individuais (cada slide independente) ou sem emendas (seamless: um painel contínuo que passa de um card para o outro)?";
+  "O carrossel vai ser de cards individuais (cada slide independente) ou sem emendas (seamless: um painel contínuo que passa de um card para o outro)? E quantos cards: você define ou eu decido pelo conteúdo?";
+
+/** Illustrator's normal canvas is about 16383 pt wide; past this a carousel needs the large canvas. */
+export const AI_NORMAL_CANVAS = 16000;

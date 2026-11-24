@@ -14,7 +14,7 @@ export interface FormatSpec {
 }
 
 /** Last review of this table and of craft-formatos/references/formatos.md (phase 4: review every quarter). */
-export const FORMATS_REVIEWED = "2026-11-13";
+export const FORMATS_REVIEWED = "2026-11-24";
 
 /** Days since the last review; jradb_get_status warns after 92. */
 export function formatsReviewAge(now: Date = new Date()): number {
@@ -22,7 +22,8 @@ export function formatsReviewAge(now: Date = new Date()): number {
 }
 
 export const FORMATS: Record<string, FormatSpec> = {
-  feed4x5: { label: "Feed 4:5", width: 1080, height: 1350, safe: { top: 60, right: 60, bottom: 60, left: 60 } },
+  feed3x4: { label: "Feed 3:4 (padrão do Instagram)", width: 1080, height: 1440, safe: { top: 60, right: 60, bottom: 60, left: 60 } },
+  feed4x5: { label: "Feed 4:5 (agendadores / API da Meta)", width: 1080, height: 1350, safe: { top: 60, right: 60, bottom: 60, left: 60 } },
   square1x1: { label: "Quadrado 1:1", width: 1080, height: 1080, safe: { top: 60, right: 60, bottom: 60, left: 60 } },
   story9x16: {
     label: "Story/Reels 9:16",

@@ -22,7 +22,7 @@ Leia antes `craft-composicao`. Base: `docs/conhecimento/02`.
 | Meio | Tamanhos |
 |---|---|
 | Tela (px) | 12, 14, 16, 20, 24, 32, 40, 56, 72, 96, 128 |
-| Post 1080×1350 | título 80–120 · apoio 26–32 · rótulo/CTA 18–24 (caixa alta) |
+| Post 1080×1440 (ou 1350) | título 80–120 · apoio 26–32 · rótulo/CTA 18–24 (caixa alta) |
 | Story/Reels 1080×1920 | título 96–140 · legenda 48–60 · nada < 36 |
 | Slide 1920×1080 | título 56–96 · corpo ≥ 28 · nada < 20 |
 | Impresso (pt) | corpo 9–11 · legenda 7–8 · mínimo 6 · subtítulo 12–14 · título 18–36 · capa 48+ |

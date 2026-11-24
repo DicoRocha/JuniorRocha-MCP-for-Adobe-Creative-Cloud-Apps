@@ -9,7 +9,8 @@ Leia antes: `roteiro-carrossel` (o texto de cada slide), `craft-composicao`, `cr
 
 ## 0. Regras de 18/11/2026 (valem acima do resto desta skill)
 
-- **Pergunte o tipo** quando a pessoa não disser: "cards individuais ou sem emendas (seamless)?". Sem
+- **Pergunte o tipo e a quantidade** quando a pessoa não disser: "cards individuais ou sem emendas (seamless)? E quantos
+  cards: você define ou eu decido pelo conteúdo?" (máximo 20 no Instagram). Sem
   emendas (um painel contínuo que atravessa os cards) segue `social-carrossel-seamless`; esta skill é a
   dos cards individuais.
 - **Pergunte onde fazer** quando a pessoa não disser: carrossel pode ser feito no Photoshop ou no
@@ -39,13 +40,13 @@ Leia antes: `roteiro-carrossel` (o texto de cada slide), `craft-composicao`, `cr
 ## 1. Antes
 
 - Roteiro aprovado em `00_briefing/roteiro-carrossel.md`.
-- Proporção: **4:5 (1080×1350)** por padrão. O primeiro slide define a proporção de todos.
+- Proporção: **3:4 (1080×1440)** por padrão (4:5, 1080×1350, só se for publicar por agendador/API da Meta). O primeiro slide define a proporção de todos.
 - Kit de marca e fotos tratadas (`foto-saida`, 2160–2400 px, sRGB).
 - `jradb_get_status`; pasta `02_design/carrossel/` (o MCP cria pastas ao salvar).
 
 ## 2. Template (slide 2 em diante)
 
-1. `ps_create_document` 1080×1350, 72 ppi, RGB.
+1. `ps_create_document` 1080×1440, 72 ppi, RGB.
 2. Camadas nomeadas, sempre as mesmas: **Fundo · Foto (Smart Object) · Protecao · Numero ·
    Titulo · Texto · Progresso · Marca**.
 3. Grade fixa: margens 64 px; número do passo no mesmo canto; título na mesma linha de base em todos.
@@ -82,7 +83,7 @@ Use `jradb_batch` (app photoshop) para agrupar as edições de um slide numa só
 | Item | Valor |
 |---|---|
 | Palavras por slide | ≤ 40 (capa ≤ 8 no título) |
-| Título | altura de letra ≥ 5% da altura (≥ 68 px em 1350) |
+| Título | altura de letra ≥ 5% da altura (≥ 72 px em 1440) |
 | Margem lateral | ≥ 64 px (a grade do perfil corta a capa para 3:4) |
 | Exportação | sempre PNG, nomes `01.png … 10.png` |
 | Marca | pequena, mesmo canto, a partir do slide 2 (capa limpa) |

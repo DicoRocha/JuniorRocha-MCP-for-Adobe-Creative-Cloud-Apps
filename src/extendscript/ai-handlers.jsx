@@ -658,14 +658,43 @@ function __mcpDispatch(action, params, _options) {
     var chA = Number(params.cardHeight) || 1350;
     var nA = Math.max(2, Math.min(20, Number(params.count) || 5));
     var mgA = typeof params.margin === "number" ? params.margin : 80;
-    if (nA * cwA > 16000) __mcpFail("INVALID_PARAMS", nA + " cards of " + cwA + " pt make " + (nA * cwA) + " pt: wider than the Illustrator canvas (about 16383 pt). Use fewer cards here or build it in Photoshop (ps_recipe_carousel_setup).");
-    var docA = app.documents.add(DocumentColorSpace.RGB, cwA, chA);
+    var bigA = params.largeCanvas === true;
+    if (!bigA && nA * cwA > 16000) __mcpFail("INVALID_PARAMS", nA + " cards of " + cwA + " pt make " + (nA * cwA) + " pt: wider than the normal Illustrator canvas. Pass largeCanvas: true.");
+    var docA = null;
+    if (bigA) {
+      // A document that starts with a 10000 px artboard opens on Illustrator's large canvas (scale factor 10).
+      var preA = new DocumentPreset();
+      preA.width = 10000;
+      preA.height = chA;
+      preA.colorMode = DocumentColorSpace.RGB;
+      preA.units = RulerUnits.Pixels;
+      preA.numArtboards = 1;
+      if (params.title) preA.title = String(params.title);
+      docA = app.documents.addDocument("Web", preA, false);
+    } else {
+      docA = app.documents.add(DocumentColorSpace.RGB, cwA, chA);
+    }
+    // On the large canvas the DOM works in scaled units: 1 unit = scaleFactor pt.
+    var sfA = 1;
+    try {
+      if (typeof docA.scaleFactor === "number" && docA.scaleFactor > 0) sfA = docA.scaleFactor;
+    } catch (_eSf) {}
+    if (bigA && sfA === 1) {
+      var rq = docA.artboards[0].artboardRect;
+      var wq = rq[2] - rq[0];
+      if (wq > 0 && Math.round(10000 / wq) > 1) sfA = Math.round(10000 / wq);
+    }
+    if (bigA && sfA === 1 && nA * cwA > 16000) {
+      docA.close(SaveOptions.DONOTSAVECHANGES);
+      __mcpFail("UNSUPPORTED", "Illustrator did not open the document on the large canvas; build this carousel in Photoshop (ps_recipe_carousel_setup).");
+    }
+    var uA = function (v) { return v / sfA; };
     var r0 = docA.artboards[0].artboardRect; // [left, top, right, bottom], y up
     var left0 = r0[0], top0 = r0[1];
-    docA.artboards[0].artboardRect = [left0, top0, left0 + cwA, top0 - chA];
+    docA.artboards[0].artboardRect = [left0, top0, left0 + uA(cwA), top0 - uA(chA)];
     docA.artboards[0].name = "01";
     for (var a = 1; a < nA; a++) {
-      var ab = docA.artboards.add([left0 + a * cwA, top0, left0 + (a + 1) * cwA, top0 - chA]);
+      var ab = docA.artboards.add([left0 + uA(a * cwA), top0, left0 + uA((a + 1) * cwA), top0 - uA(chA)]);
       ab.name = (a + 1 < 10 ? "0" : "") + (a + 1);
     }
     var art = docA.layers[0];
@@ -677,21 +706,22 @@ function __mcpDispatch(action, params, _options) {
       pth.setEntirePath([[x1, y1], [x2, y2]]);
       pth.guides = true;
     };
-    var bottom0 = top0 - chA;
+    var bottom0 = top0 - uA(chA);
     for (var s1 = 0; s1 < nA; s1++) {
-      var x0 = left0 + s1 * cwA;
+      var x0 = left0 + uA(s1 * cwA);
       if (mgA > 0) {
-        guideLine(x0 + mgA, top0, x0 + mgA, bottom0);
-        guideLine(x0 + cwA - mgA, top0, x0 + cwA - mgA, bottom0);
+        guideLine(x0 + uA(mgA), top0, x0 + uA(mgA), bottom0);
+        guideLine(x0 + uA(cwA - mgA), top0, x0 + uA(cwA - mgA), bottom0);
       }
     }
     if (mgA > 0) {
-      guideLine(left0, top0 - mgA, left0 + nA * cwA, top0 - mgA);
-      guideLine(left0, bottom0 + mgA, left0 + nA * cwA, bottom0 + mgA);
+      guideLine(left0, top0 - uA(mgA), left0 + uA(nA * cwA), top0 - uA(mgA));
+      guideLine(left0, bottom0 + uA(mgA), left0 + uA(nA * cwA), bottom0 + uA(mgA));
     }
     gl.locked = true;
     docA.activeLayer = art;
-    var outA = { document: docA.name, artboards: nA, cardWidth: cwA, cardHeight: chA, margin: mgA, totalWidth: nA * cwA, origin: [left0, top0] };
+    var outA = { document: docA.name, artboards: nA, cardWidth: cwA, cardHeight: chA, margin: mgA, totalWidth: nA * cwA, origin: [left0, top0], largeCanvas: sfA > 1, scaleFactor: sfA };
+    if (sfA > 1) outA.note = "Large canvas: script coordinates in this document are pt / " + sfA + " (a 1080 pt card is " + uA(1080) + " units). Check the width of the exported cards: a script export scaled by the DOM can come out " + sfA + "x smaller; then export at " + (sfA * 100) + " %.";
     if (params.filePath) {
       var prevUilA = app.userInteractionLevel;
       app.userInteractionLevel = UserInteractionLevel.DONTDISPLAYALERTS;

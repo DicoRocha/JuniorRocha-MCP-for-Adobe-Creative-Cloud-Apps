@@ -17,7 +17,7 @@ Documents, layers, masks, smart objects, adjustments, artboards, recipes and aud
 | [`ps_recipe_zone_dodge_burn`](#ps_recipe_zone_dodge_burn) | Dodge & burn by zones without a brush: Curves layers masked by luminosity masks (lift the shadows on Sombras 2, hold the highlights on Luzes 2, optional midtone contrast on… |
 | [`ps_recipe_frequency_separation`](#ps_recipe_frequency_separation) | Light frequency separation for skin, no brush: Baixa frequencia (blur) + Alta frequencia (Apply Image, Linear Light) rebuild the photo exactly; Suavizar pele (edge-preserving… |
 | [`ps_recipe_look`](#ps_recipe_look) | Apply a reference look as editable adjustment layers in one group above everything (the photo is not touched): esportivo-dramatico, pb-papel-antigo, pb-vintage. |
-| [`ps_recipe_carousel_setup`](#ps_recipe_carousel_setup) | Seamless Instagram carousel (one continuous panel, also called panoramic or infinite carousel), step 1: a new wide document = count x card width (default 1080x1350, 4:5) with… |
+| [`ps_recipe_carousel_setup`](#ps_recipe_carousel_setup) | Seamless Instagram carousel (one continuous panel, also called panoramic or infinite carousel), step 1: a new wide document = count x card width (default 1080x1440, 3:4,… |
 | [`ps_recipe_carousel_split`](#ps_recipe_carousel_split) | Seamless Instagram carousel, step 2: cut the wide document into its cards and export them in posting order (<prefix>_01.png ... |
 | [`ps_recipe_film_grain`](#ps_recipe_film_grain) | Film grain on top of the document: a 50 % grey layer in Overlay with monochrome Gaussian noise, slightly blurred. |
 | [`ps_organize_layers`](#ps_organize_layers) | Organise a Photoshop document in groups by meaning: text on a shape becomes a label group, an icon with its text (and the lines under it) an item group, repeated items/labels… |
@@ -175,12 +175,13 @@ Apply a reference look as editable adjustment layers in one group above everythi
 
 ## `ps_recipe_carousel_setup`
 
-Seamless Instagram carousel (one continuous panel, also called panoramic or infinite carousel), step 1: a new wide document = count x card width (default 1080x1350, 4:5) with guides at every seam, at the safe margin inside each card and at the 3:4 profile-grid crop of card 1, a 'Fundo continuo' layer and one empty 'Card NN - textos' group per card. Background shapes and photos may cross the seams; text and logo stay inside one card's margins. For a carousel of independent cards use ps_artboards instead (ask the person which kind first). Then build the art and export with ps_recipe_carousel_split.
+Seamless Instagram carousel (one continuous panel, also called panoramic or infinite carousel), step 1: a new wide document = count x card width (default 1080x1440, 3:4, Instagram's current size) with guides at every seam, at the safe margin inside each card and at the 3:4 profile-grid crop of card 1, a 'Fundo continuo' layer and one empty 'Card NN - textos' group per card. Background shapes and photos may cross the seams; text and logo stay inside one card's margins. For a carousel of independent cards use ps_artboards instead (ask the person which kind first, and how many cards or whether you decide from the content: then pass contentBlocks). Then build the art and export with ps_recipe_carousel_split.
 
 | Parameter | Type | Required | Description |
 |---|---|:---:|---|
-| `count` | integer | yes | Number of cards (Instagram: 2-20; 5-10 is usual). |
-| `ratio` | `4:5` · `3:4` · `1:1` · `1.91:1` |  | 4:5 = 1080x1350 (standard), 3:4 = 1080x1440. Default: `"4:5"`. |
+| `count` | integer |  | Number of cards (Instagram: 2-20). Give this or contentBlocks. |
+| `contentBlocks` | integer |  | When the AI decides: content blocks of the script (ideas/steps); cards = cover + blocks + CTA card, max 20. |
+| `ratio` | `3:4` · `4:5` · `1:1` · `1.91:1` |  | 3:4 = 1080x1440 (Instagram default); 4:5 = 1080x1350 (for scheduling tools / Meta API). Default: `"3:4"`. |
 | `cardWidth` | integer |  | Overrides the ratio's width (keep 1080 for Instagram). |
 | `cardHeight` | integer |  |  |
 | `margin` | integer |  | Safe margin in px from every card edge (and so from every seam). Default: `80`. |
@@ -453,7 +454,7 @@ Recipe: key art → every social format in one call. Creates a new document (the
 | Parameter | Type | Required | Description |
 |---|---|:---:|---|
 | `documentName` | string |  | Key art document (default: active). |
-| `formats` | `feed4x5` · `square1x1` · `story9x16` · `reelsCover` · `link191` · `youtubeThumb` · `landscape16x9`[] |  |  |
+| `formats` | `feed3x4` · `feed4x5` · `square1x1` · `story9x16` · `reelsCover` · `link191` · `youtubeThumb` · `landscape16x9`[] |  |  |
 | `overlayScale` | number |  | Extra scale for titles/logo (default 1). |
 | `focus` | object |  | Focal point in the key art (0–1). Default: upper third of a layer named Motiv/sujeito/produto, else centre. |
 | `outputFolder` | string |  |  |
@@ -468,7 +469,7 @@ Check a Photoshop piece before delivery: canvas vs format, RGB/sRGB/8-bit, text 
 | Parameter | Type | Required | Description |
 |---|---|:---:|---|
 | `documentName` | string |  |  |
-| `format` | `feed4x5` · `square1x1` · `story9x16` · `reelsCover` · `link191` · `youtubeThumb` · `landscape16x9` |  |  |
+| `format` | `feed3x4` · `feed4x5` · `square1x1` · `story9x16` · `reelsCover` · `link191` · `youtubeThumb` · `landscape16x9` |  |  |
 | `minContrast` | number |  |  |
 | `sampleBackground` | boolean |  |  Default: `true`. |
 | `maxTextLayers` | integer |  |  Default: `12`. |
@@ -678,7 +679,7 @@ Recipe: product photo → finished product shot in one call. Cuts the product ou
 |---|---|:---:|---|
 | `filePath` | string |  | Image file to open (closed again unchanged). Default: documentName or the active document. |
 | `documentName` | string |  |  |
-| `format` | `feed4x5` · `square1x1` · `story9x16` · `reelsCover` · `link191` · `youtubeThumb` · `landscape16x9` |  | Canvas format (default square1x1). |
+| `format` | `feed3x4` · `feed4x5` · `square1x1` · `story9x16` · `reelsCover` · `link191` · `youtubeThumb` · `landscape16x9` |  | Canvas format (default square1x1). |
 | `width` | integer |  | Custom canvas width in px (with height). |
 | `height` | integer |  |  |
 | `kitPath` | string |  | kit-de-marca.json: the surface colour becomes the background. |

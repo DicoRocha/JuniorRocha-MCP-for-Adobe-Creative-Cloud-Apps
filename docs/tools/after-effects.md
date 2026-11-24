@@ -382,7 +382,7 @@ Recipe: lower third in one call — name + role in the brand fonts, a box that r
 | `kitPath` | string |  | 00_briefing/kit-de-marca.json (cores por uso, tipos titulo/corpo/rotulo). |
 | `colors` | object |  | '#RRGGBB' per role; overrides the kit. |
 | `fonts` | object |  | PostScript names (ps_list_fonts). |
-| `format` | `feed4x5` · `square1x1` · `story9x16` · `reelsCover` · `link191` · `youtubeThumb` · `landscape16x9` |  | Canvas from the format table (default 1920×1080). |
+| `format` | `feed3x4` · `feed4x5` · `square1x1` · `story9x16` · `reelsCover` · `link191` · `youtubeThumb` · `landscape16x9` |  | Canvas from the format table (default 1920×1080). |
 | `width` | integer |  |  |
 | `height` | integer |  |  |
 | `duration` | number |  |  |
@@ -404,7 +404,7 @@ Recipe: title card in one call — kicker in the label font and accent colour, t
 | `kitPath` | string |  | 00_briefing/kit-de-marca.json (cores por uso, tipos titulo/corpo/rotulo). |
 | `colors` | object |  | '#RRGGBB' per role; overrides the kit. |
 | `fonts` | object |  | PostScript names (ps_list_fonts). |
-| `format` | `feed4x5` · `square1x1` · `story9x16` · `reelsCover` · `link191` · `youtubeThumb` · `landscape16x9` |  | Canvas from the format table (default 1920×1080). |
+| `format` | `feed3x4` · `feed4x5` · `square1x1` · `story9x16` · `reelsCover` · `link191` · `youtubeThumb` · `landscape16x9` |  | Canvas from the format table (default 1920×1080). |
 | `width` | integer |  |  |
 | `height` | integer |  |  |
 | `duration` | number |  |  |
@@ -427,7 +427,7 @@ Recipe: animated number in one call — counts from → to with a strong ease (s
 | `kitPath` | string |  | 00_briefing/kit-de-marca.json (cores por uso, tipos titulo/corpo/rotulo). |
 | `colors` | object |  | '#RRGGBB' per role; overrides the kit. |
 | `fonts` | object |  | PostScript names (ps_list_fonts). |
-| `format` | `feed4x5` · `square1x1` · `story9x16` · `reelsCover` · `link191` · `youtubeThumb` · `landscape16x9` |  | Canvas from the format table (default 1920×1080). |
+| `format` | `feed3x4` · `feed4x5` · `square1x1` · `story9x16` · `reelsCover` · `link191` · `youtubeThumb` · `landscape16x9` |  | Canvas from the format table (default 1920×1080). |
 | `width` | integer |  |  |
 | `height` | integer |  |  |
 | `duration` | number |  |  |
@@ -457,7 +457,7 @@ Recipe: logo reveal in one call — an accent circle grows behind, the logo (png
 | `kitPath` | string |  | 00_briefing/kit-de-marca.json (cores por uso, tipos titulo/corpo/rotulo). |
 | `colors` | object |  | '#RRGGBB' per role; overrides the kit. |
 | `fonts` | object |  | PostScript names (ps_list_fonts). |
-| `format` | `feed4x5` · `square1x1` · `story9x16` · `reelsCover` · `link191` · `youtubeThumb` · `landscape16x9` |  | Canvas from the format table (default 1920×1080). |
+| `format` | `feed3x4` · `feed4x5` · `square1x1` · `story9x16` · `reelsCover` · `link191` · `youtubeThumb` · `landscape16x9` |  | Canvas from the format table (default 1920×1080). |
 | `width` | integer |  |  |
 | `height` | integer |  |  |
 | `duration` | number |  |  |
@@ -480,7 +480,7 @@ Recipe: transition kit in one call — scene A → scene B (two placeholder prec
 | `kitPath` | string |  | 00_briefing/kit-de-marca.json (cores por uso, tipos titulo/corpo/rotulo). |
 | `colors` | object |  | '#RRGGBB' per role; overrides the kit. |
 | `fonts` | object |  | PostScript names (ps_list_fonts). |
-| `format` | `feed4x5` · `square1x1` · `story9x16` · `reelsCover` · `link191` · `youtubeThumb` · `landscape16x9` |  | Canvas from the format table (default 1920×1080). |
+| `format` | `feed3x4` · `feed4x5` · `square1x1` · `story9x16` · `reelsCover` · `link191` · `youtubeThumb` · `landscape16x9` |  | Canvas from the format table (default 1920×1080). |
 | `width` | integer |  |  |
 | `height` | integer |  |  |
 | `duration` | number |  |  |

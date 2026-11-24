@@ -6,7 +6,7 @@ import { REFERENCE_LOOKS, referenceLook } from "../../core/looks.js";
 import { countLeaves, planTree, psTreeToNodes } from "../../core/grouping.js";
 import { auditPhotoshop, summarize, type PsAuditData } from "../../core/audit.js";
 import { FORMATS, resolveZones } from "../../core/formats.js";
-import { CAROUSEL_SIZES, planCarousel } from "../../core/carousel.js";
+import { CAROUSEL_SIZES, planCarousel, suggestCardCount } from "../../core/carousel.js";
 import * as path from "node:path";
 import { loadRecords, fillPattern } from "../../core/records.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -399,14 +399,16 @@ export function registerPhotoshopTools(realServer: McpServer, router: BridgeRout
   server.tool(
     "ps_recipe_carousel_setup",
     "Seamless Instagram carousel (one continuous panel, also called panoramic or infinite carousel), step 1: a new " +
-      "wide document = count x card width (default 1080x1350, 4:5) with guides at every seam, at the safe margin inside " +
+      "wide document = count x card width (default 1080x1440, 3:4, Instagram's current size) with guides at every seam, at the safe margin inside " +
       "each card and at the 3:4 profile-grid crop of card 1, a 'Fundo continuo' layer and one empty 'Card NN - textos' " +
       "group per card. Background shapes and photos may cross the seams; text and logo stay inside one card's margins. " +
-      "For a carousel of independent cards use ps_artboards instead (ask the person which kind first). Then build the " +
+      "For a carousel of independent cards use ps_artboards instead (ask the person which kind first, and how many cards " +
+      "or whether you decide from the content: then pass contentBlocks). Then build the " +
       "art and export with ps_recipe_carousel_split.",
     {
-      count: z.number().int().min(2).max(20).describe("Number of cards (Instagram: 2-20; 5-10 is usual)."),
-      ratio: z.enum(["4:5", "3:4", "1:1", "1.91:1"]).optional().default("4:5").describe("4:5 = 1080x1350 (standard), 3:4 = 1080x1440."),
+      count: z.number().int().min(2).max(20).optional().describe("Number of cards (Instagram: 2-20). Give this or contentBlocks."),
+      contentBlocks: z.number().int().min(0).max(20).optional().describe("When the AI decides: content blocks of the script (ideas/steps); cards = cover + blocks + CTA card, max 20."),
+      ratio: z.enum(["3:4", "4:5", "1:1", "1.91:1"]).optional().default("3:4").describe("3:4 = 1080x1440 (Instagram default); 4:5 = 1080x1350 (for scheduling tools / Meta API)."),
       cardWidth: z.number().int().positive().optional().describe("Overrides the ratio's width (keep 1080 for Instagram)."),
       cardHeight: z.number().int().positive().optional(),
       margin: z.number().int().min(0).max(300).optional().default(80).describe("Safe margin in px from every card edge (and so from every seam)."),
@@ -415,8 +417,12 @@ export function registerPhotoshopTools(realServer: McpServer, router: BridgeRout
     },
     async (params) => {
       try {
-        const size = CAROUSEL_SIZES[(params.ratio ?? "4:5") as keyof typeof CAROUSEL_SIZES];
-        const plan = planCarousel({ count: params.count, ratio: params.ratio, cardWidth: params.cardWidth ?? size.width, cardHeight: params.cardHeight ?? size.height, margin: params.margin });
+        const size = CAROUSEL_SIZES[(params.ratio ?? "3:4") as keyof typeof CAROUSEL_SIZES];
+        if (params.count === undefined && params.contentBlocks === undefined) {
+          throw new Error("Say how many cards (count) or let the content decide (contentBlocks = ideas/steps of the script). Ask the person which they prefer.");
+        }
+        const count = params.count ?? suggestCardCount(params.contentBlocks ?? 0);
+        const plan = planCarousel({ count, ratio: params.ratio, cardWidth: params.cardWidth ?? size.width, cardHeight: params.cardHeight ?? size.height, margin: params.margin });
         const res = await router.dispatch(
           "photoshop",
           "ps.recipe.carouselSetup",
@@ -1018,7 +1024,7 @@ export function registerPhotoshopTools(realServer: McpServer, router: BridgeRout
     },
     async (params) => {
       try {
-        const keys: string[] = params.formats?.length ? params.formats : ["feed4x5", "story9x16", "square1x1", "link191"];
+        const keys: string[] = params.formats?.length ? params.formats : ["feed3x4", "story9x16", "square1x1", "link191"];
         const formats = keys.map((key: string) => {
           const f = FORMATS[key];
           const z0 = resolveZones(key, f.width, f.height);

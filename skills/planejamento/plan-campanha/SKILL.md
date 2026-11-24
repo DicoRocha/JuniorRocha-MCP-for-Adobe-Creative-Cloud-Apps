@@ -27,7 +27,7 @@ id · etapa · canal · formato (px/mm) · mensagem · CTA · arte de origem · 
 
 - **Arte de origem**: toda peça deriva da arte-chave ou de uma foto tratada; diga qual.
 - **App(s)** na ordem do pipeline: LR → PS → AI → AE → PR → ID.
-- Formatos: `craft-formatos` (feed 1080×1350, story/reels 1080×1920, A5 148×210 mm + 3 mm sangria).
+- Formatos: `craft-formatos` (feed 1080×1440, story/reels 1080×1920, A5 148×210 mm + 3 mm sangria).
 
 ## 3. Ordem de produção (dependências)
 

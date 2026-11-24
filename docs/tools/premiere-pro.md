@@ -458,7 +458,7 @@ Check the active sequence before export: gaps on V1/A1 (black or silence), gap a
 
 | Parameter | Type | Required | Description |
 |---|---|:---:|---|
-| `format` | `feed4x5` · `square1x1` · `story9x16` · `reelsCover` · `link191` · `youtubeThumb` · `landscape16x9` |  |  |
+| `format` | `feed3x4` · `feed4x5` · `square1x1` · `story9x16` · `reelsCover` · `link191` · `youtubeThumb` · `landscape16x9` |  |  |
 | `renderPath` | string |  | Rendered file to measure loudness (needs ffmpeg). |
 | `targetLufs` | number |  | Default −14 (social/YouTube); −16 for podcasts and long talks. |
 | `gapTracks` | object[] |  | Tracks that must not have gaps (default V1 and A1). |
@@ -507,6 +507,6 @@ Recipe: talking-head reel in one call. Imports the clips (in order) into a bin, 
 | `musicPath` | string |  |  |
 | `musicBaseDb` | number |  |  Default: `-8`. |
 | `musicDuckDb` | number |  |  Default: `14`. |
-| `format` | `feed4x5` · `square1x1` · `story9x16` · `reelsCover` · `link191` · `youtubeThumb` · `landscape16x9` |  |  Default: `"story9x16"`. |
+| `format` | `feed3x4` · `feed4x5` · `square1x1` · `story9x16` · `reelsCover` · `link191` · `youtubeThumb` · `landscape16x9` |  |  Default: `"story9x16"`. |
 | `exportPath` | string |  | Queue the export in Media Encoder to this file (H.264). |
 | `presetPath` | string |  |  |

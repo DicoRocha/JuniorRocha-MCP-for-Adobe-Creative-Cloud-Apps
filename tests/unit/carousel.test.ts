@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import * as fs from "node:fs";
-import { planCarousel, seamIssues, CAROUSEL_KIND_QUESTION } from "../../src/core/carousel.js";
+import { planCarousel, seamIssues, suggestCardCount, CAROUSEL_KIND_QUESTION } from "../../src/core/carousel.js";
 
 describe("seamless carousel plan", () => {
   it("makes the canvas an exact multiple of the card and cuts at whole pixels", () => {
-    const p = planCarousel({ count: 5 });
+    const p = planCarousel({ count: 5, ratio: "4:5" });
     expect(p.canvasWidth).toBe(5400);
     expect(p.canvasHeight).toBe(1350);
     expect(p.seams).toEqual([1080, 2160, 3240, 4320]);
@@ -19,8 +19,17 @@ describe("seamless carousel plan", () => {
     expect(p.fileNames[4]).toBe("carrossel_05.png");
   });
 
+  it("defaults to 3:4 (1080x1440) and decides the count from the content", () => {
+    expect(planCarousel({ count: 4 }).canvasHeight).toBe(1440);
+    expect(planCarousel({ count: 20 }).canvasWidth).toBe(21600);
+    expect(suggestCardCount(5)).toBe(7);
+    expect(suggestCardCount(30)).toBe(20);
+    expect(suggestCardCount(0)).toBe(2);
+    expect(CAROUSEL_KIND_QUESTION).toMatch(/quantos cards/);
+  });
+
   it("marks the 3:4 grid crop of a 4:5 first card and none for 3:4", () => {
-    expect(planCarousel({ count: 3 }).gridCropSide).toBe(34);
+    expect(planCarousel({ count: 3, ratio: "4:5" }).gridCropSide).toBe(34);
     expect(planCarousel({ count: 3, ratio: "3:4" }).gridCropSide).toBe(0);
     expect(planCarousel({ count: 3, ratio: "3:4" }).canvasHeight).toBe(1440);
   });
@@ -30,6 +39,7 @@ describe("seamless carousel plan", () => {
     expect(() => planCarousel({ count: 1 })).toThrow();
     expect(planCarousel({ count: 10 }).warnings.join(" ")).toMatch(/8192/);
     expect(planCarousel({ count: 3 }).warnings.join(" ")).toMatch(/fewer than 4/);
+    expect(planCarousel({ count: 5 }).warnings.join(" ")).toMatch(/4:5 at most/);
     expect(planCarousel({ count: 5, cardWidth: 1200, cardHeight: 1500 }).warnings.join(" ")).toMatch(/1080/);
   });
 
@@ -72,6 +82,9 @@ describe("seamless carousel plan", () => {
   it("Photoshop and Illustrator handlers exist", () => {
     expect(fs.readFileSync("src/extendscript/ps-handlers.jsx", "utf8")).toContain('action === "ps.recipe.carouselSplit"');
     expect(fs.readFileSync("src/extendscript/ps-handlers.jsx", "utf8")).toContain('action === "ps.recipe.carouselSetup"');
-    expect(fs.readFileSync("src/extendscript/ai-handlers.jsx", "utf8")).toContain('action === "ai.recipe.carouselArtboards"');
+    const ai = fs.readFileSync("src/extendscript/ai-handlers.jsx", "utf8");
+    expect(ai).toContain('action === "ai.recipe.carouselArtboards"');
+    expect(ai).toMatch(/preA\.width = 10000/);
+    expect(ai).toMatch(/scaleFactor/);
   });
 });

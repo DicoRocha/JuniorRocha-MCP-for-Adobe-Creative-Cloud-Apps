@@ -75,7 +75,7 @@ export function registerTemplatesTool(server: McpServer, router: BridgeRouter, e
         if (apps.includes("photoshop")) {
           try {
             const made = [];
-            for (const key of ["feed4x5", "story9x16", "square1x1"]) {
+            for (const key of ["feed3x4", "story9x16", "square1x1"]) {
               const f = FORMATS[key];
               const zn = resolveZones(key, f.width, f.height);
               const safe = { top: zn.safeRect.y, left: zn.safeRect.x, right: f.width - zn.safeRect.x - zn.safeRect.width, bottom: f.height - zn.safeRect.y - zn.safeRect.height };
@@ -153,7 +153,7 @@ export function registerTemplatesTool(server: McpServer, router: BridgeRouter, e
 
         if (apps.includes("illustrator")) {
           try {
-            const boards = ["feed4x5", "story9x16", "square1x1", "link191"].map((k) => ({ name: k, width: FORMATS[k].width, height: FORMATS[k].height }));
+            const boards = ["feed3x4", "story9x16", "square1x1", "link191"].map((k) => ({ name: k, width: FORMATS[k].width, height: FORMATS[k].height }));
             const r = await router.dispatch(
               "illustrator",
               "ai.template.brand",

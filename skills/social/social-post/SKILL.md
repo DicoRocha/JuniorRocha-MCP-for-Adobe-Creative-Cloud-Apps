@@ -16,7 +16,7 @@ Leia antes: `craft-composicao` e `craft-formatos`.
 
 ## 2. Montagem (uma etapa por chamada — evita timeout)
 
-1. **Documento:** `ps_create_document({ name, width: 1080, height: 1350, resolution: 72, mode: "RGBColorMode" })`
+1. **Documento:** `ps_create_document({ name, width: 1080, height: 1440, resolution: 72, mode: "RGBColorMode" })` (3:4, padrão do Instagram; 1350 de altura = 4:5 só para agendador/API da Meta)
    — ou abra o template da marca (`ps_open_document`).
 2. **Foto:** abra (`ps_open_document`) e traga como camada; ajuste com
    `ps_modify_canvas` (crop/resizeImage) ou `ps_transform_and_manage_layer` (scale/translate).

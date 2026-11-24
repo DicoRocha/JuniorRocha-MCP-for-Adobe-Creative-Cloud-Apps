@@ -1,18 +1,18 @@
 # Formatos — tabela de referência
 
-> Revisado em 13/11/2026 a partir de guias de dimensões de 2026 (posteverywhere.ai,
-> post-bridge.com, postermywall.com) e prática de produção gráfica. Revisar a cada trimestre.
+> Revisado em 24/11/2026 a partir de guias de dimensões de 2026 (posteverywhere.ai, skedsocial.com,
+> stan.store, post-bridge.com, postermywall.com) e prática de produção gráfica. Revisar a cada trimestre.
 > Para mídia paga, a especificação do gerenciador de anúncios prevalece.
 
 ## Redes sociais e anúncios
 
 | Peça | Proporção | Pixels |
 |---|---|---|
-| Instagram feed retrato (padrão) | 4:5 | 1080×1350 |
-| Instagram feed alto / grade do perfil | 3:4 | 1080×1440 |
+| Instagram feed e carrossel (padrão atual) | 3:4 | 1080×1440 (= a célula da grade do perfil, sem corte) |
+| Instagram feed retrato (agendadores / API da Meta) | 4:5 | 1080×1350 (a API publica no máximo 4:5; a grade corta ~34 px de cada lado) |
 | Quadrado | 1:1 | 1080×1080 |
 | Reels, Stories, TikTok, Shorts | 9:16 | 1080×1920 |
-| Carrossel Instagram | 4:5, 3:4 ou 1:1 | o 1º slide define a proporção de todos |
+| Carrossel Instagram | 3:4 (padrão), 4:5 ou 1:1 | o 1º slide define a proporção de todos; 2 a 20 cards |
 | Capa de Reels | 9:16 | 1080×1920 (essencial no centro: recorta para 4:5 no feed e 3:4 na grade) |
 | Anúncio de feed Meta | 4:5 ou 1:1 | 1440×1800 / 1440×1440 |
 | Thumbnail YouTube | 16:9 | 1280×720 (mínimo) |

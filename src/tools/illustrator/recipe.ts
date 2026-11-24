@@ -10,7 +10,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { BridgeRouter } from "../../core/bridge-router.js";
 import { buildImageToolResponse, formatErrorResponse } from "../../core/image-helper.js";
 import { resolveKit, hexToRgb } from "../../core/brand-kit.js";
-import { CAROUSEL_SIZES, planCarousel } from "../../core/carousel.js";
+import { AI_NORMAL_CANVAS, CAROUSEL_SIZES, planCarousel, suggestCardCount } from "../../core/carousel.js";
 import { contactSheet, decodePng, encodePng, type RgbImage } from "../../core/png.js";
 
 /** File-name slug: lowercase, no accents, words joined by '-'. */
@@ -209,13 +209,17 @@ export function registerIllustratorRecipe(server: McpServer, router: BridgeRoute
   server.tool(
     "ai_recipe_carousel_artboards",
     "Seamless Instagram carousel in Illustrator: a new document with count artboards side by side and NO space between " +
-      "them (named 01..NN, default 1080x1350 pt = px), a layer 'Arte' and a locked layer 'Guias' with the safe margin " +
+      "them (named 01..NN, default 1080x1440 pt = px, 3:4), a layer 'Arte' and a locked layer 'Guias' with the safe margin " +
       "of each card as guides. Draw the background and photos across the artboard edges; keep text and logo inside one " +
       "artboard's margins. Export each artboard with ai_export_assets (PNG, 72 ppi, 'use artboards'). For independent " +
-      "cards (not seamless) ask first: then the artboards can keep a gap.",
+      "cards (not seamless) ask first: then the artboards can keep a gap. Past ~14 cards of 1080 (or largeCanvas: true) " +
+      "the document starts with a 10000 px artboard so Illustrator opens it on the large canvas (up to 20 cards fit); " +
+      "there the script works in the document's scale (scaleFactor, returned) and the artboards are still 1080 px.",
     {
-      count: z.number().int().min(2).max(20),
-      ratio: z.enum(["4:5", "3:4", "1:1", "1.91:1"]).optional().default("4:5"),
+      count: z.number().int().min(2).max(20).optional().describe("Number of cards (2-20). Give this or contentBlocks."),
+      contentBlocks: z.number().int().min(0).max(20).optional().describe("When the AI decides: cards = cover + blocks + CTA card."),
+      ratio: z.enum(["3:4", "4:5", "1:1", "1.91:1"]).optional().default("3:4"),
+      largeCanvas: z.boolean().optional().describe("Force (true) or avoid (false) Illustrator's large canvas; default: only when the row does not fit the normal canvas."),
       cardWidth: z.number().int().positive().optional(),
       cardHeight: z.number().int().positive().optional(),
       margin: z.number().int().min(0).max(300).optional().default(80),
@@ -223,12 +227,17 @@ export function registerIllustratorRecipe(server: McpServer, router: BridgeRoute
     },
     async (params) => {
       try {
-        const size = CAROUSEL_SIZES[(params.ratio ?? "4:5") as keyof typeof CAROUSEL_SIZES];
-        const plan = planCarousel({ count: params.count, ratio: params.ratio, cardWidth: params.cardWidth ?? size.width, cardHeight: params.cardHeight ?? size.height, margin: params.margin });
+        const size = CAROUSEL_SIZES[(params.ratio ?? "3:4") as keyof typeof CAROUSEL_SIZES];
+        if (params.count === undefined && params.contentBlocks === undefined) {
+          throw new Error("Say how many cards (count) or let the content decide (contentBlocks). Ask the person which they prefer.");
+        }
+        const count = params.count ?? suggestCardCount(params.contentBlocks ?? 0);
+        const plan = planCarousel({ count, ratio: params.ratio, cardWidth: params.cardWidth ?? size.width, cardHeight: params.cardHeight ?? size.height, margin: params.margin });
+        const largeCanvas = params.largeCanvas ?? plan.canvasWidth > AI_NORMAL_CANVAS;
         const res = await router.dispatch(
           "illustrator",
           "ai.recipe.carouselArtboards",
-          { count: plan.count, cardWidth: plan.cardWidth, cardHeight: plan.cardHeight, margin: plan.margin, filePath: params.filePath },
+          { count: plan.count, cardWidth: plan.cardWidth, cardHeight: plan.cardHeight, margin: plan.margin, filePath: params.filePath, largeCanvas },
           { timeoutMs: 70000 }
         );
         return { content: [{ type: "text" as const, text: JSON.stringify({ ...((res.data || {}) as object), fileNames: plan.fileNames, warnings: plan.warnings }, null, 2) }] };

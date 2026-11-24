@@ -2,53 +2,149 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Kit de marca (jr-adb-mcp-bridge)",
   "type": "object",
-  "required": ["cliente", "status", "cores", "tipos"],
+  "required": [
+    "cliente",
+    "status",
+    "cores",
+    "tipos"
+  ],
   "properties": {
-    "cliente": { "type": "string" },
-    "status": { "enum": ["aprovado", "proposta"] },
+    "cliente": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "aprovado",
+        "proposta"
+      ]
+    },
     "cores": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["nome", "hex"],
+        "required": [
+          "nome",
+          "hex"
+        ],
         "properties": {
-          "nome": { "type": "string" },
-          "hex": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
-          "cmyk": { "type": ["array", "null"], "items": { "type": "number" }, "minItems": 4, "maxItems": 4 },
-          "pantone": { "type": ["string", "null"] },
-          "uso": { "enum": ["fundo", "superficie", "texto", "texto-secundario", "destaque", "semantica"] },
-          "origem": { "enum": ["manual", "conversao", "proposta"] }
+          "nome": {
+            "type": "string"
+          },
+          "hex": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "cmyk": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "number"
+            },
+            "minItems": 4,
+            "maxItems": 4
+          },
+          "pantone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "uso": {
+            "enum": [
+              "fundo",
+              "superficie",
+              "texto",
+              "texto-secundario",
+              "destaque",
+              "semantica"
+            ]
+          },
+          "origem": {
+            "enum": [
+              "manual",
+              "conversao",
+              "proposta"
+            ]
+          }
         }
       }
     },
     "tipos": {
       "type": "object",
       "properties": {
-        "titulo": { "$ref": "#/$defs/fonte" },
-        "corpo": { "$ref": "#/$defs/fonte" },
-        "rotulo": { "$ref": "#/$defs/fonte" }
+        "titulo": {
+          "$ref": "#/$defs/fonte"
+        },
+        "corpo": {
+          "$ref": "#/$defs/fonte"
+        },
+        "rotulo": {
+          "$ref": "#/$defs/fonte"
+        }
       }
     },
     "logo": {
       "type": "object",
       "properties": {
-        "arquivos": { "type": "object", "additionalProperties": { "type": "string" } },
-        "respiro": { "type": "string" },
-        "minimo_mm": { "type": "number" },
-        "minimo_px": { "type": "number" }
+        "arquivos": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "respiro": {
+          "type": "string"
+        },
+        "minimo_mm": {
+          "type": "number"
+        },
+        "minimo_px": {
+          "type": "number"
+        }
       }
     },
-    "tom": { "type": "string" },
-    "nunca": { "type": "array", "items": { "type": "string" } }
+    "tom": {
+      "type": "string"
+    },
+    "nunca": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "termos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Nomes escritos certo nas legendas (marca, pessoas, produtos, ferramentas), ex. ['Junior Rocha', 'Photoshop', 'MCP']."
+    },
+    "glossario": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Correções da transcrição 'errado' → 'certo', ex. {'Roche': 'Rocha'}."
+    }
   },
   "$defs": {
     "fonte": {
       "type": "object",
-      "required": ["familia"],
+      "required": [
+        "familia"
+      ],
       "properties": {
-        "familia": { "type": "string" },
-        "estilo": { "type": "string" },
-        "postscript": { "type": "string" }
+        "familia": {
+          "type": "string"
+        },
+        "estilo": {
+          "type": "string"
+        },
+        "postscript": {
+          "type": "string"
+        }
       }
     }
   }

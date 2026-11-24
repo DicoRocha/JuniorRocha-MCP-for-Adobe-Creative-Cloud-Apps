@@ -27,6 +27,8 @@ Como fazer (fase 2 — ferramentas tipadas):
    repetíveis vão no `glossary`; frases mal ouvidas, reescreva o segmento (passe `segments`).
 3. **Montar as legendas:** `media_build_captions` (reels: `maxChars` 24–28, `maxLines` 2, `minDuration` 0.8;
    `keep` = trechos mantidos no corte para re-sincronizar; `offsetSeconds` = início do clipe na timeline).
+   Com kit de marca, passe `kitPath`: os `termos` (nomes certos), o `glossario` ("Roche" → "Rocha") e o
+   nome do cliente do kit corrigem a grafia sozinhos. Nome que errou uma vez entra no `glossario` do kit.
 4. **Levar ao Premiere:** com estilo (fonte, caixa, cor, animação) → `pr_captions_as_mogrt({ filePath:
    Legenda.mogrt, srtPath })`, um clipe por bloco numa trilha de vídeo acima de tudo (o `.mogrt` vem do
    `ae_export_mogrt`). Faixa de legenda nativa (acessível, liga/desliga na plataforma) → `pr_import_captions`;

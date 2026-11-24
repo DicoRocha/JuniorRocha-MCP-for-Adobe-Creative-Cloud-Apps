@@ -10,7 +10,8 @@ As skills de área (`video-fala-limpa`, `video-reels`, `video-legendas-e-som`, `
 
 ## 1. Proteger o trabalho do usuário
 
-- Trabalhe numa **sequência duplicada** com nome novo (`V2 reels`); nunca na sequência que ele editou.
+- Trabalhe numa **sequência duplicada** com nome novo: `pr_duplicate_sequence { sequenceName, newName: "V2 reels" }`
+  (leva efeitos, Color Mode e aninhamentos); nunca na sequência que ele editou.
 - **Não salve nem feche o projeto do usuário** sem ele pedir. Feche só o que você criou, pelo nome exato.
 - Ajuste que ele fez à mão (cor, Color Mode, áudio limpo) é a referência: **use os ajustes dele**, não
   troque por um look seu. Para levar a cor dele adiante, aninhe a sequência dele.

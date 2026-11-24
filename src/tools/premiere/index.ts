@@ -158,6 +158,26 @@ export function registerPremiereTools(server: McpServer, router: BridgeRouter): 
   );
 
   server.tool(
+    "pr_duplicate_sequence",
+    "Duplicate a sequence (default: the active one) to work on a copy and leave the user's edit untouched; renames it, " +
+      "optionally moves it to a bin (created if missing) and makes it active. Effects, Color Mode and nests come along.",
+    {
+      sequenceName: z.string().optional().describe("Sequence to copy (default: active)."),
+      newName: z.string().optional().describe("Name of the copy (default: Premiere's 'Copy' name)."),
+      targetBinName: z.string().optional(),
+      activate: z.boolean().optional().default(true)
+    },
+    async (params) => {
+      try {
+        const res = await router.dispatch("premiere", "pr.sequence.duplicate", params, { undoGroup: "MCP: Duplicate sequence" });
+        return formatSuccessResponse(res.data);
+      } catch (err) {
+        return formatErrorResponse(err);
+      }
+    }
+  );
+
+  server.tool(
     "pr_create_sequence",
     "Create a new sequence in Premiere Pro without opening the New Sequence dialog: from an imported clip (its format), or from a sequence preset file (default: HD 1080p 29.97 fps; change the size afterwards with the sequence settings).",
     {

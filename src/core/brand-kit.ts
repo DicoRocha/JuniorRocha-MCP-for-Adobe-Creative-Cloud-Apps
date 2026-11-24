@@ -170,3 +170,16 @@ function contrast(a: [number, number, number], b: [number, number, number]): num
   const lb = lum(b);
   return Math.round(((Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05)) * 100) / 100;
 }
+
+/** Caption spelling from the kit: termos (names spelled right) + glossario ('wrong' -> 'right') + the client name. */
+export function kitCaptionTerms(kitPath: string): { terms: string[]; glossary: Record<string, string> } {
+  const raw = JSON.parse(fs.readFileSync(kitPath, "utf8")) as { cliente?: string; termos?: unknown; glossario?: unknown };
+  const terms = new Set<string>();
+  if (typeof raw.cliente === "string" && raw.cliente.trim()) terms.add(raw.cliente.trim());
+  if (Array.isArray(raw.termos)) for (const t of raw.termos) if (typeof t === "string" && t.trim()) terms.add(t.trim());
+  const glossary: Record<string, string> = {};
+  if (raw.glossario && typeof raw.glossario === "object") {
+    for (const [k, v] of Object.entries(raw.glossario as Record<string, unknown>)) if (typeof v === "string") glossary[k] = v;
+  }
+  return { terms: [...terms], glossary };
+}

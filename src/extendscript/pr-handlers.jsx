@@ -587,6 +587,38 @@ function __mcpDispatch(action, params, _options) {
     return outImp;
   }
 
+  if (action === "pr.sequence.duplicate") {
+    // Work on a copy, never on the user's sequence (22/11/2026: V4 cuts were made on clones of his sequence).
+    var projD = __prRequireProject();
+    var srcD = null;
+    var i;
+    for (i = 0; i < projD.sequences.numSequences; i++) {
+      var sq = projD.sequences[i];
+      if (params.sequenceName ? sq.name === params.sequenceName : (projD.activeSequence && sq.sequenceID === projD.activeSequence.sequenceID)) srcD = sq;
+    }
+    if (!srcD) __mcpFail("NOT_FOUND", params.sequenceName ? "No sequence named '" + params.sequenceName + "'." : "No active sequence.");
+    var before = {};
+    for (i = 0; i < projD.sequences.numSequences; i++) before[projD.sequences[i].sequenceID] = true;
+    srcD.clone();
+    var copy = null;
+    for (i = 0; i < projD.sequences.numSequences; i++) {
+      if (!before[projD.sequences[i].sequenceID]) copy = projD.sequences[i];
+    }
+    if (!copy) __mcpFail("EXECUTION_ERROR", "Premiere did not create the copy of '" + srcD.name + "'.");
+    if (params.newName) copy.projectItem.name = String(params.newName);
+    if (params.targetBinName) {
+      var binD = null;
+      for (i = 0; i < projD.rootItem.children.numItems; i++) {
+        var ch = projD.rootItem.children[i];
+        if (ch.type === ProjectItemType.BIN && ch.name === params.targetBinName) binD = ch;
+      }
+      if (!binD) binD = projD.rootItem.createBin(String(params.targetBinName));
+      copy.projectItem.moveBin(binD);
+    }
+    if (params.activate !== false) projD.activeSequence = copy;
+    return { source: srcD.name, name: copy.projectItem.name, sequenceID: String(copy.sequenceID), active: params.activate !== false };
+  }
+
   if (action === "pr.sequence.getState") {
     var seq = __prRequireActiveSequence();
     var vTracks = [];

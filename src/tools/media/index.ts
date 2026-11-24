@@ -23,6 +23,7 @@ import { normalizeLoudness } from "../../media/loudnorm.js";
 import { decodeImageRgb } from "../../media/ffmpeg.js";
 import { zoneMap, zoneReport } from "../../media/zones.js";
 import { encodePng } from "../../core/png.js";
+import { kitCaptionTerms } from "../../core/brand-kit.js";
 import { balanceLines } from "../../media/balance.js";
 import { transcribeFile, WhisperSize } from "../../media/transcribe.js";
 import { runJob, getJob, jobView, listJobs } from "../../media/jobs.js";
@@ -195,6 +196,7 @@ export function registerMediaTools(server: McpServer): void {
       keep: z.array(RangeSchema).optional(),
       offsetSeconds: z.number().optional().describe("Shift every cue (e.g. the clip starts at 2.5 s on the timeline)."),
       outputPath: z.string().describe("Where to write the .srt."),
+      kitPath: z.string().optional().describe("Brand kit (00_briefing/kit-de-marca.json): its termos, glossario and client name fix the spelling too."),
       ...CueStyle
     },
     async (p) => {
@@ -204,7 +206,15 @@ export function registerMediaTools(server: McpServer): void {
         else if (p.segments) transcript = { segments: p.segments };
         else if (p.srtPath) transcript = { segments: parseSrt(fs.readFileSync(p.srtPath, "utf8")).map((c) => ({ start: c.start, end: c.end, text: c.text.replace(/\n/g, " ") })) };
         else throw Object.assign(new Error("Give transcriptPath, segments or srtPath."), { code: "INVALID_PARAMS" });
-        let cues = buildCues(transcript, { ...p, glossary: p.glossary as Glossary | undefined, terms: p.terms as string[] | undefined, keep: p.keep as Range[] | undefined });
+        const fromKit = p.kitPath ? kitCaptionTerms(p.kitPath) : { terms: [], glossary: {} };
+        const glossary = { ...fromKit.glossary, ...((p.glossary as Glossary | undefined) ?? {}) };
+        const terms = [...new Set([...fromKit.terms, ...((p.terms as string[] | undefined) ?? [])])];
+        let cues = buildCues(transcript, {
+          ...p,
+          glossary: Object.keys(glossary).length ? glossary : undefined,
+          terms: terms.length ? terms : undefined,
+          keep: p.keep as Range[] | undefined
+        });
         if (p.offsetSeconds) cues = cues.map((c) => ({ ...c, start: c.start + p.offsetSeconds!, end: c.end + p.offsetSeconds! }));
         fs.mkdirSync(path.dirname(p.outputPath), { recursive: true });
         fs.writeFileSync(p.outputPath, toSrt(cues), "utf8");

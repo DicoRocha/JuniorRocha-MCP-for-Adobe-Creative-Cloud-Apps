@@ -207,6 +207,20 @@ function installUxpPlugins(): {
     externalDirs.push(idExternalTarget);
   }
 
+  // 1b. Photoshop may load a versioned copy (<id>_<version>, left by the Creative Cloud installer) instead of the
+  // plain folder: a fix shipped without a version bump never reached it (23/11/2026). Refresh those copies too.
+  try {
+    for (const entry of fs.readdirSync(userUxpExternalBase)) {
+      const m = /^(com\.jradbmcp\.(photoshop|premiere|indesign)\.uxp)_[\d.]+$/.exec(entry);
+      if (!m) continue;
+      const src = m[2] === "photoshop" ? uxpPsDir : m[2] === "premiere" ? uxpPrDir : uxpIdDir;
+      const target = path.join(userUxpExternalBase, entry);
+      if (tryCopyDirectory(src, target)) externalDirs.push(target);
+    }
+  } catch {
+    /* no external folder yet */
+  }
+
   // 2. Also attempt System Common Files / Application UXP folders if writable
   if (process.platform === "win32") {
     const psSystemTarget = "C:\\Program Files\\Common Files\\Adobe\\UXP\\extensions\\com.jradbmcp.photoshop.uxp";

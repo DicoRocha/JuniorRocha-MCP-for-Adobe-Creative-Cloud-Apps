@@ -1486,7 +1486,7 @@ function connect() {
         app: "photoshop",
         bridgeType: "uxp",
         appVersion: app.version || "unknown",
-        pluginVersion: "1.4.15",
+        pluginVersion: "1.4.16",
         capabilities: ["dom", "batchPlay", "executeUxp", "snapshot", "extendscriptHybrid"]
       })
     );

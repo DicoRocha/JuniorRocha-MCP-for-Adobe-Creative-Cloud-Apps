@@ -899,24 +899,56 @@ function __psAdjLayer(name, typeObj) {
 
 /** Curves adjustment layer with points [[in,out],...] (0-255), masked by the current selection when there is one. */
 function __psCurvesLayer(name, points, opacity) {
-  var curve = [];
-  for (var i = 0; i < points.length; i++) curve.push({ _obj: "paint", horizontal: points[i][0], vertical: points[i][1] });
-  __psRunDescriptor({
-    _obj: "make",
-    _target: [{ _ref: "adjustmentLayer" }],
-    using: {
-      _obj: "adjustmentLayer",
-      name: name,
-      type: {
-        _obj: "curves",
-        presetKind: { _enum: "presetKindType", _value: "presetKindCustom" },
-        adjustment: [{ _obj: "curvesAdjustment", channel: { _ref: "channel", _enum: "channel", _value: "composite" }, curve: curve }]
-      }
-    }
-  });
+  // Two steps, raw ActionManager: the curve points must be doubles. Through the actionJSON converter whole numbers
+  // became integers and "set" failed with "program error" (live, Photoshop 2027, 23/11/2026).
+  var c = charIDToTypeID, sid = stringIDToTypeID;
+  var mk = new ActionDescriptor();
+  var mr = new ActionReference();
+  mr.putClass(c("AdjL"));
+  mk.putReference(c("null"), mr);
+  var use = new ActionDescriptor();
+  use.putString(c("Nm  "), String(name));
+  var ty = new ActionDescriptor();
+  ty.putEnumerated(sid("presetKind"), sid("presetKindType"), sid("presetKindDefault"));
+  use.putObject(c("Type"), c("Crvs"), ty);
+  mk.putObject(c("Usng"), c("AdjL"), use);
+  executeAction(c("Mk  "), mk, DialogModes.NO);
+  var st = new ActionDescriptor();
+  var sr = new ActionReference();
+  sr.putEnumerated(c("AdjL"), c("Ordn"), c("Trgt"));
+  st.putReference(c("null"), sr);
+  var cv = new ActionDescriptor();
+  cv.putEnumerated(sid("presetKind"), sid("presetKindType"), sid("presetKindCustom"));
+  var adjs = new ActionList();
+  var ad = new ActionDescriptor();
+  var cr = new ActionReference();
+  cr.putEnumerated(c("Chnl"), c("Chnl"), c("Cmps"));
+  ad.putReference(c("Chnl"), cr);
+  var pts = new ActionList();
+  for (var i = 0; i < points.length; i++) {
+    var pd = new ActionDescriptor();
+    pd.putDouble(c("Hrzn"), Number(points[i][0]));
+    pd.putDouble(c("Vrtc"), Number(points[i][1]));
+    pts.putObject(c("Pnt "), pd);
+  }
+  ad.putList(c("Crv "), pts);
+  adjs.putObject(c("CrvA"), ad);
+  cv.putList(c("Adjs"), adjs);
+  st.putObject(c("T   "), c("Crvs"), cv);
+  executeAction(c("setd"), st, DialogModes.NO);
   var lyr = app.activeDocument.activeLayer;
   if (typeof opacity === "number") lyr.opacity = opacity;
   return lyr;
+}
+
+/** Removes the layers a recipe created before it failed, so a half-built stack is never left behind. */
+function __psRemoveLayerIds(doc, ids) {
+  for (var i = ids.length - 1; i >= 0; i--) {
+    try {
+      var l = __psFindLayer(doc, Number(ids[i]), null);
+      if (l) l.remove();
+    } catch (_eRm) {}
+  }
 }
 
 /** Selects the layers with these ids and groups them (Layer > Group Layers). Returns the new group's id. */
@@ -1514,9 +1546,15 @@ function __psDispatch(action, params, _options) {
       madeDB.push(name);
       ids.push(l.id);
     };
+    try {
     if (params.liftShadows !== false) mk(params.shadowsMask || "Sombras 2", "Clarear sombras (" + (params.shadowsMask || "Sombras 2") + ")", [[0, 0], [64, 64 + lift], [128, 128 + Math.round(lift / 2)], [255, 255]]);
     if (params.holdHighlights !== false) mk(params.highlightsMask || "Luzes 2", "Escurecer luzes (" + (params.highlightsMask || "Luzes 2") + ")", [[0, 0], [128, 128 - Math.round(lift / 2)], [192, 192 - lift], [255, 255]]);
     if (params.midContrast === true) mk("Medios", "Contraste medios (Medios)", [[0, 0], [96, 96 - Math.round(lift / 2)], [160, 160 + Math.round(lift / 2)], [255, 255]]);
+    } catch (eDB) {
+      try { docDB.selection.deselect(); } catch (_eDs2) {}
+      __psRemoveLayerIds(docDB, ids);
+      throw eDB;
+    }
     var gidDB = ids.length > 1 ? __psGroupLayerIds(ids, params.groupName || "Dodge & Burn por zonas") : null;
     return { documentName: docDB.name, layers: madeDB, groupId: gidDB, strength: st, next: "Lower the group opacity to taste (30-70 %); compare with media_zone_report." };
   }
@@ -1597,6 +1635,7 @@ function __psDispatch(action, params, _options) {
     var stk = params.stack || {};
     var idsLk = [];
     var madeLk = [];
+    try {
     if (stk.blackAndWhite) {
       var bw = stk.blackAndWhite;
       var bwObj = { _obj: "blackAndWhite", presetKind: { _enum: "presetKindType", _value: "presetKindCustom" }, red: bw.red, yellow: bw.yellow, grain: bw.green, cyan: bw.cyan, blue: bw.blue, magenta: bw.magenta, useTint: !!bw.tint };
@@ -1619,6 +1658,10 @@ function __psDispatch(action, params, _options) {
     if (stk.grain) {
       idsLk.push(__psGrainLayer(docLk, "Grao", stk.grain.amount, stk.grain.size, stk.grain.opacity).id);
       madeLk.push("Grao");
+    }
+    } catch (eLk) {
+      __psRemoveLayerIds(docLk, idsLk);
+      throw eLk;
     }
     if (!idsLk.length) __mcpFail("INVALID_PARAMS", "The look has no layers.");
     var gLk = idsLk.length > 1 ? __psGroupLayerIds(idsLk, "Look \u2013 " + (params.name || "look")) : idsLk[0];

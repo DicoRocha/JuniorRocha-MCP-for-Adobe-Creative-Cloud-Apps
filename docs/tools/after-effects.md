@@ -33,6 +33,7 @@ Compositions, layers, keyframes, easing, effects, text animators, transitions an
 | [`ae_create_transition`](#ae_create_transition) | Recipe: transition kit in one call — scene A → scene B (two placeholder precomps to replace) with one move in the brand colours: wipe (accent band crosses the frame), circle… |
 | [`ae_get_layers`](#ae_get_layers) | List all layers in an After Effects composition (1-based index, name, type, timing, 3D status, parent, effect count). |
 | [`ae_create_layer`](#ae_create_layer) | Create a new Text, Solid, Adjustment, Null, Camera, Light, or empty Shape layer in an After Effects composition. |
+| [`ae_organize_project`](#ae_organize_project) | Organise an After Effects project without changing the picture: root items into folders by type (01 Comps, 02 Pre-comps, 03 Midia, 04 Audio, 05 Solidos; existing folders… |
 | [`ae_create_shape_layer`](#ae_create_shape_layer) | Create a parametric or custom Bezier vector Shape Layer in After Effects. |
 | [`ae_modify_layer`](#ae_modify_layer) | Update layer transform (position, scale, rotation, opacity, anchorPoint), timing (inPoint, outPoint, startTime, stretch), parenting, 3D state, motionBlur, or duplicate/delete a… |
 | [`ae_get_property_tree`](#ae_get_property_tree) | Universal Property Navigator: Recursively inspect all PropertyGroups and Properties on an After Effects layer (Transform, Effects, Masks, Vector Contents, Text Animators,… |
@@ -527,6 +528,16 @@ Create a new Text, Solid, Adjustment, Null, Camera, Light, or empty Shape layer 
 | `inPoint` | number |  |  |
 | `outPoint` | number |  |  |
 | `threeDLayer` | boolean |  |  |
+
+## `ae_organize_project`
+
+Organise an After Effects project without changing the picture: root items into folders by type (01 Comps, 02 Pre-comps, 03 Midia, 04 Audio, 05 Solidos; existing folders untouched), label colours by layer role (text yellow, shape blue, footage aqua, pre-comp sandstone, null/control purple, adjustment lavender, audio sea foam, camera/light orange) and names for layers left with default names (null -> CTRL <child>, shape -> its group name, pre-comp -> its comp). Also lists fill/outline pairs that should be one shape layer. apply: false (default) only reports.
+
+| Parameter | Type | Required | Description |
+|---|---|:---:|---|
+| `compName` | string |  | Only this comp for labels and names (default: every comp). |
+| `compIndex` | integer |  |  |
+| `apply` | boolean |  |  Default: `false`. |
 
 ## `ae_create_shape_layer`
 

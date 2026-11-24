@@ -10,6 +10,7 @@ Projects, sequences, clips, effects, transitions, captions, markers and export.
 | [`pr_manage_project`](#pr_manage_project) | Create a new project (operation 'new' + filePath .prproj), open, save, save-as, or create bins in Adobe Premiere Pro. |
 | [`pr_import_media`](#pr_import_media) | Import video, audio, graphics, or image sequences into the active Premiere Pro project. |
 | [`pr_get_sequence_state`](#pr_get_sequence_state) | Get the complete state of the active Premiere Pro sequence: frame size, playhead position, all video tracks (V1..Vn), audio tracks (A1..An), and clips with start/end/duration. |
+| [`pr_organize_project`](#pr_organize_project) | Organise a Premiere project: items at the root go into bins by type (01 Sequencias, 02 Video, 03 Audio, 04 Graficos, 05 Imagens; created when missing, existing bins untouched). |
 | [`pr_duplicate_sequence`](#pr_duplicate_sequence) | Duplicate a sequence (default: the active one) to work on a copy and leave the user's edit untouched; renames it, optionally moves it to a bin (created if missing) and makes it… |
 | [`pr_create_sequence`](#pr_create_sequence) | Create a new sequence in Premiere Pro without opening the New Sequence dialog: from an imported clip (its format), or from a sequence preset file (default: HD 1080p 29.97 fps;… |
 | [`pr_place_clip_on_timeline`](#pr_place_clip_on_timeline) | Insert (ripple) or overwrite a project clip onto a video/audio track in the active Premiere Pro sequence at a specified time in seconds. |
@@ -76,6 +77,14 @@ Import video, audio, graphics, or image sequences into the active Premiere Pro p
 Get the complete state of the active Premiere Pro sequence: frame size, playhead position, all video tracks (V1..Vn), audio tracks (A1..An), and clips with start/end/duration.
 
 No parameters.
+
+## `pr_organize_project`
+
+Organise a Premiere project: items at the root go into bins by type (01 Sequencias, 02 Video, 03 Audio, 04 Graficos, 05 Imagens; created when missing, existing bins untouched). Also lists the tracks of the active sequence with their clip counts, to check the rule V1 main video, V2 cover, V3 graphics; A1 voice, A2 music, A3 effects. apply: false (default) only reports.
+
+| Parameter | Type | Required | Description |
+|---|---|:---:|---|
+| `apply` | boolean |  |  Default: `false`. |
 
 ## `pr_duplicate_sequence`
 
@@ -314,7 +323,7 @@ Colour labels of items in the Project panel (0-15, in the order of Premiere's la
 
 ## `pr_color`
 
-Colour-correct a clip with Lumetri Color using the same control names as the Lightroom and Camera Raw tools: temperature, tint, exposure, contrast, highlights, shadows, whites, blacks, saturation, vibrance, sharpen, fadedFilm. Adds the effect if the clip does not have it and returns the values read back. Effect names follow Premiere's language; in another language use pr_apply_effect with the listed name. Named looks: natural-limpo, cinematico-contido, quente-editorial, frio-tecnologico, pb-contraste (after the correction, intensity 0.5-0.8). A look the user made by hand stays: use his, not one of these.
+Colour-correct a clip with Lumetri Color using the same control names as the Lightroom and Camera Raw tools: temperature, tint, exposure, contrast, highlights, shadows, whites, blacks, saturation, vibrance, sharpen, fadedFilm. Adds the effect if the clip does not have it and returns the values read back. Effect names follow Premiere's language; in another language use pr_apply_effect with the listed name. Named looks: natural-limpo, cinematico-contido, quente-editorial, frio-tecnologico, pb-contraste, esportivo-dramatico, pb-papel-antigo, pb-vintage (after the correction, intensity 0.5-0.8). A look the user made by hand stays: use his, not one of these.
 
 | Parameter | Type | Required | Description |
 |---|---|:---:|---|
@@ -322,7 +331,7 @@ Colour-correct a clip with Lumetri Color using the same control names as the Lig
 | `clipIndex` | integer |  |  |
 | `atSeconds` | number |  |  |
 | `settings` | object |  | e.g. { exposure: 0.3, contrast: 12, saturation: 110, temperature: 8 } |
-| `look` | `natural-limpo` · `cinematico-contido` · `quente-editorial` · `frio-tecnologico` · `pb-contraste` |  | Named look applied at `intensity`; settings override its values. |
+| `look` | `natural-limpo` · `cinematico-contido` · `quente-editorial` · `frio-tecnologico` · `pb-contraste` · `esportivo-dramatico` · `pb-papel-antigo` · `pb-vintage` |  | Named look applied at `intensity`; settings override its values. |
 | `intensity` | number |  |  Default: `0.7`. |
 
 ## `pr_expect_project`

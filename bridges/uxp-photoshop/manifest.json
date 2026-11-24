@@ -1,7 +1,7 @@
 {
   "id": "com.jradbmcp.photoshop.uxp",
   "name": "Junior Rocha MCP",
-  "version": "1.4.14",
+  "version": "1.4.15",
   "main": "index.html",
   "manifestVersion": 5,
   "host": {

@@ -514,6 +514,7 @@ Recipe: a print-ready flyer/poster in one call, in a NEW InDesign document. Bran
 | `pdfPreset` | string |  | Default '[High Quality Print]' (cmyk) or '[Smallest File Size]' (rgb). |
 | `cropMarks` | boolean |  | Crop/bleed marks in the PDF (ask the print shop). |
 | `previewPath` | string |  |  |
+| `organize` | boolean |  | Group cards, buttons and icon + text blocks on each page (id_organize_objects). Default: `true`. |
 | `layout` | `imagem-topo` · `imagem-cheia` · `lateral` |  |  |
 | `kicker` | string |  | Short line above the title (e.g. 'Lançamento'). |
 | `title` | string | yes |  |
@@ -547,6 +548,7 @@ Recipe: product catalogue / price list from a spreadsheet in one call, in a NEW 
 | `pdfPreset` | string |  | Default '[High Quality Print]' (cmyk) or '[Smallest File Size]' (rgb). |
 | `cropMarks` | boolean |  | Crop/bleed marks in the PDF (ask the print shop). |
 | `previewPath` | string |  |  |
+| `organize` | boolean |  | Group cards, buttons and icon + text blocks on each page (id_organize_objects). Default: `true`. |
 | `csvPath` | string |  | CSV/TSV with a header row (delimiter auto-detected). |
 | `jsonPath` | string |  |  |
 | `records` | object[] |  |  |
@@ -583,6 +585,7 @@ Recipe: skeleton of a manual / handbook / guide in one call, in a NEW InDesign d
 | `pdfPreset` | string |  | Default '[High Quality Print]' (cmyk) or '[Smallest File Size]' (rgb). |
 | `cropMarks` | boolean |  | Crop/bleed marks in the PDF (ask the print shop). |
 | `previewPath` | string |  |  |
+| `organize` | boolean |  | Group cards, buttons and icon + text blocks on each page (id_organize_objects). Default: `true`. |
 | `title` | string | yes |  |
 | `subtitle` | string |  |  |
 | `kicker` | string |  | Small line above the cover title (default 'Manual'). |

@@ -1,6 +1,6 @@
 # Known issues and open items
 
-Last reviewed on 23 November 2026, version 1.12.0. Items are grouped by where they show up.
+Last reviewed on 23 November 2026, version 1.13.0. Items are grouped by where they show up.
 
 ## Not available through the server
 
@@ -28,7 +28,7 @@ Last reviewed on 23 November 2026, version 1.12.0. Items are grouped by where th
 | Text creation in Photoshop and Illustrator | With the World-Ready text engine as the app preference, new point text is laid out to the left of the anchor. The tools do not force the composer or the alignment yet |
 | Hub port | Fixed in the panels (31001 since 1.9.0; it was 3001, a port many development servers use). If another program holds it, no bridge connects |
 
-## New and fixed in 1.11.0 and 1.12.0 (23 November 2026), to confirm live
+## New and fixed in 1.11.0 – 1.13.0 (23 November 2026), to confirm live
 
 | Tool | Was | Now |
 |---|---|---|
@@ -47,6 +47,9 @@ Last reviewed on 23 November 2026, version 1.12.0. Items are grouped by where th
 | Photoshop without a brush (new) | Dodge & burn and skin needed brush work the MCP cannot do | `ps_luminosity_masks`, `ps_recipe_zone_dodge_burn`, `ps_recipe_frequency_separation` (light, skin-tone mask), `ps_recipe_film_grain` (to confirm live: curves descriptor, Color Range skin tones) |
 | Lightroom (new) | Old presets (process 2010, .lrtemplate) applied as they were, too strong on today's files | `lr_read_legacy_preset` translates and scales them (snapshot first); `lr_find_photos` returns `iso` for noise reduction by ISO (to confirm live: tone curve arrays through applyDevelopSettings) |
 | Premiere (new) | Cuts clicked without audio fades; jump cuts in talking heads; looks typed by hand | `pr_apply_cut_plan` adds 2-frame Constant Power fades (`audioFadeFrames`) and `punchIn`; `pr_color` takes `look` + `intensity`; `pr_audit_timeline` lists `AUDIO_PEAKS` moments with `renderPath` (fades apply to every cut of that audio track) |
+| Organisation (1.13) | Recipes made flat files; After Effects and Premiere projects stayed loose | `ps_recipe_social_set` and the InDesign recipes group by meaning (cards included); `ae_organize_project` (folders, labels, names) and `pr_organize_project` (bins) |
+| Looks (1.13) | The reference looks existed only as Lightroom ranges | `lr_apply_look`, `ps_recipe_look` (adjustment layers, group opacity = intensity) and the same names in `pr_color` |
+| Skills gate (1.13) | One lookup opened every tool for the rest of the session | A move to an app no looked-up skill covers, or 60 idle minutes, asks for a new lookup |
 
 Still open: `ae_manage_project` save that took ~70 s once and reconnected the panel (not reproduced yet).
 

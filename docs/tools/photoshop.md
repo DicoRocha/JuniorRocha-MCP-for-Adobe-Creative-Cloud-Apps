@@ -16,6 +16,7 @@ Documents, layers, masks, smart objects, adjustments, artboards, recipes and aud
 | [`ps_luminosity_masks`](#ps_luminosity_masks) | Create luminosity masks as alpha channels, no brush: Luzes 1..N (brightness of the composite, each step narrower), Sombras 1..N (the inverse) and Medios (neither). |
 | [`ps_recipe_zone_dodge_burn`](#ps_recipe_zone_dodge_burn) | Dodge & burn by zones without a brush: Curves layers masked by luminosity masks (lift the shadows on Sombras 2, hold the highlights on Luzes 2, optional midtone contrast on… |
 | [`ps_recipe_frequency_separation`](#ps_recipe_frequency_separation) | Light frequency separation for skin, no brush: Baixa frequencia (blur) + Alta frequencia (high pass, Linear Light) rebuild the photo exactly; Suavizar pele (more blur, masked… |
+| [`ps_recipe_look`](#ps_recipe_look) | Apply a reference look as editable adjustment layers in one group above everything (the photo is not touched): esportivo-dramatico, pb-papel-antigo, pb-vintage. |
 | [`ps_recipe_film_grain`](#ps_recipe_film_grain) | Film grain on top of the document: a 50 % grey layer in Overlay with monochrome Gaussian noise, slightly blurred. |
 | [`ps_organize_layers`](#ps_organize_layers) | Organise a Photoshop document in groups by meaning: text on a shape becomes a label group, an icon with its text (and the lines under it) an item group, repeated items/labels… |
 | [`ps_create_layer`](#ps_create_layer) | Create a new pixel layer, group (folder), solid color fill layer, or text layer in Photoshop. |
@@ -159,6 +160,16 @@ Light frequency separation for skin, no brush: Baixa frequencia (blur) + Alta fr
 | `smoothOpacity` | number |  |  Default: `30`. |
 | `skinMask` | boolean |  | Mask Suavizar pele with Select > Color Range > Skin Tones. Default: `true`. |
 | `groupName` | string |  |  |
+
+## `ps_recipe_look`
+
+Apply a reference look as editable adjustment layers in one group above everything (the photo is not touched): esportivo-dramatico, pb-papel-antigo, pb-vintage. The group opacity is the intensity (default 70 %). Same looks as lr_apply_look and pr_color.
+
+| Parameter | Type | Required | Description |
+|---|---|:---:|---|
+| `documentName` | string |  |  |
+| `look` | `esportivo-dramatico` · `pb-papel-antigo` · `pb-vintage` | yes |  |
+| `intensity` | number |  |  Default: `0.7`. |
 
 ## `ps_recipe_film_grain`
 
@@ -416,6 +427,7 @@ Recipe: key art → every social format in one call. Creates a new document (the
 | `outputFolder` | string |  |  |
 | `exportFormat` | `png` · `jpg` · `webp` |  | Social exports are PNG by default (user rule). Default: `"png"`. |
 | `quality` | integer |  |  |
+| `organize` | boolean |  | Group related layers by meaning in each artboard (ps_organize_layers) before exporting. Default: `true`. |
 
 ## `ps_audit_document`
 

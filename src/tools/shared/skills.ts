@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { formatErrorResponse, formatSuccessResponse } from "../../core/image-helper.js";
-import { markSkillsConsulted, skillGateState } from "../../core/skill-gate.js";
+import { appsOfSkill, markSkillsConsulted, skillGateState } from "../../core/skill-gate.js";
 
 /**
  * Serves the skills in <project>/skills over MCP, so every client (Claude Desktop, Codex, Cursor…)
@@ -158,7 +158,8 @@ export function registerSkillTools(server: McpServer, root: string = resolveSkil
           });
         }
         const matches = findSkills(root, task, limit);
-        markSkillsConsulted({ search: task, matches: matches.map((m) => m.name) });
+        // The three best matches open their apps; a cross-app skill (pipeline) only when it is loaded.
+        markSkillsConsulted({ search: task, matches: matches.slice(0, 3).map((m) => m.name).filter((n) => !appsOfSkill(n).includes("*")) });
         // The exit gate applies to every deliverable (router rule 5); motion and video add their own review.
         const names = new Set(listSkills(root).map((s) => s.name));
         const always = ["qa-revisao-visual", ...(matches.some((m) => /^(motion|video)/.test(m.area)) ? ["qa-revisao-video"] : [])].filter(

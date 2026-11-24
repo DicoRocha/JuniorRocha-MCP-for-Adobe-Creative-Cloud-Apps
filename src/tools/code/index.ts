@@ -241,13 +241,19 @@ export function registerCodeTools(server: McpServer, catalog: ToolCatalog): void
         }
       } else {
         const words = (search ?? "").toLowerCase().split(/\s+/).filter(Boolean);
+        // Every word first; when nothing has them all, any word, best matches first ("organize luminosity" found nothing).
+        const scored: Array<{ line: string; hits: number }> = [];
         for (const e of catalog.all()) {
           if (e.name === "jradb_code" || e.name === "jradb_api") continue;
           if (prefix && !e.name.startsWith(prefix)) continue;
           const hay = `${e.name} ${e.description}`.toLowerCase();
-          if (words.length && !words.every((w) => hay.includes(w))) continue;
-          lines.push(`${e.name} — ${firstSentence(e.description, 110)}`);
+          const hits = words.filter((w) => hay.includes(w)).length;
+          if (words.length && !hits) continue;
+          scored.push({ line: `${e.name} — ${firstSentence(e.description, 110)}`, hits });
         }
+        const all = scored.filter((x) => x.hits === words.length);
+        const pick = all.length || !words.length ? all : scored.sort((a, b) => b.hits - a.hits).slice(0, 25);
+        for (const x of pick) lines.push(x.line);
         if (!lines.length) lines.push("No tool matches. Try a prefix (ps_, ae_, pr_, ai_, id_, lr_) or fewer words.");
       }
       return { content: [{ type: "text" as const, text: lines.join("\n") }] };

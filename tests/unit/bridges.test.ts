@@ -203,7 +203,8 @@ describe("Photoshop UXP bridge", () => {
   it("implements every Photoshop action the MCP tools dispatch, except the ExtendScript escape hatch", () => {
     const tools = read("src/tools/photoshop/index.ts");
     const actions = [...tools.matchAll(/"(ps\.[a-zA-Z.]+)"/g)].map((m) => m[1]);
-    const main = read("bridges/uxp-photoshop/main.js");
+    // the list of actions that need no target document names actions without implementing them
+    const main = read("bridges/uxp-photoshop/main.js").replace(/const DOC_FREE_ACTIONS = new Set\(\[[\s\S]*?\]\);/, "");
     const missing = [...new Set(actions)].filter((a) => !main.includes(`"${a}"`));
     // These run in the ExtendScript handlers; the UXP panel answers ACTION_NOT_SUPPORTED and its hybrid mode runs them.
     expect(missing.sort()).toEqual(["ps.cameraRaw", "ps.guides", "ps.layers.groupPlan", "ps.layers.layoutInfo", "ps.luminosityMasks", "ps.raw.executeExtendScript", "ps.recipe.carouselSetup", "ps.recipe.carouselSplit", "ps.recipe.filmGrain", "ps.recipe.frequencySeparation", "ps.recipe.look", "ps.recipe.zoneDodgeBurn"]);

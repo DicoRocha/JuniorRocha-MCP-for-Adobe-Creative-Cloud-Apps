@@ -7,6 +7,7 @@ Analysis of audio and video files outside the apps (beats, silence, transcriptio
 | Tool | What it does |
 |---|---|
 | [`media_transcribe`](#media_transcribe) | Transcribe speech in a video or audio file locally (Whisper via sherpa-onnx, CPU, no cloud; the model downloads once from GitHub). |
+| [`media_download_url`](#media_download_url) | Download a file (image, video, audio) from an http(s) link straight to the user's disk, from the MCP server on this computer: use it for results of external generators… |
 | [`media_normalize_loudness`](#media_normalize_loudness) | Normalise the loudness of a video or audio file in two passes (EBU R128 loudnorm): default -14 LUFS and -1.5 dBTP for Instagram/Reels. |
 | [`media_zone_report`](#media_zone_report) | Zone System report of a photo or a video frame (CIE L*: zone 0 = black … X = white): percent per zone, clipped shadows/highlights, mean L*, key (low/mid/high), colour cast of… |
 | [`media_job_status`](#media_job_status) | Status and result of a media job (media_transcribe, media_analyze_audio on long files). |
@@ -34,6 +35,16 @@ Transcribe speech in a video or audio file locally (Whisper via sherpa-onnx, CPU
 | `glossary` | object |  | Corrections 'wrong' → 'right' applied before splitting, e.g. {'chat GPP': 'ChatGPT', 'em camadas': 'em camadas'}. |
 | `terms` | string[] |  | Names and brands spelled right (5+ letters); runs of 1–3 words that sound close are fixed, e.g. ['Levatio', 'ChatGPT', 'Invisalign']. |
 | `waitSeconds` | number |  |  Default: `45`. |
+
+## `media_download_url`
+
+Download a file (image, video, audio) from an http(s) link straight to the user's disk, from the MCP server on this computer: use it for results of external generators (Magnific, Higgsfield, Firefly...) or stock links when the chat cannot hand the file over. Missing folders are created; a path without extension gets one from the file type.
+
+| Parameter | Type | Required | Description |
+|---|---|:---:|---|
+| `url` | string | yes | http(s) link to the file (e.g. a generator's full-resolution URL). |
+| `filePath` | string | yes | Absolute destination path, e.g. <project>/assets/fundo.png. |
+| `overwrite` | boolean |  |  Default: `true`. |
 
 ## `media_normalize_loudness`
 

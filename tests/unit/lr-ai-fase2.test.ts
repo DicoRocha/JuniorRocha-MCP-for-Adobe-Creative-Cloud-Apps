@@ -138,7 +138,7 @@ describe("Illustrator variations", () => {
     vm.runInContext(`${read("src/extendscript/es3-runtime.jsx")}\n${read("src/extendscript/ai-handlers.jsx")}`, sandbox);
     // stub the exporter: record what the document looked like at export time
     vm.runInContext(
-      `var __realDispatch = __mcpDispatch; __mcpDispatch = function (a, p, o) { if (a === "ai.export.file") { __exp(p.filePath); return { filePath: p.filePath }; } return __realDispatch(a, p, o); };`,
+      `var __realDispatch = __aiDispatch; __aiDispatch = function (a, p, o) { if (a === "ai.export.file") { __exp(p.filePath); return { filePath: p.filePath }; } return __realDispatch(a, p, o); };`,
       Object.assign(sandbox, { __exp: (f: string) => exported.push({ file: f, titel: titel.contents, hidden: selo.hidden }) })
     );
     const out = JSON.parse(

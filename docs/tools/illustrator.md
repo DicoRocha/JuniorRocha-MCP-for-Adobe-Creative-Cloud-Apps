@@ -48,12 +48,15 @@ Organise an Illustrator document (each layer) in groups by meaning: text on a sh
 | `artboardIndex` | integer |  | Artboard whose top-left is the origin (default: active). |
 | `apply` | boolean |  |  Default: `false`. |
 | `language` | `pt` · `en` |  | Language of the group names. Default: `"pt"`. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_get_document_info`
 
 Retrieve active Adobe Illustrator document metadata, dimensions, color space, artboards, layers, and page item counts.
 
-No parameters.
+| Parameter | Type | Required | Description |
+|---|---|:---:|---|
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_manage_document`
 
@@ -69,6 +72,7 @@ Create, open, save, save-as, or close an Adobe Illustrator document (.ai, .svg, 
 | `numArtboards` | integer |  |  Default: `1`. |
 | `filePath` | string |  | File path for open or save. |
 | `saveChanges` | boolean |  | Save changes when operation='close'. Default: `false`. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_manage_artboards`
 
@@ -80,6 +84,7 @@ Add, activate, or remove artboards in the active Illustrator document.
 | `name` | string |  |  |
 | `index` | integer |  | 0-based artboard index. |
 | `rect` | number[] |  | Illustrator artboard rectangle [left, top, right, bottom] where top > bottom (e.g. [0, 1080, 1920, 0]). |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_manage_layers`
 
@@ -94,6 +99,7 @@ Add, rename, toggle visibility/lock, or delete layers in the active Illustrator 
 | `newName` | string |  |  |
 | `visible` | boolean |  |  |
 | `locked` | boolean |  |  |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_create_shape`
 
@@ -119,6 +125,7 @@ Create vector primitive shapes (rectangle, rounded rectangle, ellipse, polygon, 
 | `strokeWidth` | number |  |  |
 | `stroked` | boolean |  |  |
 | `opacity` | number |  |  Default: `100`. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_create_bezier_path`
 
@@ -132,6 +139,7 @@ Draw custom precision vector paths and Bezier curves in Illustrator by specifyin
 | `fillColor` | string or object |  | RGB color as hex string ('#RRGGBB') or { r, g, b } (0-255). |
 | `strokeColor` | string or object |  | RGB color as hex string ('#RRGGBB') or { r, g, b } (0-255). |
 | `strokeWidth` | number |  |  |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_create_text`
 
@@ -146,6 +154,7 @@ Create a typography TextFrame in Illustrator, configure font/size/color, and opt
 | `fontName` | string |  | PostScript font name (e.g. 'ArialMT'). |
 | `fillColor` | string or object |  | RGB color as hex string ('#RRGGBB') or { r, g, b } (0-255). |
 | `createOutlines` | boolean |  | Convert text frame into editable vector paths. Default: `false`. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_text_on_path`
 
@@ -164,6 +173,7 @@ Text on a circular arc for seals, badges and stamps: 'text' runs over the top of
 | `tracking` | number |  | Letter spacing in 1/1000 em (seals usually 50–200). |
 | `name` | string |  | Prefix for the item names (default 'Selo'). |
 | `createOutlines` | boolean |  |  |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_get_artboard_preview`
 
@@ -176,6 +186,7 @@ Multimodal Visual Feedback: Export the active Illustrator artboard as a PNG24 pr
 | `scale` | number |  | Export scale percentage (default 100%). Default: `100`. |
 | `transparency` | boolean |  |  Default: `true`. |
 | `includeImageContent` | boolean |  |  Default: `true`. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_batch_variants`
 
@@ -193,6 +204,7 @@ Variations from a spreadsheet (Illustrator's answer to data-driven graphics): in
 | `scale` | number |  | PNG/JPG scale in %. |
 | `transparency` | boolean |  |  |
 | `fileFolder` | string |  | Relative image paths in the data are resolved against this folder. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_export_assets`
 
@@ -205,6 +217,7 @@ Export one Illustrator artboard to SVG, PNG24, or JPEG (scale in % for PNG/JPEG,
 | `transparency` | boolean |  |  Default: `true`. |
 | `artboardIndex` | integer |  | 0-based artboard (default: active artboard). |
 | `scale` | number |  | PNG/JPEG: export scale in % (default 100). |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_center_text_in_shape`
 
@@ -221,6 +234,7 @@ Centres a text frame inside a shape (button, pill, tag) by the CAP HEIGHT of the
 | `vertical` | boolean |  |  Default: `true`. |
 | `offsetX` | number |  | Extra points to the right. |
 | `offsetY` | number |  | Extra points downwards. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_export_artboards`
 
@@ -234,6 +248,7 @@ Export for Screens (File > Export > Export for Screens): every artboard, or a ra
 | `scale` | number |  | PNG/JPG scale in % (100 = artboard size in px at 72 ppi; 200 for @2x). |
 | `transparency` | boolean |  | PNG: keep transparency (false = white background). Default: `true`. |
 | `prefix` | string |  | Text added before each file name. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_find_objects`
 
@@ -248,6 +263,7 @@ Find existing objects in the active Illustrator document by name, type or layer.
 | `topLevelOnly` | boolean |  | Skip objects nested inside groups. Default: `true`. |
 | `artboardIndex` | integer |  |  |
 | `limit` | integer |  |  Default: `200`. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_modify_objects`
 
@@ -276,6 +292,7 @@ Edit existing Illustrator objects (by uuid, name, layer or current selection): m
 | `zOrder` | `bringToFront` · `bringForward` · `sendBackward` · `sendToBack` |  |  |
 | `moveToLayer` | string |  |  |
 | `remove` | boolean |  | Delete the targeted objects. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_apply_live_effect`
 
@@ -292,6 +309,7 @@ Apply a non-destructive Illustrator Live Effect (Effect menu) to objects: dropSh
 | `options` | object |  | Effect options listed above. Default: `{}`. |
 | `rawXml` | string |  | Full <LiveEffect ...> XML (overrides effect/options). |
 | `expandAppearance` | boolean |  |  Default: `false`. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_graphic_style`
 
@@ -306,6 +324,7 @@ List the document's Graphic Styles, or apply / merge one onto objects. Graphic S
 | `artboardIndex` | integer |  | Artboard for coordinates (default: active artboard). |
 | `operation` | `list` · `apply` · `merge` |  |  Default: `"list"`. |
 | `styleName` | string |  |  |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_swatches`
 
@@ -316,6 +335,7 @@ List the document's swatches (with RGB/CMYK values) or add a new RGB swatch.
 | `operation` | `list` · `add` |  |  Default: `"list"`. |
 | `name` | string |  |  |
 | `color` | string |  | Hex '#RRGGBB' for add. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_apply_gradient`
 
@@ -332,6 +352,7 @@ Create a linear or radial gradient (2+ colour stops) and fill objects with it.
 | `stops` | object[] | yes |  |
 | `angle` | number |  | Linear gradient angle in degrees. |
 | `name` | string |  |  |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_align_distribute`
 
@@ -349,6 +370,7 @@ Align objects (left, centerH, right, top, centerV, bottom) to their combined bou
 | `distribute` | `horizontal` · `vertical` |  |  |
 | `gap` | number |  | Fixed spacing between objects when distributing, in points. |
 | `useVisibleBounds` | boolean |  | Include stroke width in the bounds. Default: `false`. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_mask`
 
@@ -363,6 +385,7 @@ Clipping masks: 'clip' turns the top object of the set into the mask shape and c
 | `artboardIndex` | integer |  | Artboard for coordinates (default: active artboard). |
 | `operation` | `clip` · `releaseClip` · `opacity` · `releaseOpacity` |  |  Default: `"clip"`. |
 | `name` | string |  | Name for the resulting group. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_stroke`
 
@@ -382,6 +405,7 @@ Stroke settings of paths (groups and compound paths are entered): dashed line (d
 | `cap` | `butt` · `round` · `projecting` |  |  |
 | `join` | `miter` · `round` · `bevel` |  |  |
 | `miterLimit` | number |  |  |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_image_trace`
 
@@ -402,6 +426,7 @@ Image Trace: turn a placed or embedded image (or an image file, placed for you) 
 | `expand` | boolean |  |  Default: `true`. |
 | `listPresets` | boolean |  |  |
 | `name` | string |  |  |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_text_styles`
 
@@ -420,6 +445,7 @@ Paragraph and character styles of the document: list, create, update (attributes
 | `newName` | string |  | update: rename the style. |
 | `attributes` | object |  |  |
 | `clearOverrides` | boolean |  | apply: remove local formatting so the style shows as defined. Default: `true`. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_pathfinder`
 
@@ -435,6 +461,7 @@ Combine shapes with Pathfinder: unite, minusFront, intersect, exclude, divide, t
 | `operation` | `unite` · `minusFront` · `intersect` · `exclude` · `divide` · `trim` · `merge` · `crop` · `outline` · `minusBack` | yes |  |
 | `expand` | boolean |  |  Default: `true`. |
 | `name` | string |  | Name for the resulting object. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_execute_menu_or_action`
 
@@ -445,6 +472,7 @@ Execute any Illustrator menu command string (`app.executeMenuCommand`, e.g. 'Liv
 | `menuCommand` | string |  | Menu command string for app.executeMenuCommand(). |
 | `actionName` | string |  | Action name for app.doScript(). |
 | `actionSet` | string |  | Action set name for app.doScript(). |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_send_cpp_script_message`
 
@@ -455,6 +483,7 @@ Native C++ SDK Bridge (`AIScriptMessageSuite` from Adobe Illustrator 2026 SDK): 
 | `pluginName` | string |  | Target C++ plugin name registered in Illustrator. Default: `"ScriptMessage"`. |
 | `selector` | string |  | Message selector string. Default: `"Send Text"`. |
 | `payload` | string or object | yes | Input string or JSON object (`inParam`) sent to C++ plugin. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_execute_extendscript`
 
@@ -463,6 +492,7 @@ Illustrator ExtendScript escape hatch: execute arbitrary .jsx ExtendScript code 
 | Parameter | Type | Required | Description |
 |---|---|:---:|---|
 | `code` | string | yes | ExtendScript (ES3) code to evaluate in Illustrator. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_recipe_logo_package`
 
@@ -485,6 +515,7 @@ Recipe: logo delivery package from the OPEN Illustrator document (approved logo 
 | `minWidthPx` | integer |  |  Default: `120`. |
 | `usageSheet` | boolean |  |  Default: `true`. |
 | `pdf` | boolean |  |  Default: `true`. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ai_recipe_carousel_artboards`
 
@@ -528,3 +559,4 @@ Recipe: 'out of bounds' / pop-out portrait built with clipping masks in the OPEN
 | `top` | number |  | Top of the placed image, pt from the artboard's top (default: centred). |
 | `embed` | boolean |  | Default false: the image stays linked (a later edit of the PSD updates the layout). true embeds it, with a PSD's layers flattened. |
 | `groupName` | string |  |  |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |

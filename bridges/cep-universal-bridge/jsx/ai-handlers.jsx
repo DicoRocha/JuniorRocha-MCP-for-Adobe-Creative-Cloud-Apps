@@ -525,7 +525,7 @@ function __aiRecipeLogoPackage(params) {
   }
 }
 
-function __mcpDispatch(action, params, _options) {
+function __aiDispatch(action, params, _options) {
   if (action === "adobe.ping") {
     return { pong: true, app: "illustrator", version: String(app.version), documents: app.documents.length };
   }
@@ -1427,7 +1427,7 @@ function __mcpDispatch(action, params, _options) {
         }
         app.redraw();
         var base = String(rec.__file || ("variant_" + (r < 9 ? "0" : "") + (r + 1))).replace(/[\\\/:*?"<>|]+/g, "_");
-        var res = __mcpDispatch("ai.export.file", {
+        var res = __aiDispatch("ai.export.file", {
           filePath: outV.fsName + "/" + base + "." + (fmtV === "jpeg" ? "jpg" : fmtV),
           format: fmtV,
           artboardIndex: params.artboardIndex,
@@ -2136,4 +2136,14 @@ function __mcpDispatch(action, params, _options) {
   }
 
   __mcpUnsupported("Unknown Illustrator action: " + action);
+}
+
+function __mcpDispatch(action, params, options) {
+  params = params || {};
+  var docState = __mcpEnterDocument(action, params);
+  try {
+    return __aiDispatch(action, params, options);
+  } finally {
+    __mcpLeaveDocument(docState);
+  }
 }

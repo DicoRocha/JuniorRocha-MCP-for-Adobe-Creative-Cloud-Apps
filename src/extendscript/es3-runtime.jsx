@@ -516,6 +516,14 @@ function __mcpBatch(params, prefix) {
     }
   }
 
+  // Steps without their own documentName work on the batch's document (never on "whatever is in front").
+  if (params.documentName) {
+    for (var di = 0; di < ops.length; di++) {
+      ops[di].params = ops[di].params || {};
+      if (!ops[di].params.documentName) ops[di].params.documentName = params.documentName;
+    }
+  }
+
   var stopOnError = params.stopOnError !== false;
   var canSuspendHistory =
     prefix === "ps" &&
@@ -590,6 +598,167 @@ function __mcpFail(code, message) {
   var e = new Error(message);
   e.name = code;
   throw e;
+}
+
+/* ------------------------------------------------------------------ target document (rule 27/11/2026)
+ * Every command goes to a named document, never to "whatever is in front": the person may be working in
+ * another file of the same app at the same time. __mcpEnterDocument resolves params.documentName; with more
+ * than one document open and no name it refuses (DOCUMENT_REQUIRED). The app runs most commands only on the
+ * document in front (Photoshop executeAction, Illustrator menu commands and selection, InDesign ruler origin),
+ * so the target is brought to front only for the command, and __mcpLeaveDocument puts the document that was
+ * in front before back in front. Actions that create, open or only list documents need no target.
+ */
+var __MCP_DOC_FREE = {
+  "adobe.ping": true,
+  "adobe.inspectDom": true,
+  "ps.doc.create": true,
+  "ps.doc.open": true,
+  "ps.doc.list": true,
+  "ps.fonts.list": true,
+  "ps.action.list": true,
+  "ps.template.socialPost": true,
+  "ps.recipe.carouselSetup": true,
+  "ai.doc.getInfo": true,
+  "ai.template.brand": true,
+  "ai.recipe.carouselArtboards": true,
+  "id.doc.getInfo": true,
+  "id.recipe.flyer": true,
+  "id.recipe.catalog": true,
+  "id.recipe.manual": true
+};
+
+function __mcpDocKey(d) {
+  if (!d) return "";
+  try {
+    if (d.fullName) return String(d.fullName.fsName || d.fullName).replace(/\\/g, "/").toLowerCase();
+  } catch (_eK) {}
+  try {
+    return "name:" + String(d.name);
+  } catch (_eK2) {
+    return "";
+  }
+}
+
+function __mcpOpenDocNames() {
+  var out = [];
+  for (var i = 0; i < app.documents.length; i++) {
+    try {
+      out.push(String(app.documents[i].name));
+    } catch (_eN) {}
+  }
+  return out;
+}
+
+/** The open document called `name` (file name, or full path when two open files share a name). */
+function __mcpFindDocument(name) {
+  var want = String(name).replace(/\\/g, "/");
+  var wantLow = want.toLowerCase();
+  var hits = [];
+  for (var i = 0; i < app.documents.length; i++) {
+    var d = app.documents[i];
+    var nm = String(d.name);
+    if (nm === want || __mcpDocKey(d) === wantLow) hits.push(d);
+  }
+  if (hits.length === 0) {
+    // tolerate the extension on either side ("Post" for "Post.psd", "Post.psd" for an unsaved "Post")
+    var bare = want.replace(/\.[^.\/]+$/, "");
+    for (var j = 0; j < app.documents.length; j++) {
+      var d2 = app.documents[j];
+      if (String(d2.name).replace(/\.[^.]+$/, "") === bare) hits.push(d2);
+    }
+  }
+  if (hits.length === 1) return hits[0];
+  if (hits.length > 1) __mcpFail("DOCUMENT_AMBIGUOUS", "Two open documents are called '" + name + "': pass the full path as documentName.");
+  __mcpFail("DOCUMENT_NOT_FOUND", "No open document called '" + name + "'. Open: " + __mcpOpenDocNames().join(" | "));
+  return null;
+}
+
+/** Does this command need a target document? (create/open/list do not; a batch whose every step names one does not.) */
+function __mcpNeedsDocument(action, params) {
+  if (__MCP_DOC_FREE[action] === true) return false;
+  var op = params && params.operation;
+  if ((action === "ai.doc.manage" || action === "id.doc.manage") && (!op || op === "create" || op === "open")) return false;
+  if (/\.batch$/.test(action) && params && params.operations instanceof Array && params.operations.length) {
+    for (var i = 0; i < params.operations.length; i++) {
+      var p = params.operations[i] && params.operations[i].params;
+      if (!p || !p.documentName) return true;
+    }
+    return false;
+  }
+  return true;
+}
+
+/** Raw scripts: refuse code that relies on the active document while several are open and none was named. */
+function __mcpCheckRawCode(code) {
+  var src = String(code || "");
+  if (!/activeDocument/.test(src)) return;
+  if (/getByName\s*\(|itemByName\s*\(|documents\s*\[/.test(src)) return;
+  __mcpFail(
+    "DOCUMENT_REQUIRED",
+    app.documents.length + " documents are open and the script uses app.activeDocument. Pass documentName (the script then runs with that document in front) or take the document by name (app.documents.getByName, or itemByName in InDesign). Open: " +
+      __mcpOpenDocNames().join(" | ")
+  );
+}
+
+function __mcpEnterDocument(action, params) {
+  params = params || {};
+  var state = { prev: null, prevKey: "", target: null };
+  var n = 0;
+  try {
+    n = app.documents.length;
+  } catch (_eN) {
+    n = 0;
+  }
+  if (n === 0) return state;
+  try {
+    state.prev = app.activeDocument;
+    state.prevKey = __mcpDocKey(state.prev);
+  } catch (_eA) {
+    state.prev = null;
+  }
+  if (params.documentName) {
+    state.target = __mcpFindDocument(params.documentName);
+  } else if (n > 1) {
+    if (/\.raw\.executeExtendScript$/.test(action)) {
+      __mcpCheckRawCode(params.code);
+    } else if (__mcpNeedsDocument(action, params)) {
+      __mcpFail(
+        "DOCUMENT_REQUIRED",
+        n + " documents are open: say which one with documentName (the person may be working in another). Open: " + __mcpOpenDocNames().join(" | ")
+      );
+    }
+  } else if (__mcpNeedsDocument(action, params)) {
+    state.target = state.prev; // the only open document
+  }
+  if (state.target) {
+    // handlers that look the document up by name get its exact name (a path or a name without extension was given)
+    if (params.documentName) params.documentName = String(state.target.name);
+    if (__mcpDocKey(state.target) !== state.prevKey) app.activeDocument = state.target;
+  }
+  return state;
+}
+
+/** Puts back in front the document that was in front before the command (when it is still open). */
+function __mcpLeaveDocument(state) {
+  if (!state || !state.prev || !state.prevKey) return;
+  try {
+    var now = app.documents.length ? __mcpDocKey(app.activeDocument) : "";
+    if (now === state.prevKey) return;
+    for (var i = 0; i < app.documents.length; i++) {
+      if (__mcpDocKey(app.documents[i]) === state.prevKey) {
+        app.activeDocument = app.documents[i];
+        return;
+      }
+    }
+  } catch (_eL) {}
+}
+
+/** Name of the document a command worked on, for the result (so the next call can name it). */
+function __mcpTargetName(state) {
+  try {
+    if (state && state.target) return String(state.target.name);
+  } catch (_eT) {}
+  return null;
 }
 
 /** Creates a folder and every missing parent; throws FOLDER_CREATE_FAILED when the host refuses. */

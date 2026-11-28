@@ -4,6 +4,7 @@ import { logUsage } from "./usage-log.js";
 import { rewritePsdInputs } from "./prefer-psd.js";
 import { checkSkillGate, skillGateNotice } from "./skill-gate.js";
 import { formatErrorResponse } from "./image-helper.js";
+import { documentNameSchema, runWithDocument, wantsDocumentParam } from "./doc-target.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type CatalogToolHandler = (args: any, extra?: any) => Promise<unknown> | unknown;
@@ -40,6 +41,8 @@ export class ToolCatalog {
           return (...args: unknown[]) => {
             // Skills first: the gate wraps the handler itself, so the direct call, jradb_code and jradb_batch all pass it.
             const gatedName = String(args[0]);
+            // Target document: every Photoshop/Illustrator/InDesign tool takes documentName (core/doc-target.ts).
+            if (wantsDocumentParam(gatedName)) addDocumentParam(args);
             const original = args[args.length - 1];
             if (typeof original === "function") args[args.length - 1] = gateHandler(gatedName, original as CatalogToolHandler);
             catalog.record(args);
@@ -112,7 +115,8 @@ export function gateHandler(name: string, handler: CatalogToolHandler): CatalogT
     const notice = skillGateNotice(name);
     // The PSD is the master: an image with a PSD of the same name goes in as the PSD (core/prefer-psd.ts).
     const psd = rewritePsdInputs(name, input);
-    const result = await handler(psd.input, extra);
+    const docName = psd.input && typeof psd.input === "object" ? (psd.input as { documentName?: unknown }).documentName : undefined;
+    const result = await runWithDocument(docName, () => handler(psd.input, extra));
     const notes: string[] = [];
     if (notice) notes.push(notice);
     if (psd.swaps.length) {
@@ -125,6 +129,20 @@ export function gateHandler(name: string, handler: CatalogToolHandler): CatalogT
     }
     return result;
   };
+}
+
+/** Adds an optional documentName to a tool's zod shape (inserting a shape when the tool had none). */
+function addDocumentParam(args: unknown[]): void {
+  for (let i = 1; i < args.length - 1; i++) {
+    const candidate = args[i];
+    if (candidate && typeof candidate === "object" && !Array.isArray(candidate)) {
+      const shape = candidate as z.ZodRawShape;
+      if (!("documentName" in shape)) args[i] = { ...shape, documentName: documentNameSchema() };
+      return;
+    }
+  }
+  // no shape: name, [description], handler -> name, [description], { documentName }, handler
+  args.splice(args.length - 1, 0, { documentName: documentNameSchema() });
 }
 
 export function editDistance(a: string, b: string): number {

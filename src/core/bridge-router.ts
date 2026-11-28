@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { withTargetDocument } from "./doc-target.js";
 import { AsyncLocalStorage } from "node:async_hooks";
 import {
   AdobeAppId,
@@ -181,6 +182,8 @@ export class BridgeRouter {
     params: Record<string, unknown> = {},
     options: CommandOptions = {}
   ): Promise<BridgeResponsePacket> {
+    // Target document: the tool call's documentName reaches every command it sends (core/doc-target.ts).
+    params = withTargetDocument(app, params);
     const expected = this.expectedProjects.get(app);
     if (expected && params.expectedProject === undefined && !action.startsWith("adobe.")) {
       params = { ...params, expectedProject: expected };

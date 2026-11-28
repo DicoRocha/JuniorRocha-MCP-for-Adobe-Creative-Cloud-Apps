@@ -193,11 +193,11 @@ describe("Photoshop", () => {
       expect(tools[name].schema).toHaveProperty("documentName");
     }
     expect(tools.ps_create_document.schema).not.toHaveProperty("documentName");
+    // 27/11/2026: no separate "bring to front" call any more (it left the person's tab switched); the command
+    // itself carries documentName (router + core/doc-target.ts) and the bridge restores the previous front document.
     await tools.ps_save_document.handler({ documentName: "4S_Karussell_06_CTA", format: "png", filePath: "D:/a.png" }, {});
-    expect(calls[0].action).toBe("ps.raw.batchPlay");
-    expect(calls[0].params.descriptors[0]).toEqual({ _obj: "select", _target: [{ _ref: "document", _name: "4S_Karussell_06_CTA" }] });
-    expect(calls[1].action).toBe("ps.doc.save");
-    expect(calls[1].params).not.toHaveProperty("documentName");
+    expect(calls).toHaveLength(1);
+    expect(calls[0].action).toBe("ps.doc.save");
     expect(getErrorHint("DOCUMENT_NOT_FOUND")?.nextTools).toContain("ps_list_documents");
   });
 

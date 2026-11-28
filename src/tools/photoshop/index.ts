@@ -1,4 +1,5 @@
 import { withTrail } from "../../core/recipe-trail.js";
+import { documentNameSchema } from "../../core/doc-target.js";
 import * as os from "node:os";
 import * as fs from "node:fs";
 import { z } from "zod";
@@ -56,7 +57,7 @@ const ColorSchema = z
   ])
   .describe("RGB color as hex string ('#RRGGBB') or { r, g, b } object (0-255).");
 
-/** Tools that act on "the active document" and therefore accept an optional documentName. */
+/** Tools that act on a document: documentName (required when several are open) reaches every command they send. */
 export const PS_DOCUMENT_TOOLS = new Set([
   "ps_save_document",
   "ps_modify_canvas",
@@ -75,22 +76,6 @@ export const PS_DOCUMENT_TOOLS = new Set([
   "ps_batch_play",
   "ps_place_file"
 ]);
-
-/** Brings an open document to the front by name (with or without its extension). */
-export async function activatePsDocument(router: BridgeRouter, documentName: string): Promise<void> {
-  await runPsDescriptors(
-    router,
-    [{ _obj: "select", _target: [{ _ref: "document", _name: documentName }] } as Descriptor],
-    "MCP: activate document"
-  ).catch((err: unknown) => {
-    const e = new Error(
-      `No open Photoshop document named '${documentName}' (${err instanceof Error ? err.message : String(err)}). ` +
-        "List them with ps_list_documents."
-    ) as Error & { code?: string };
-    e.code = "DOCUMENT_NOT_FOUND";
-    throw e;
-  });
-}
 
 /** Plans (and with apply: true creates) the semantic groups of a Photoshop document. Used by ps_organize_layers and the recipes. */
 export async function organizePsDocument(
@@ -121,27 +106,14 @@ export async function organizePsDocument(
 }
 
 export function registerPhotoshopTools(realServer: McpServer, router: BridgeRouter): void {
-  // Every tool that works on "the active document" also takes documentName: the user may switch tabs in
-  // Photoshop while the agent works, and a save or an edit would then land in the wrong file.
+  // Every tool that works on a document takes documentName (core/doc-target.ts): the person may be working in
+  // another Photoshop file at the same time. The router hands it to every command the tool sends; the bridge
+  // brings that document to front only for the command and puts the previous one back in front afterwards.
   const server = {
     tool: (name: string, description: string, schema: Record<string, z.ZodTypeAny>, handler: (p: any, extra: any) => any) => {
       if (!PS_DOCUMENT_TOOLS.has(name)) return (realServer.tool as any)(name, description, schema, handler);
-      const withDoc = {
-        ...schema,
-        documentName: z
-          .string()
-          .optional()
-          .describe("Open document to act on (brought to the front first). Default: the active document.")
-      };
-      return (realServer.tool as any)(name, description, withDoc, async (params: Record<string, unknown>, extra: unknown) => {
-        const { documentName, ...rest } = params;
-        if (typeof documentName === "string" && documentName.trim() !== "") {
-          try {
-            await activatePsDocument(router, documentName.trim());
-          } catch (err) {
-            return formatErrorResponse(err);
-          }
-        }
+      return (realServer.tool as any)(name, description, { ...schema, documentName: documentNameSchema() }, async (params: Record<string, unknown>, extra: unknown) => {
+        const { documentName: _documentName, ...rest } = params;
         return handler(rest, extra);
       });
     }
@@ -459,7 +431,6 @@ export function registerPhotoshopTools(realServer: McpServer, router: BridgeRout
       try {
         if (!params.allowTextOnSeams) {
           // Refuse before exporting when a text or logo crosses a seam (a margin touch is only a warning).
-          if (params.documentName) await activatePsDocument(router, params.documentName);
           const tree = await router.dispatch("photoshop", "ps.layer.getTree", { maxDepth: 8 });
           const { boxes, maxRight } = seamBoxesFromTree(((tree.data as { layers?: unknown[] })?.layers ?? []) as never[]);
           const cw = params.cardWidth ?? 1080;
@@ -622,7 +593,7 @@ export function registerPhotoshopTools(realServer: McpServer, router: BridgeRout
 
   server.tool(
     "ps_selection_and_masks",
-    "Create or modify pixel selections (rectangle, ellipse, polygon, selectAll, selectSubject, selectSky, invert, clear), remove the background, or add/delete a layer mask from the current selection. 'feather' applies to rectangle, ellipse and polygon. Refine the current selection with expand, contract, smooth, feather, border (amount in px), grow, similar (tolerance) or colorRange (highlights, midtones, shadows, a colour family, skin tones); keep it with saveSelection and bring it back with loadSelection.",
+    "Create or modify pixel selections (rectangle, ellipse, polygon, selectAll, selectSubject, selectSky, invert, clear), remove the background, or add/delete a layer mask from the current selection. maskFromBackground: subject + ground that runs off the edges (robot on a rock, person on a sofa) on a plain generated background, where Select Subject keeps only the person: magic wand on the background at `points` (tolerance, default 42), invert, layer mask. 'feather' applies to rectangle, ellipse and polygon. Refine the current selection with expand, contract, smooth, feather, border (amount in px), grow, similar (tolerance) or colorRange (highlights, midtones, shadows, a colour family, skin tones); keep it with saveSelection and bring it back with loadSelection.",
     {
       operation: z.enum([
         "rectangle",
@@ -645,7 +616,8 @@ export function registerPhotoshopTools(realServer: McpServer, router: BridgeRout
         "similar",
         "colorRange",
         "saveSelection",
-        "loadSelection"
+        "loadSelection",
+        "maskFromBackground"
       ]),
       amount: z.number().positive().optional().describe("expand / contract / smooth / feather / border: pixels."),
       tolerance: z.number().min(0).max(255).optional().describe("grow / similar: tolerance (default 32)."),
@@ -663,7 +635,13 @@ export function registerPhotoshopTools(realServer: McpServer, router: BridgeRout
           bottom: z.number()
         })
         .optional(),
-      points: z.array(z.array(z.number()).length(2)).optional().describe("Polygon vertices [[x,y], ...]."),
+      points: z
+        .array(z.array(z.number()).length(2))
+        .optional()
+        .describe("Polygon vertices [[x,y], ...]. maskFromBackground: points ON the plain background (document px), several around the subject."),
+      layerName: z.string().optional().describe("maskFromBackground: layer that gets the mask (default the active one)."),
+      layerId: z.number().int().optional(),
+      artboard: z.string().optional().describe("Look for layerName only inside this artboard."),
       feather: z.number().min(0).optional().default(0)
     },
     async (params) => {
@@ -687,10 +665,14 @@ export function registerPhotoshopTools(realServer: McpServer, router: BridgeRout
       type: z
         .string()
         .describe(
-          "filter: gaussianBlur | motionBlur | highPass | addNoise | unsharpMask. layerStyle: dropShadow | innerShadow | stroke | outerGlow | innerGlow | bevelEmboss | satin | colorOverlay | gradientOverlay. adjustmentLayer: brightnessContrast | hueSaturation | vibrance | levels | curves | colorBalance | blackAndWhite."
+          "filter: gaussianBlur | motionBlur | highPass | addNoise | unsharpMask. layerStyle: dropShadow | innerShadow | stroke | outerGlow | innerGlow | bevelEmboss | satin | colorOverlay | gradientOverlay | clear (Clear Layer Style, keeps the blend mode and fill opacity). adjustmentLayer: brightnessContrast | hueSaturation | vibrance | levels | curves | colorBalance | blackAndWhite."
         ),
       layerId: z.number().int().optional(),
       layerName: z.string().optional().describe("Target layer or group (folder) name. A layer style on a group affects everything inside it."),
+      artboard: z
+        .string()
+        .optional()
+        .describe("Look for layerName only inside this artboard (a PSD with one artboard per format repeats the names; without it the first match wins)."),
       replaceExisting: z
         .boolean()
         .optional()
@@ -787,7 +769,6 @@ export function registerPhotoshopTools(realServer: McpServer, router: BridgeRout
     },
     async (params) => {
       try {
-        if (params.documentName) await activatePsDocument(router, params.documentName);
         const res = await router.dispatch("photoshop", "ps.guides", params, { undoGroup: "MCP: guides" });
         return formatSuccessResponse(res.data);
       } catch (err) {
@@ -812,7 +793,6 @@ export function registerPhotoshopTools(realServer: McpServer, router: BridgeRout
     },
     async (params) => {
       try {
-        if (params.documentName) await activatePsDocument(router, params.documentName);
         const res = await router.dispatch("photoshop", "ps.cameraRaw", params, { undoGroup: "MCP: Camera Raw filter" });
         return formatSuccessResponse(res.data);
       } catch (err) {
@@ -916,14 +896,15 @@ export function registerPhotoshopTools(realServer: McpServer, router: BridgeRout
 
   server.tool(
     "ps_artboards",
-    "Artboards: list them (name, rect, background), create several at once (name, width, height, optional x/y — placed " +
+    "Artboards: list them (name, rect, background), duplicate one into another format (source → newName, width, height: the copy " +
+      "keeps every group and Smart Object, names without ' copy'; reframe the layers after), create several at once (name, width, height, optional x/y — placed " +
       "side by side by default — and backgroundColor), or export each one to its own file named after the artboard " +
       "(png/jpg/webp, scale for @2x, sRGB, maxKB) — one PSD with feed 4:5, story 9:16 and square delivered in one call. " +
       "Exports work on duplicates; the document is not changed.",
     {
       documentName: z.string().optional(),
       operation: z
-        .enum(["list", "create", "export", "quickExport"])
+        .enum(["list", "create", "duplicate", "export", "quickExport"])
         .default("list")
         .describe("quickExport = File > Export > Quick Export as PNG (one file per artboard, named after it) — preferred for a PSD with artboards; export = per-artboard crop with naming pattern, formats and size budget."),
       artboards: z
@@ -939,7 +920,13 @@ export function registerPhotoshopTools(realServer: McpServer, router: BridgeRout
         )
         .optional()
         .describe("create: artboards in pixels."),
-      gap: z.number().optional().describe("create: space between artboards placed automatically (default 100 px)."),
+      gap: z.number().optional().describe("create/duplicate: space between artboards placed automatically (default 100 px)."),
+      source: z.string().optional().describe("duplicate: artboard to copy (another format of the same art: groups and Smart Objects come along)."),
+      newName: z.string().optional().describe("duplicate: name of the copy, e.g. 'Story 9x16 1080x1920'."),
+      width: z.number().positive().optional().describe("duplicate: new width (default the source's)."),
+      height: z.number().positive().optional().describe("duplicate: new height."),
+      x: z.number().optional().describe("duplicate: left of the copy (default: right of the last artboard + gap)."),
+      y: z.number().optional().describe("duplicate: top of the copy (default: the source's)."),
       names: z.array(z.string()).optional().describe("export: only these artboards (default all)."),
       outputFolder: z.string().optional(),
       fileNamePattern: z.string().optional().describe("export: {{name}} artboard, {{#}} order, {{document}}. Default '{{name}}'."),
@@ -1200,7 +1187,8 @@ export function registerPhotoshopTools(realServer: McpServer, router: BridgeRout
   server.tool(
     "ps_place_file",
     "Place an image, PDF, AI or PSD file as a Smart Object layer (embedded, or linked), optionally fitted into a box " +
-      "(x/y = top-left in px; fit contain/cover/width/height) and renamed. Bounds are those of the visible pixels. " +
+      "(x/y = top-left in px; fit contain/cover/width/height) and renamed, inside a group or artboard (into), optionally cut out " +
+      "(cutout: Select Subject as a mask). Bounds are those of the visible pixels. " +
       "Swap its contents later with ps_smart_object replaceContents.",
     {
       filePath: z.string().describe("Absolute path."),
@@ -1210,11 +1198,16 @@ export function registerPhotoshopTools(realServer: McpServer, router: BridgeRout
       width: z.number().positive().optional(),
       height: z.number().positive().optional(),
       fit: z.enum(["contain", "cover", "width", "height", "none"]).optional(),
-      linked: z.boolean().optional().default(false)
+      linked: z.boolean().optional().default(false),
+      into: z.string().optional().describe("Group or artboard that receives the layer (on top of it)."),
+      cutout: z
+        .union([z.boolean(), z.enum(["selectSubject", "removeBackground"])])
+        .optional()
+        .describe("Cut the subject out as a layer mask right after placing (true = Select Subject, no generative credits). Best with an asset generated on a plain background in the scene's main colour.")
     },
     async (params) => {
       try {
-        const res = await router.dispatch("photoshop", "ps.layer.place", params, { undoGroup: "MCP: Place file" });
+        const res = await router.dispatch("photoshop", "ps.layer.place", params, { undoGroup: "MCP: Place file", timeoutMs: params.cutout ? 70000 : undefined });
         return formatSuccessResponse(res.data);
       } catch (err) {
         return formatErrorResponse(err);

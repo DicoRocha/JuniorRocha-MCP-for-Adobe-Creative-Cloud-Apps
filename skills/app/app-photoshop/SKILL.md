@@ -12,6 +12,7 @@ Referência de descritores: `references/batchplay-cheatsheet.md`.
 | Item | Regra |
 |---|---|
 | Pontes | CEP (padrão, ExtendScript) · UXP (`Plugins > MCP Bridge`, necessário para `ps_execute_uxp_script`) · COM no Windows sem painel |
+| Documento alvo | **Sempre `documentName`** (nome do arquivo aberto; caminho completo se dois tiverem o mesmo nome). A pessoa pode estar trabalhando em outro arquivo do mesmo programa: com mais de um aberto, comando sem nome é recusado (`DOCUMENT_REQUIRED`). O programa traz o alvo para a frente só durante o comando e devolve a frente ao documento que estava antes (regra do usuário, 27/11/2026) |
 | Unidades | pixels; tamanho de fonte em pt (em 72 ppi pt = px) |
 | Origem | canto superior esquerdo, Y para baixo |
 | Cor | `"#RRGGBB"` ou `{r,g,b}` 0–255 |
@@ -38,6 +39,15 @@ Referência de descritores: `references/batchplay-cheatsheet.md`.
 | Texto atrás da pessoa | duplicar a foto acima do título → `ps_selection_and_masks` selectSubject → addMaskFromSelection |
 | Tela | `ps_modify_canvas` (resizeCanvas para recompor, crop, trim) |
 | Botão, selo, card (forma viva) | `ps_create_shape` (retângulo arredondado/retângulo/elipse; raio = altura ÷ 2 faz botão pílula; cor e raio editáveis) |
+| Forma combinada (janela abstrata, balão com rabicho, moldura vazada), linha aberta só com traço | `ps_create_path_shape` (`type: "polygon"` com raio por vértice = **todos os cantos arredondados**; ou `items` com `op`: add = Combinar formas, subtract = Subtrair forma frontal, intersect, exclude; `fill: null` + `stroke` = só contorno). Foto dentro: máscara de corte na forma |
+| Linha de chamada de tag (diagonal + reta, ponto duplo) | `ps_recipe_callout` (`points`, `groupWith` = camadas da tag → um grupo por tag) |
+| Agrupar camadas onde elas estão | `ps_group_layers` (`layerNames`, `groupName`, `artboard`) |
+| Fundo em degradê que sobrevive à duplicação da prancheta + sol | `ps_recipe_gradient_background` (retângulo + Sobreposição de degradê; `sun` nítido, desfoque 1 px) |
+| Recorte de sujeito + chão que sai pelas bordas | `ps_selection_and_masks` `maskFromBackground` (`points` no fundo liso, `tolerance` 42) |
+| Mesmo nome de camada em várias pranchetas | passe `artboard` em `ps_effects_and_adjustments` / `ps_selection_and_masks` |
+| Vinheta (escurecer o entorno do assunto) | `ps_recipe_vignette` (elipse ou assunto expandido → inverter → Matiz/Sat., Curvas ou Níveis; feather da máscara 60–80 px+; cópia recortada do assunto por cima — a vinheta escurece só o fundo) |
+| Fundo desfocado sem halo | `ps_recipe_background_blur_clean` (assunto +10 px → preenchimento sensível ao conteúdo numa cópia → objeto inteligente desfocado → assunto recortado por cima; `method: "remove"` = ferramenta Remover, só com consentimento para gastar créditos) |
+| Tirar todos os estilos | `ps_effects_and_adjustments` layerStyle `type: "clear"` (mantém modo e preenchimento) |
 | Recortar o sujeito (receita) | `ps_recipe_remove_background` (cópia do documento, Smart Object + máscara, PNG transparente, caixa do sujeito) |
 | Out of bounds / pop-out (receita) | `ps_recipe_pop_out` (pessoa saindo de um círculo ou outra forma: forma + recorte com máscara de corte + cópia de cima com máscara; numa cópia ou no próprio documento com `layerName`; `keepBackground` mantém o fundo da foto dentro da forma; ver `foto-recorte-e-composicao` 1b) |
 | Foto de produto pronta (receita) | `ps_recipe_product_shot` (recorte → formato com fundo do kit, produto na zona segura, sombra de contato) |
@@ -65,7 +75,9 @@ para a direita): escreva `a ? x : (b ? y : z)` ou use `if`. Num `replace`, `"$1"
 **Mire o documento pelo nome**, não por `app.activeDocument`: o usuário pode trocar de aba enquanto você
 trabalha (13/11: o fundo e os textos do slide 6 foram parar na capa). No script:
 `var d = app.documents.getByName("4S_Karussell_06_CTA"); app.activeDocument = d;`. Nas ferramentas
-de documento, passe `documentName`.
+de documento, passe `documentName` (todas aceitam; também no script livre, que então roda com esse documento na
+frente e devolve a frente ao anterior). Com mais de um documento aberto, script que usa `app.activeDocument` sem
+pegar o documento pelo nome é recusado (`DOCUMENT_REQUIRED`).
 
 ## 3b. Variantes: duplique o bloco inteiro, depois adapte
 
@@ -78,6 +90,10 @@ ElementPlacement.INSIDE)`, agrupar tudo numa ação (`selectAllLayers` + `Mk lay
 
 ## 4. Armadilhas
 
+- **Créditos generativos (regra do usuário, 25/11/2026):** recursos de IA da Adobe que podem gastar créditos
+  (Remover com IA, Preenchimento generativo, Expandir generativo) só com o consentimento da pessoa naquele pedido.
+  Sem ele, use o equivalente local (preenchimento sensível ao conteúdo, Selecionar assunto).
+
 - **Texto ancora na linha de base:** `position` é o ponto de inserção; leia bounds (`ps_get_layer_tree`) para alinhar pela base.
 - `layerStyle` substitui os estilos existentes da camada: para sombra + traço, mande os dois num descritor (`ps_batch_play`).
 - `ps_batch_play` não lança erro: leia `errorCount` no resultado.
@@ -86,6 +102,37 @@ ElementPlacement.INSIDE)`, agrupar tudo numa ação (`selectAllLayers` + `Mk lay
 - Smart Object inserido tem bounds dos **pixels visíveis**: ícones de tamanhos diferentes no mesmo
   artboard ficam com alturas diferentes depois de replaceContents; normalize a altura (resize) por slide.
 - `saveAs` PNG pela ferramenta exporta cópia: o documento continua sendo o PSD.
+- **Camada de degradê + duplicar prancheta:** o degradê muda de posição na cópia. Fundo em degradê = retângulo
+  do tamanho da prancheta com Sobreposição de degradê (não estraga ao duplicar).
+- `getByName` devolve a **primeira** camada com o nome: depois de renomear uma camada nova com o nome da antiga,
+  apagar "pelo nome" apaga a nova. Apague pela referência ou pelo tipo.
+- Tornar ativa uma camada oculta (`doc.activeLayer = camada`) a deixa **visível**: oculte depois de ativar.
+- Estilos de camada lidos de um documento e aplicados em outro pelo mesmo descritor falham sem erro: monte o
+  descritor de novo com os valores.
+- **`PathPointInfo` no Photoshop é o contrário do Illustrator:** `leftDirection` é a alça de **saída** (para o
+  próximo ponto) e `rightDirection` a de entrada. Do jeito do Illustrator os cantos saem chanfrados (retos).
+  `ps_create_path_shape` já monta certo.
+- Duplicar uma camada com máscara de corte gera outra com máscara de corte: solte (`Ungr`) se ela deve aparecer fora.
+- Levar uma camada sozinha para outro documento (para exportar PNG): se ela tem máscara de corte, a cópia chega
+  recortada e invisível (PNG vazio). Solte (`grouped = false`) no documento novo antes de salvar.
+- Tirar o filtro inteligente: `Dlt` de `filterFX` índice 1 na camada (o `clearSmartFilters` não existe no 28).
+- Mover uma camada com máscara vinculada move a máscara: para limites fixos (área de vazamento), desvincule
+  (`userMaskLinked: false`).
+- Forma de caminho aberto (linha com cotovelo, traço sem preenchimento): `doc.pathItems.add` com subcaminho
+  aberto → `select()` → `Mk ` de `contentLayer` com `strokeStyle` (`fillEnabled false`, largura, cor) → apagar o
+  caminho de trabalho.
+- **Salvar como PSD renomeia o documento** para `<nome>.psd`: use o nome novo nas chamadas seguintes.
+- **Medir forma sem a sombra:** `layer.bounds` inclui sombra projetada (o centro desce ~10 px); use
+  `boundsNoEffects` (as receitas de centralizar e de preço já usam).
+- **Pranchetas por script (25/11/2026):** para outro formato, **duplique a prancheta inteira**
+  (`ps_artboards` operation `duplicate`, com `source`, `newName`, `width`, `height`): grupos e Smart Objects vão
+  junto, sem " copy" nos nomes. Não duplique grupos para dentro de outra prancheta (`duplicate(grupo)` falha e
+  `move(..., INSIDE)` em grupo aninhado joga a camada para a raiz do documento). Fundo de prancheta = camada de
+  **cor sólida** (preenche em qualquer tamanho), não pixels.
+- **Receitas de montagem (25/11/2026):** `ps_place_file` com `into` (grupo/prancheta) e `cutout: true`
+  (Selecionar Assunto como máscara); `ps_recipe_motion_trail` (rastro + desfoque leve no objeto);
+  `ps_center_text_in_shape` com `layerNames` (conjunto centrado nos dois eixos); `ps_recipe_price_tag`
+  (preço como frase única); `media_download_url` (baixar asset gerado por link).
 
 ## 5. Portão
 

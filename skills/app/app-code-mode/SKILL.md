@@ -45,6 +45,8 @@ return { verdict: s.artboards.map(a => [a.artboard, a.verdict, a.errors]), files
 - Uma ferramenta com erro **lança exceção** com a mensagem dela: use `try/catch` para seguir e anotar o erro.
 - Mostre imagem só onde a decisão é visual (`show()` após a chamada que tem a prévia).
 - Ações que mudam fotos, enviam algo ou apagam continuam valendo as mesmas regras de permissão do uso direto.
+- Photoshop, Illustrator e InDesign: passe `documentName` em **toda** chamada (a pessoa pode estar trabalhando em
+  outro arquivo do mesmo programa); com mais de um documento aberto, chamada sem ele é recusada.
 - O script não tem `require`, `process` nem rede: só as ferramentas e os helpers acima.
 
 ## Modo enxuto

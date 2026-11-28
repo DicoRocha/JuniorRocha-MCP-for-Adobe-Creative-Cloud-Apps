@@ -1,6 +1,6 @@
 # Known issues and open items
 
-Last reviewed on 24 November 2026, version 1.14.4. Items are grouped by where they show up.
+Last reviewed on 27 November 2026, version 1.15.0. Items are grouped by where they show up.
 
 ## Not available through the server
 
@@ -8,13 +8,27 @@ Last reviewed on 24 November 2026, version 1.14.4. Items are grouped by where th
 |---|---|---|
 | Illustrator | Opacity masks | No scripting access in Illustrator 31 |
 | Illustrator | Arrowheads on strokes | No scripting access |
+| Illustrator | Variable width profiles on strokes (`strokeWidthProfile`) | The property exists but rejects every value ("Illegal Argument", 25/11/2026); draw the tapered outline as a shape |
 | Illustrator | The app's own Remove Background | No scripting access; `ai_recipe_pop_out` has Photoshop cut the photo out first |
 | Photoshop | Pattern overlay layer style, Blur Gallery (iris blur) | Not implemented |
 | Photoshop | Several copies of the same layer style on one layer | Applying a style of a type replaces the copies of that type; other types are kept |
 | Premiere Pro | Adjustment layers, freeze frame | Not exposed by the scripting interfaces in use |
 | Premiere Pro | Work area | Premiere Pro 27 ignores the setter; the tool reports `NOT_APPLIED` |
 | Premiere Pro | Creating and styling native caption tracks, writing text into a `.mogrt` through UXP | Not exposed; captions are added as editable graphics instead |
-| All | Features that spend generative credits (Generative Fill, Generative Expand, Text to Vector and similar) | Left out on purpose |
+| All | Features that spend generative credits (Generative Fill, Generative Expand, Text to Vector and similar) | Left out on purpose. The one exception is the Remove tool in `ps_recipe_background_blur_clean` (`method: "remove"`), which runs only with `allowGenerativeCredits: true` after the person agreed |
+
+## Target document (1.15.0)
+
+Every Photoshop, Illustrator and InDesign command goes to a named document (`documentName`), so the person can
+work in another file of the same app at the same time. Limits that remain:
+
+| Where | Behaviour |
+|---|---|
+| Photoshop, Illustrator, InDesign | Most commands only run on the document in front (Photoshop Action Manager, Illustrator menu commands and selection, InDesign ruler origin). The target comes to front for the command and the previous document goes back to front afterwards: the person sees a short switch, and the app does not answer while a command runs |
+| Same | With one document open, a command without `documentName` goes to that document; with several, it is refused (`DOCUMENT_REQUIRED`) |
+| Raw scripts (`*_execute_extendscript`, `ps_execute_uxp_script`) | Refused with several documents open only when the code uses `activeDocument` without taking a document by name; the check reads the code, it cannot follow what the script does |
+| After Effects, Lightroom Classic | One project / catalog at a time: nothing to target |
+| Premiere Pro | Several projects can be open; commands go to the active project. `pr_expect_project` makes them refuse when another project is active |
 
 ## Found during the macOS validation, to check on Windows too
 

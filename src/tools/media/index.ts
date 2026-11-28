@@ -27,6 +27,7 @@ import { kitCaptionTerms } from "../../core/brand-kit.js";
 import { balanceLines } from "../../media/balance.js";
 import { transcribeFile, WhisperSize } from "../../media/transcribe.js";
 import { runJob, getJob, jobView, listJobs } from "../../media/jobs.js";
+import { downloadUrl } from "../../media/download.js";
 
 const RangeSchema = z.object({ start: z.number().min(0), end: z.number().min(0) });
 
@@ -105,6 +106,25 @@ export function registerMediaTools(server: McpServer): void {
           path.basename(p.filePath)
         );
         return formatSuccessResponse(jobView(job));
+      } catch (err) {
+        return formatErrorResponse(err);
+      }
+    }
+  );
+
+  server.tool(
+    "media_download_url",
+    "Download a file (image, video, audio) from an http(s) link straight to the user's disk, from the MCP server on this " +
+      "computer: use it for results of external generators (Magnific, Higgsfield, Firefly...) or stock links when the chat " +
+      "cannot hand the file over. Missing folders are created; a path without extension gets one from the file type.",
+    {
+      url: z.string().describe("http(s) link to the file (e.g. a generator's full-resolution URL)."),
+      filePath: z.string().describe("Absolute destination path, e.g. <project>/assets/fundo.png."),
+      overwrite: z.boolean().optional().default(true)
+    },
+    async (p) => {
+      try {
+        return formatSuccessResponse(await downloadUrl(p.url, p.filePath, { overwrite: p.overwrite }));
       } catch (err) {
         return formatErrorResponse(err);
       }

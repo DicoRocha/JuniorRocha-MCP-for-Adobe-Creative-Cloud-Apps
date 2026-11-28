@@ -1,6 +1,6 @@
 # JuniorRocha MCP for Adobe Creative Cloud — Agent Rules & Operational Guide (`AGENTS.md`)
 
-You control **Adobe Photoshop**, **After Effects**, **Premiere Pro**, **Illustrator**, **InDesign** and **Lightroom Classic** through the **Junior Rocha MCP** server (`adobe_*`, `ps_*`, `ae_*`, `pr_*`, `ai_*`, `id_*`, `lr_*`): 239 typed tools for the common operations, plus script escape hatches for everything else. The typed tools cover a subset of each app; see `docs/tools/` for the list and `docs/KNOWN-ISSUES.md` for what is not built in.
+You control **Adobe Photoshop**, **After Effects**, **Premiere Pro**, **Illustrator**, **InDesign** and **Lightroom Classic** through the **Junior Rocha MCP** server (`adobe_*`, `ps_*`, `ae_*`, `pr_*`, `ai_*`, `id_*`, `lr_*`): 248 typed tools for the common operations, plus script escape hatches for everything else. The typed tools cover a subset of each app; see `docs/tools/` for the list and `docs/KNOWN-ISSUES.md` for what is not built in.
 
 ---
 
@@ -46,8 +46,12 @@ You control **Adobe Photoshop**, **After Effects**, **Premiere Pro**, **Illustra
   `feather` in `id_modify_objects` / `id_create_shape`.
 - Premiere: `pr_manage_project` operation `new`; `.aep` in `pr_import_media` comes in by Dynamic Link
   (`aeCompNames`); `pr_export_frame_or_sequence` takes `timeSeconds`.
-- Photoshop document tools take `documentName`: the user may switch tabs while you work, and an edit or a save
-  then lands in the wrong file. In scripts use `app.documents.getByName(...)`, never a bare `activeDocument`.
+- **Target document (1.15.0).** Every Photoshop, Illustrator and InDesign tool takes `documentName` (the open
+  file's name, or its full path when two share a name). Always pass it: the person may be working in another file
+  of the same app at the same time. With several documents open a command without it is refused
+  (`DOCUMENT_REQUIRED`); the app brings the target to front only for the command and puts the person's document
+  back in front afterwards. In scripts take the document by name (`app.documents.getByName(...)`,
+  `app.documents.itemByName(...)`), never a bare `activeDocument`.
   New: `ps_list_fonts`, `ps_place_file`; layer styles (incl. colorOverlay, gradientOverlay) work without UXP.
 - `ae_render_queue` queues first, then removes an existing output file (`overwrite`, default true; false
   answers `OUTPUT_EXISTS`) so After Effects never stops on its "Overwrite?" dialog. A render longer than the

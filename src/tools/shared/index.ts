@@ -1,4 +1,5 @@
 import { FORMATS_REVIEWED, formatsReviewAge } from "../../core/formats.js";
+import { documentNameSchema } from "../../core/doc-target.js";
 import { z } from "zod";
 import type { UpdateChecker } from "../../core/update-check.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -173,15 +174,16 @@ export function registerSharedTools(server: McpServer, router: BridgeRouter, ena
 
   server.tool(
     "jradb_bridge_transfer",
-    "Cross-application pipeline: export the active document of a source app (Illustrator or Photoshop) to exchangeFilePath and import that file into After Effects or Premiere Pro. Supported: Illustrator -> png; Photoshop -> png or psd. (After Effects and Premiere Pro do not import SVG; for layered Illustrator art save the .ai with ai_manage_document and import it with ae_manage_project.)",
+    "Cross-application pipeline: export a document (documentName; required when several are open) of a source app (Illustrator or Photoshop) to exchangeFilePath and import that file into After Effects or Premiere Pro. Supported: Illustrator -> png; Photoshop -> png or psd. (After Effects and Premiere Pro do not import SVG; for layered Illustrator art save the .ai with ai_manage_document and import it with ae_manage_project.)",
     {
       sourceApp: z.enum(["illustrator", "photoshop"]).describe("Source application holding the active artwork/document."),
       targetApp: z.enum(["after-effects", "premiere"]).describe("Destination video/motion application."),
       exchangeFilePath: z.string().describe("Absolute path for the intermediate exported asset (e.g. 'C:/temp/transferred_asset.png')."),
       format: z.enum(["png", "psd", "svg"]).optional().default("png").describe("Intermediate file format."),
-      importAsComp: z.boolean().optional().default(false).describe("When importing PSD/AI into After Effects, import as layered composition.")
+      importAsComp: z.boolean().optional().default(false).describe("When importing PSD/AI into After Effects, import as layered composition."),
+      documentName: documentNameSchema()
     },
-    async ({ sourceApp, targetApp, exchangeFilePath, format, importAsComp }) => {
+    async ({ sourceApp, targetApp, exchangeFilePath, format, importAsComp, documentName }) => {
       try {
         const allowedFormats = sourceApp === "illustrator" ? ["png"] : ["png", "psd"];
         if (!allowedFormats.includes(format)) {
@@ -194,11 +196,13 @@ export function registerSharedTools(server: McpServer, router: BridgeRouter, ena
           sourceApp === "illustrator"
             ? await router.dispatch("illustrator", "ai.export.file", {
                 filePath: exchangeFilePath,
-                format
+                format,
+                documentName
               })
             : await router.dispatch("photoshop", "ps.doc.save", {
                 filePath: exchangeFilePath,
-                format
+                format,
+                documentName
               });
 
         // Step 2: Import into target app
@@ -229,7 +233,7 @@ export function registerSharedTools(server: McpServer, router: BridgeRouter, ena
 
   server.tool(
     "jradb_checkpoint",
-    "Save a named, timestamped iteration of the active document/project BEFORE a structural change, a long render, a heavy " +
+    "Save a named, timestamped iteration of a document (documentName; required when several are open) or the project BEFORE a structural change, a long render, a heavy " +
       "preview or anything that could hang the app. Photoshop: layered PSD copy; InDesign: saveACopy; Illustrator, After " +
       "Effects, Premiere: save, then copy the file (a never-saved document is saved as the checkpoint, reported as " +
       "documentPathChanged); Lightroom: a Develop snapshot on the target photos. Default folder: '_checkpoints' next to " +
@@ -237,9 +241,10 @@ export function registerSharedTools(server: McpServer, router: BridgeRouter, ena
     {
       app: z.enum(["photoshop", "illustrator", "indesign", "after-effects", "premiere", "lightroom"]),
       label: z.string().max(60).optional().describe("Short name for the iteration, e.g. 'antes-da-animacao'."),
-      folder: z.string().optional().describe("Absolute folder for the copy. Ignored for Lightroom.")
+      folder: z.string().optional().describe("Absolute folder for the copy. Ignored for Lightroom."),
+      documentName: documentNameSchema()
     },
-    async ({ app, label, folder }) => {
+    async ({ app, label, folder, documentName }) => {
       try {
         if (!enabledApps.includes(app)) {
           throw new Error(`${app} is not enabled in this server (--apps).`);
@@ -250,7 +255,7 @@ export function registerSharedTools(server: McpServer, router: BridgeRouter, ena
           const res = await router.dispatch("lightroom", "lr.develop.snapshot", { name }, { undoGroup: "MCP: checkpoint" });
           return formatSuccessResponse({ app, method: "develop snapshot on the target photos", snapshotName: name, result: res.data });
         }
-        const res = await router.dispatch(app, "adobe.checkpoint", { label, folder }, { undoGroup: "MCP: checkpoint" });
+        const res = await router.dispatch(app, "adobe.checkpoint", { label, folder, documentName }, { undoGroup: "MCP: checkpoint" });
         return formatSuccessResponse(res.data);
       } catch (err) {
         return formatErrorResponse(err);

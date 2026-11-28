@@ -669,6 +669,122 @@ const UXP_BATCHABLE_ACTIONS = new Set([
   "ps.variants"
 ]);
 
+/* ------------------------------------------------------------------ target document (rule 27/11/2026)
+ * Every command goes to a named document, never to "whatever is in front": the person may be working in another
+ * file at the same time. Same rule as __mcpEnterDocument in es3-runtime.jsx: documentName is resolved; with more
+ * than one document open and no name the command is refused (DOCUMENT_REQUIRED). Photoshop runs most commands
+ * only on the document in front, so the target comes to front for the command and the one that was in front
+ * before goes back to front afterwards.
+ */
+const DOC_FREE_ACTIONS = new Set([
+  "adobe.ping",
+  "adobe.inspectDom",
+  "ps.doc.create",
+  "ps.doc.open",
+  "ps.doc.list",
+  "ps.fonts.list",
+  "ps.action.list",
+  "ps.template.socialPost",
+  "ps.recipe.carouselSetup"
+]);
+
+function docError(code, message) {
+  const err = new Error(message);
+  err.code = code;
+  return err;
+}
+
+function openDocNames() {
+  return app.documents.map((d) => d.name).join(" | ");
+}
+
+function normPath(p) {
+  return String(p || "").replace(/\\/g, "/").toLowerCase();
+}
+
+function findDocument(name) {
+  const want = String(name);
+  let hits = app.documents.filter((d) => d.name === want || (d.path && normPath(d.path) === normPath(want)));
+  // tolerate the extension on either side ("Post" for "Post.psd", "Post.psd" for an unsaved "Post")
+  if (hits.length === 0) {
+    const bare = want.replace(/\.[^./\\]+$/, "");
+    hits = app.documents.filter((d) => String(d.name).replace(/\.[^.]+$/, "") === bare);
+  }
+  if (hits.length === 1) return hits[0];
+  if (hits.length > 1) throw docError("DOCUMENT_AMBIGUOUS", `Two open documents are called '${name}': pass the full path as documentName.`);
+  throw docError("DOCUMENT_NOT_FOUND", `No open document called '${name}'. Open: ${openDocNames()}`);
+}
+
+function needsDocument(actionName, params) {
+  if (DOC_FREE_ACTIONS.has(actionName)) return false;
+  if (actionName === "ps.batch" && Array.isArray(params.operations) && params.operations.length) {
+    return !params.operations.every((op) => op && op.params && op.params.documentName);
+  }
+  return true;
+}
+
+async function bringDocumentToFront(id) {
+  if (!id || (app.activeDocument && app.activeDocument.id === id)) return;
+  await core.executeAsModal(
+    async () => {
+      await batchPlay([{ _obj: "select", _target: [{ _ref: "document", _id: id }] }], {});
+    },
+    { commandName: "MCP: documento alvo" }
+  );
+}
+
+async function enterDocument(actionName, params) {
+  const state = { prevId: null, targetId: null, targetName: null };
+  const n = app.documents.length;
+  if (n === 0) return state;
+  state.prevId = app.activeDocument ? app.activeDocument.id : null;
+  let target = null;
+  if (params.documentName) {
+    target = findDocument(params.documentName);
+  } else if (n > 1) {
+    if (/^ps\.raw\.execute/.test(actionName)) {
+      // raw scripts (UXP or ExtendScript): refused only when the code relies on the document in front
+      const code = String(params.code || "");
+      if (/activeDocument/.test(code) && !/getByName\s*\(|documents\s*\[|documents\.find\s*\(/.test(code)) {
+        throw docError(
+          "DOCUMENT_REQUIRED",
+          `${n} documents are open and the script uses app.activeDocument. Pass documentName or take the document by name. Open: ${openDocNames()}`
+        );
+      }
+    } else if (needsDocument(actionName, params)) {
+      throw docError("DOCUMENT_REQUIRED", `${n} documents are open: say which one with documentName (the person may be working in another). Open: ${openDocNames()}`);
+    }
+  } else if (needsDocument(actionName, params)) {
+    target = app.activeDocument;
+  }
+  if (target) {
+    state.targetId = target.id;
+    state.targetName = target.name;
+    if (params.documentName) params.documentName = target.name; // exact name for handlers that look it up
+    // a batch whose steps name other documents goes to the ExtendScript batch, which targets each step
+    if (actionName === "ps.batch" && Array.isArray(params.operations)) {
+      for (const op of params.operations) {
+        if (!op) continue;
+        op.params = op.params || {};
+        if (!op.params.documentName) op.params.documentName = target.name;
+      }
+    }
+    await bringDocumentToFront(target.id);
+  }
+  return state;
+}
+
+async function leaveDocument(state) {
+  if (!state || !state.prevId) return;
+  try {
+    if (app.activeDocument && app.activeDocument.id === state.prevId) return;
+    if (!app.documents.some((d) => d.id === state.prevId)) return;
+    await bringDocumentToFront(state.prevId);
+  } catch (_e) {
+    // the command's result matters more than the focus
+  }
+}
+
 async function dispatchPhotoshopCommand(actionName, params, options) {
   const undoLabel = (options && options.undoGroup) || `MCP: ${actionName}`;
 
@@ -680,6 +796,10 @@ async function dispatchPhotoshopCommand(actionName, params, options) {
       if (op.action === "ps.batch") throw new Error(`Batch operation ${i} is itself a batch; nesting is not allowed.`);
       if (!UXP_BATCHABLE_ACTIONS.has(op.action)) {
         throw unsupported(`Batch operation ${i} (${op.action}) is not implemented by the Photoshop UXP bridge.`);
+      }
+      const opDoc = op.params && op.params.documentName;
+      if (opDoc && app.activeDocument && findDocument(opDoc).id !== app.activeDocument.id) {
+        throw unsupported(`Batch operation ${i} works on another document: the ExtendScript batch targets each step.`);
       }
     });
     const stopOnError = params.stopOnError !== false;
@@ -1041,6 +1161,7 @@ async function dispatchPhotoshopCommand(actionName, params, options) {
   }
 
   if (actionName === "ps.selection.operate") {
+    if (params.operation === "maskFromBackground" || params.artboard) throw unsupported("maskFromBackground runs in ExtendScript.");
     return await runModalWithHistory(undoLabel, async () => {
       requireDoc();
       const op = params.operation;
@@ -1124,6 +1245,8 @@ async function dispatchPhotoshopCommand(actionName, params, options) {
   }
 
   if (actionName === "ps.effects.apply") {
+    // Layer in a given artboard (same names in several artboards) and "clear" live in the ExtendScript handler.
+    if (params.artboard || params.type === "clear") throw unsupported("ps.effects.apply with artboard/clear runs in ExtendScript.");
     return await runModalWithHistory(undoLabel, async () => {
       const doc = requireDoc();
       const s = params.settings || {};
@@ -1486,7 +1609,7 @@ function connect() {
         app: "photoshop",
         bridgeType: "uxp",
         appVersion: app.version || "unknown",
-        pluginVersion: "1.4.19",
+        pluginVersion: "1.4.23",
         capabilities: ["dom", "batchPlay", "executeUxp", "snapshot", "extendscriptHybrid"]
       })
     );
@@ -1508,12 +1631,21 @@ function connect() {
     let reply;
     try {
       let data;
+      const params = msg.params || {};
+      const docState = await enterDocument(msg.action, params);
       try {
-        data = await dispatchPhotoshopCommand(msg.action, msg.params || {}, msg.options || {});
-      } catch (errUxp) {
-        if (!errUxp || errUxp.code !== "ACTION_NOT_SUPPORTED") throw errUxp;
-        log(`ExtendScript (hybrid): ${msg.action}`);
-        data = await runExtendScriptHybrid(msg.action, msg.params || {}, msg.options || {});
+        try {
+          data = await dispatchPhotoshopCommand(msg.action, params, msg.options || {});
+        } catch (errUxp) {
+          if (!errUxp || errUxp.code !== "ACTION_NOT_SUPPORTED") throw errUxp;
+          log(`ExtendScript (hybrid): ${msg.action}`);
+          data = await runExtendScriptHybrid(msg.action, params, msg.options || {});
+        }
+      } finally {
+        await leaveDocument(docState);
+      }
+      if (docState.targetName && data && typeof data === "object" && !Array.isArray(data) && data.targetDocument === undefined) {
+        data.targetDocument = docState.targetName;
       }
       reply = { ok: true, data };
       if (data && typeof data.previewBase64 === "string") {

@@ -40,6 +40,16 @@ os prompts da série. Mude só sujeito/ação. Referência de rosto/produto apro
 
 ## 4. Para usar no Adobe
 
+- **Arte que vai ser montada no Photoshop** (post com recorte, texto atrás, luz atrás): gere **cada
+  elemento separado** e prepare-o para a montagem (regras testadas em 25/11/2026):
+  - cenário **mais aberto do que o formato** (parede inteira, 16:9) e **nítido** ("everything in sharp focus,
+    no blur"): o desfoque e o enquadramento de cada formato são feitos no Photoshop;
+  - mesma câmera do sujeito (sujeito de frente → parede de frente, sem canto da sala em ângulo);
+  - sujeito em **fundo liso da cor dominante do cenário** (laranja para cenário laranja): o recorte fica
+    limpo e as arestas não clareiam;
+  - luz (onda, brilho, fumaça) **sobre fundo preto sólido**, para modo Tela;
+  - objetos 3D/ícones **nítidos, sem desfoque de movimento nem sombra no chão**, fundo liso;
+  - nunca texto, logo nem preço na imagem.
 - Peça a resolução da peça final ou maior (feed 2160×2700 para recorte), sRGB.
 - Reimporte e iguale à campanha: `ps_place_file` → `ps_adjustment_layer` (curves, colorLookup)
   → grão (`ps_apply_filter` applyAddNoise 1–3 %). Ver `pipeline-ia-externa`.

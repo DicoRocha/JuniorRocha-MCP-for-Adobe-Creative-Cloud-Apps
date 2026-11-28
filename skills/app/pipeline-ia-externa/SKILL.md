@@ -15,10 +15,15 @@ apps (feitos pela pessoa no app). Prompts: `prompt-roteamento-modelos`, `prompt-
 2. Prompt com a filosofia visual (`craft-filosofia-visual`) e referências (folha de personagem
    ou produto de `prompt-asset-sheets`); proporção e resolução finais desde o início.
 3. Gere 3–4 opções por pedido; produto, logo e texto **reais** entram na pós (não peça ao gerador).
+4. **Assets para montagem (25/11/2026):** um elemento por imagem; cenário **mais aberto que o formato e
+   nítido** (o desfoque é feito no Photoshop); sujeito em **fundo liso da cor dominante do cenário**; luz sobre
+   fundo preto; objetos sem desfoque nem sombra embutidos. Detalhes em `craft-desconstrucao-referencia`.
 
 ## 2. Receber e registrar
 
 - Pasta `01_assets/ia/<ferramenta>/` com nome `projeto_asset_v01.ext`.
+- O gerador só devolve um link? `media_download_url { url, filePath }` baixa direto para a pasta, pelo MCP
+  (que roda no computador da pessoa e alcança o link mesmo quando o chat não alcança).
 - Ao lado, `<nome>.txt` com ferramenta, modelo, data, prompt, seed e referências usadas.
 - Licença/termos da ferramenta permitem uso comercial? Pessoa real reconhecível ou marca de
   terceiro = não usar.

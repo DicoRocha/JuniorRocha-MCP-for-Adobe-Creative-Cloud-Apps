@@ -33,12 +33,12 @@ Documents, layers, masks, smart objects, adjustments, artboards, recipes and aud
 | [`ps_smart_object`](#ps_smart_object) | Smart Object operations on a layer: convert to Smart Object, open its contents, replace or relink its contents with a file (mockups), convert back to layers, or rasterize. |
 | [`ps_menu_command`](#ps_menu_command) | Run any Photoshop menu command by its numeric command ID (record the ID with Alchemist or Record Action Commands, where it appears as 'select menuItemClass'). |
 | [`ps_batch_variants`](#ps_batch_variants) | Ads and posts from a spreadsheet: in an open template PSD, layers are named after the data columns — text layers get the text, Smart Objects get the file in the cell (photo,… |
-| [`ps_artboards`](#ps_artboards) | Artboards: list them (name, rect, background), create several at once (name, width, height, optional x/y — placed side by side by default — and backgroundColor), or export each… |
+| [`ps_artboards`](#ps_artboards) | Artboards: list them (name, rect, background), duplicate one into another format (source → newName, width, height: the copy keeps every group and Smart Object, names without '… |
 | [`ps_export_web`](#ps_export_web) | Export the document for web and social: JPG, PNG or WebP, converted to sRGB 8-bit, metadata stripped, resized to fit maxWidth/maxHeight or by scale, with a file-size budget… |
 | [`ps_recipe_social_set`](#ps_recipe_social_set) | Recipe: key art → every social format in one call. |
 | [`ps_audit_document`](#ps_audit_document) | Check a Photoshop piece before delivery: canvas vs format, RGB/sRGB/8-bit, text outside the format's safe zone (story bars, reels buttons, thumbnail duration badge), text… |
 | [`ps_list_fonts`](#ps_list_fonts) | List installed fonts with the PostScript names Photoshop text tools expect (search by family, style or name, e.g. |
-| [`ps_place_file`](#ps_place_file) | Place an image, PDF, AI or PSD file as a Smart Object layer (embedded, or linked), optionally fitted into a box (x/y = top-left in px; fit contain/cover/width/height) and renamed. |
+| [`ps_place_file`](#ps_place_file) | Place an image, PDF, AI or PSD file as a Smart Object layer (embedded, or linked), optionally fitted into a box (x/y = top-left in px; fit contain/cover/width/height) and… |
 | [`ps_list_actions`](#ps_list_actions) | List every Action set and Action loaded in Photoshop's Actions panel (including the user's own .atn sets). |
 | [`ps_play_action`](#ps_play_action) | Play an Action from the Actions panel by set and action name (as listed by ps_list_actions). |
 | [`ps_batch_play`](#ps_batch_play) | Photoshop escape hatch: run raw actionJSON descriptors (batchPlay format). |
@@ -47,11 +47,19 @@ Documents, layers, masks, smart objects, adjustments, artboards, recipes and aud
 | [`ps_recolor_object`](#ps_recolor_object) | Recolour an object that already has colour (shirt, product, wall) the controllable way: one masked group with three separate adjustments — hue (solid fill in Hue blend mode),… |
 | [`ps_blend_if`](#ps_blend_if) | Blend If (Layer Style > Blending Options) on a layer: split the underlying-layer black/white sliders so shadows and texture of what is below show through — e.g. |
 | [`ps_center_text_in_shape`](#ps_center_text_in_shape) | Centres a text layer inside a shape layer (button, pill, tag, card) by the CAP HEIGHT of the text, which is how the eye reads it: the ink box of a line with descenders or… |
+| [`ps_recipe_motion_trail`](#ps_recipe_motion_trail) | Speed on an object (icon, product, ball): turns the layer into a Smart Object, puts a motion-blurred copy behind it shifted back along the movement (the trail) and a light… |
+| [`ps_recipe_price_tag`](#ps_recipe_price_tag) | A price set as one phrase ("PLANOS A PARTIR DE R$ 59,90/mês"): creates the text layers in the shape's artboard, puts the currency, cents and period at the same distance from… |
 | [`ps_place_logo`](#ps_place_logo) | Places the brand logo (PNG/SVG/AI/PSD file from the kit) as a Smart Object in a corner of the document or of one artboard, sized as a fraction of the width and kept away from… |
 | [`ps_create_shape`](#ps_create_shape) | Live shape layer: rounded rectangle (buttons, badges, cards), rectangle or ellipse, with an editable fill colour. |
 | [`ps_recipe_remove_background`](#ps_recipe_remove_background) | Recipe: cut out the subject of a photo in one call. |
 | [`ps_recipe_pop_out`](#ps_recipe_pop_out) | Recipe: 'out of bounds' / pop-out portrait in one call (also asked for as: person coming out of a circle, breaking the frame, 3D pop-out). |
 | [`ps_recipe_product_shot`](#ps_recipe_product_shot) | Recipe: product photo → finished product shot in one call. |
+| [`ps_create_path_shape`](#ps_create_path_shape) | One shape layer made of several components combined with Photoshop's shape modes (Combine Shapes = add, Subtract Front Shape = subtract, Intersect, Exclude), like drawing with… |
+| [`ps_recipe_callout`](#ps_recipe_callout) | Callout line from a tag/label to a point on the subject, like the Pen tool in Shape mode: an angled run then a straight run (give the points), stroke only (2 px), and a double… |
+| [`ps_group_layers`](#ps_group_layers) | Group the named layers into a new group where they are (inside their artboard or group), e.g. |
+| [`ps_recipe_gradient_background`](#ps_recipe_gradient_background) | Background of an artboard as a rectangle of the artboard's size + Gradient Overlay (radial by default). |
+| [`ps_recipe_vignette`](#ps_recipe_vignette) | Vignette that values the subject: selects what keeps its tone (an ellipse, or the subject expanded), inverts, adds an adjustment layer on the rest (Hue/Saturation lightness by… |
+| [`ps_recipe_background_blur_clean`](#ps_recipe_background_blur_clean) | Blur a photo's background without a halo around the people: selects the subject on the scene layer, expands it (~10 px), removes the people from a copy with Content-Aware Fill… |
 
 ## `ps_list_documents`
 
@@ -89,7 +97,7 @@ Save or export the active Adobe Photoshop document (.psd, .png, .jpg).
 | `filePath` | string |  | Destination file path. Omit to save in-place. |
 | `format` | `psd` · `png` · `jpg` |  |  Default: `"psd"`. |
 | `quality` | number |  | JPEG quality (1-12). Default: `10`. |
-| `documentName` | string |  | Open document to act on (brought to the front first). Default: the active document. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ps_modify_canvas`
 
@@ -102,7 +110,7 @@ Crop, resize image, resize canvas, rotate, trim transparent pixels, or flatten t
 | `height` | number |  | Target height in pixels (for resizeImage / resizeCanvas). |
 | `bounds` | object |  | Crop rectangle in pixels. |
 | `angle` | number |  | Rotation angle in degrees. |
-| `documentName` | string |  | Open document to act on (brought to the front first). Default: the active document. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ps_get_canvas_snapshot`
 
@@ -113,7 +121,7 @@ Multimodal Visual Feedback: Render the active Photoshop document (downscaled to 
 | `outputPath` | string |  | Optional file path to save the PNG snapshot. |
 | `maxDimension` | integer |  | Max width/height for preview scaling. Default: `1024`. |
 | `includeImageContent` | boolean |  | Return inline base64 image in MCP response. Default: `true`. |
-| `documentName` | string |  | Open document to act on (brought to the front first). Default: the active document. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ps_get_layer_tree`
 
@@ -122,7 +130,7 @@ Retrieve the complete hierarchy of layers and groups in the active Photoshop doc
 | Parameter | Type | Required | Description |
 |---|---|:---:|---|
 | `maxDepth` | integer |  |  Default: `5`. |
-| `documentName` | string |  | Open document to act on (brought to the front first). Default: the active document. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ps_luminosity_masks`
 
@@ -242,7 +250,7 @@ Create a new pixel layer, group (folder), solid color fill layer, or text layer 
 | `color` | string or object |  | RGB color as hex string ('#RRGGBB') or { r, g, b } object (0-255). |
 | `opacity` | number |  |  Default: `100`. |
 | `blendMode` | string |  |  Default: `"normal"`. |
-| `documentName` | string |  | Open document to act on (brought to the front first). Default: the active document. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ps_edit_text_layer`
 
@@ -259,7 +267,7 @@ Modify text contents, font, size, color, tracking, leading, or alignment on an e
 | `tracking` | number |  |  |
 | `leading` | number |  |  |
 | `alignment` | `left` · `center` · `right` · `justify` |  |  |
-| `documentName` | string |  | Open document to act on (brought to the front first). Default: the active document. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ps_transform_and_manage_layer`
 
@@ -279,24 +287,27 @@ Transform (translate, scale, rotate, flip) or manage (rename, duplicate, delete,
 | `scaleX` | number |  | Horizontal scale percentage (e.g. 150 for 150%). |
 | `scaleY` | number |  | Vertical scale percentage. |
 | `angle` | number |  | Rotation angle in degrees. |
-| `documentName` | string |  | Open document to act on (brought to the front first). Default: the active document. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ps_selection_and_masks`
 
-Create or modify pixel selections (rectangle, ellipse, polygon, selectAll, selectSubject, selectSky, invert, clear), remove the background, or add/delete a layer mask from the current selection. 'feather' applies to rectangle, ellipse and polygon. Refine the current selection with expand, contract, smooth, feather, border (amount in px), grow, similar (tolerance) or colorRange (highlights, midtones, shadows, a colour family, skin tones); keep it with saveSelection and bring it back with loadSelection.
+Create or modify pixel selections (rectangle, ellipse, polygon, selectAll, selectSubject, selectSky, invert, clear), remove the background, or add/delete a layer mask from the current selection. maskFromBackground: subject + ground that runs off the edges (robot on a rock, person on a sofa) on a plain generated background, where Select Subject keeps only the person: magic wand on the background at `points` (tolerance, default 42), invert, layer mask. 'feather' applies to rectangle, ellipse and polygon. Refine the current selection with expand, contract, smooth, feather, border (amount in px), grow, similar (tolerance) or colorRange (highlights, midtones, shadows, a colour family, skin tones); keep it with saveSelection and bring it back with loadSelection.
 
 | Parameter | Type | Required | Description |
 |---|---|:---:|---|
-| `operation` | `rectangle` · `ellipse` · `polygon` · `selectAll` · `clear` · `invert` · `selectSubject` · `selectSky` · `removeBackground` · `addMaskFromSelection` · `deleteMask` · `expand` · `contract` · `smooth` · `feather` · `border` · `grow` · `similar` · `colorRange` · `saveSelection` · `loadSelection` | yes |  |
+| `operation` | `rectangle` · `ellipse` · `polygon` · `selectAll` · `clear` · `invert` · `selectSubject` · `selectSky` · `removeBackground` · `addMaskFromSelection` · `deleteMask` · `expand` · `contract` · `smooth` · `feather` · `border` · `grow` · `similar` · `colorRange` · `saveSelection` · `loadSelection` · `maskFromBackground` | yes |  |
 | `amount` | number |  | expand / contract / smooth / feather / border: pixels. |
 | `tolerance` | number |  | grow / similar: tolerance (default 32). |
 | `range` | `highlights` · `midtones` · `shadows` · `reds` · `yellows` · `greens` · `cyans` · `blues` · `magentas` · `skinTones` |  | colorRange: what to select. |
 | `name` | string |  | saveSelection / loadSelection: name of the saved selection (an alpha channel). |
 | `invert` | boolean |  | loadSelection: load it inverted. |
 | `bounds` | object |  |  |
-| `points` | number[][] |  | Polygon vertices [[x,y], ...]. |
+| `points` | number[][] |  | Polygon vertices [[x,y], ...]. maskFromBackground: points ON the plain background (document px), several around the subject. |
+| `layerName` | string |  | maskFromBackground: layer that gets the mask (default the active one). |
+| `layerId` | integer |  |  |
+| `artboard` | string |  | Look for layerName only inside this artboard. |
 | `feather` | number |  |  Default: `0`. |
-| `documentName` | string |  | Open document to act on (brought to the front first). Default: the active document. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ps_effects_and_adjustments`
 
@@ -305,12 +316,13 @@ Apply a built-in filter (gaussianBlur, motionBlur, highPass, addNoise, unsharpMa
 | Parameter | Type | Required | Description |
 |---|---|:---:|---|
 | `category` | `filter` · `layerStyle` · `adjustmentLayer` | yes |  |
-| `type` | string | yes | filter: gaussianBlur \| motionBlur \| highPass \| addNoise \| unsharpMask. layerStyle: dropShadow \| innerShadow \| stroke \| outerGlow \| innerGlow \| bevelEmboss \| satin \| colorOverlay \| gradientOverlay. adjustmentLayer: brightnessContrast \| hueSaturation \| vibrance \| levels \| curves \| colorBalance \| blackAndWhite. |
+| `type` | string | yes | filter: gaussianBlur \| motionBlur \| highPass \| addNoise \| unsharpMask. layerStyle: dropShadow \| innerShadow \| stroke \| outerGlow \| innerGlow \| bevelEmboss \| satin \| colorOverlay \| gradientOverlay \| clear (Clear Layer Style, keeps the blend mode and fill opacity). adjustmentLayer: brightnessContrast \| hueSaturation \| vibrance \| levels \| curves \| colorBalance \| blackAndWhite. |
 | `layerId` | integer |  |  |
 | `layerName` | string |  | Target layer or group (folder) name. A layer style on a group affects everything inside it. |
+| `artboard` | string |  | Look for layerName only inside this artboard (a PSD with one artboard per format repeats the names; without it the first match wins). |
 | `replaceExisting` | boolean |  | layerStyle: by default the style is added to the ones already on the layer (call once per style to stack several). true removes the other styles first. |
 | `settings` | object |  | Parameters. gaussianBlur/highPass {radius}; motionBlur {angle,distance}; addNoise {amount,distribution:'gaussian'\|'uniform',monochromatic}; unsharpMask {amount,radius,threshold}; dropShadow {color,opacity,angle,distance,spread,size,blendMode}; stroke {color,size,position:'outside'\|'inside'\|'center',opacity}; outerGlow {color,opacity,spread,size}; colorOverlay {color,opacity,blendMode}; gradientOverlay {from,to,fromOpacity,toOpacity,angle,style:'linear'\|'radial',scale,reverse,opacity,blendMode}; brightnessContrast {brightness,contrast}; hueSaturation {hue,saturation,lightness,colorize}; vibrance {vibrance,saturation}; colorBalance {shadows,midtones,highlights: [cyanRed,magentaGreen,yellowBlue]}; blackAndWhite {red,yellow,green,cyan,blue,magenta}. Default: `{}`. |
-| `documentName` | string |  | Open document to act on (brought to the front first). Default: the active document. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ps_apply_filter`
 
@@ -322,7 +334,7 @@ Apply any of the Photoshop DOM filters to a layer (works on the UXP panel and on
 | `layerName` | string |  |  |
 | `filter` | `applyAddNoise` · `applyAverage` · `applyBlur` · `applyBlurMore` · `applyClouds` · `applyCustomFilter` · `applyDeInterlace` · `applyDespeckle` · `applyDifferenceClouds` · `applyDiffuseGlow` · `applyDisplace` · `applyDustAndScratches` · `applyGaussianBlur` · `applyGlassEffect` · `applyHighPass` · `applyLensBlur` · `applyLensFlare` · `applyMaximum` · `applyMedianNoise` · `applyMinimum` · `applyMotionBlur` · `applyNTSC` · `applyOceanRipple` · `applyOffset` · `applyPinch` · `applyPolarCoordinates` · `applyRipple` · `applySharpen` · `applySharpenEdges` · `applySharpenMore` · `applyShear` · `applySmartBlur` · `applySpherize` · `applyTwirl` · `applyUnSharpMask` · `applyWave` · `applyZigZag` | yes | Layer method name. |
 | `args` | any[] |  | Arguments in method order. Default: `[]`. |
-| `documentName` | string |  | Open document to act on (brought to the front first). Default: the active document. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ps_adjustment_layer`
 
@@ -338,7 +350,7 @@ Create any non-destructive adjustment layer: brightnessContrast, levels, curves,
 | `clipToBelow` | boolean |  | Clip to the layer below (affects only that layer). Default: `false`. |
 | `opacity` | number |  |  |
 | `blendMode` | string |  | actionJSON blend mode, e.g. normal, multiply, screen, overlay, softLight, luminosity. |
-| `documentName` | string |  | Open document to act on (brought to the front first). Default: the active document. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ps_guides`
 
@@ -376,7 +388,7 @@ Smart Object operations on a layer: convert to Smart Object, open its contents, 
 | `layerId` | integer |  |  |
 | `layerName` | string |  |  |
 | `filePath` | string |  | Absolute path for replaceContents / relink. |
-| `documentName` | string |  | Open document to act on (brought to the front first). Default: the active document. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ps_menu_command`
 
@@ -385,7 +397,7 @@ Run any Photoshop menu command by its numeric command ID (record the ID with Alc
 | Parameter | Type | Required | Description |
 |---|---|:---:|---|
 | `commandId` | integer | yes |  |
-| `documentName` | string |  | Open document to act on (brought to the front first). Default: the active document. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ps_batch_variants`
 
@@ -405,14 +417,20 @@ Ads and posts from a spreadsheet: in an open template PSD, layers are named afte
 
 ## `ps_artboards`
 
-Artboards: list them (name, rect, background), create several at once (name, width, height, optional x/y — placed side by side by default — and backgroundColor), or export each one to its own file named after the artboard (png/jpg/webp, scale for @2x, sRGB, maxKB) — one PSD with feed 4:5, story 9:16 and square delivered in one call. Exports work on duplicates; the document is not changed.
+Artboards: list them (name, rect, background), duplicate one into another format (source → newName, width, height: the copy keeps every group and Smart Object, names without ' copy'; reframe the layers after), create several at once (name, width, height, optional x/y — placed side by side by default — and backgroundColor), or export each one to its own file named after the artboard (png/jpg/webp, scale for @2x, sRGB, maxKB) — one PSD with feed 4:5, story 9:16 and square delivered in one call. Exports work on duplicates; the document is not changed.
 
 | Parameter | Type | Required | Description |
 |---|---|:---:|---|
 | `documentName` | string |  |  |
-| `operation` | `list` · `create` · `export` · `quickExport` |  | quickExport = File > Export > Quick Export as PNG (one file per artboard, named after it) — preferred for a PSD with artboards; export = per-artboard crop with naming pattern, formats and size budget. Default: `"list"`. |
+| `operation` | `list` · `create` · `duplicate` · `export` · `quickExport` |  | quickExport = File > Export > Quick Export as PNG (one file per artboard, named after it) — preferred for a PSD with artboards; export = per-artboard crop with naming pattern, formats and size budget. Default: `"list"`. |
 | `artboards` | object[] |  | create: artboards in pixels. |
-| `gap` | number |  | create: space between artboards placed automatically (default 100 px). |
+| `gap` | number |  | create/duplicate: space between artboards placed automatically (default 100 px). |
+| `source` | string |  | duplicate: artboard to copy (another format of the same art: groups and Smart Objects come along). |
+| `newName` | string |  | duplicate: name of the copy, e.g. 'Story 9x16 1080x1920'. |
+| `width` | number |  | duplicate: new width (default the source's). |
+| `height` | number |  | duplicate: new height. |
+| `x` | number |  | duplicate: left of the copy (default: right of the last artboard + gap). |
+| `y` | number |  | duplicate: top of the copy (default: the source's). |
 | `names` | string[] |  | export: only these artboards (default all). |
 | `outputFolder` | string |  |  |
 | `fileNamePattern` | string |  | export: {{name}} artboard, {{#}} order, {{document}}. Default '{{name}}'. |
@@ -485,7 +503,7 @@ List installed fonts with the PostScript names Photoshop text tools expect (sear
 
 ## `ps_place_file`
 
-Place an image, PDF, AI or PSD file as a Smart Object layer (embedded, or linked), optionally fitted into a box (x/y = top-left in px; fit contain/cover/width/height) and renamed. Bounds are those of the visible pixels. Swap its contents later with ps_smart_object replaceContents.
+Place an image, PDF, AI or PSD file as a Smart Object layer (embedded, or linked), optionally fitted into a box (x/y = top-left in px; fit contain/cover/width/height) and renamed, inside a group or artboard (into), optionally cut out (cutout: Select Subject as a mask). Bounds are those of the visible pixels. Swap its contents later with ps_smart_object replaceContents.
 
 | Parameter | Type | Required | Description |
 |---|---|:---:|---|
@@ -497,7 +515,9 @@ Place an image, PDF, AI or PSD file as a Smart Object layer (embedded, or linked
 | `height` | number |  |  |
 | `fit` | `contain` · `cover` · `width` · `height` · `none` |  |  |
 | `linked` | boolean |  |  Default: `false`. |
-| `documentName` | string |  | Open document to act on (brought to the front first). Default: the active document. |
+| `into` | string |  | Group or artboard that receives the layer (on top of it). |
+| `cutout` | boolean or `selectSubject` · `removeBackground` |  | Cut the subject out as a layer mask right after placing (true = Select Subject, no generative credits). Best with an asset generated on a plain background in the scene's main colour. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ps_list_actions`
 
@@ -513,7 +533,7 @@ Play an Action from the Actions panel by set and action name (as listed by ps_li
 |---|---|:---:|---|
 | `setName` | string | yes |  |
 | `actionName` | string | yes |  |
-| `documentName` | string |  | Open document to act on (brought to the front first). Default: the active document. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ps_batch_play`
 
@@ -524,7 +544,7 @@ Photoshop escape hatch: run raw actionJSON descriptors (batchPlay format). Reach
 | `descriptors` | object[] | yes | Array of batchPlay ActionDescriptor objects (each having _obj, _target, etc.). |
 | `options` | object |  |  Default: `{"synchronousExecution":false}`. |
 | `commandName` | string |  |  Default: `"MCP BatchPlay"`. |
-| `documentName` | string |  | Open document to act on (brought to the front first). Default: the active document. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ps_execute_uxp_script`
 
@@ -534,6 +554,7 @@ Photoshop UXP escape hatch: execute arbitrary async JavaScript inside Photoshop'
 |---|---|:---:|---|
 | `code` | string | yes | JavaScript async body to execute. You can use `app`, `core`, `action`, `uxp`, and `return` any JSON-serializable value. |
 | `commandName` | string |  |  Default: `"MCP UXP Script"`. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ps_execute_extendscript`
 
@@ -542,6 +563,7 @@ Photoshop ExtendScript escape hatch: execute arbitrary .jsx (ES3) code in Photos
 | Parameter | Type | Required | Description |
 |---|---|:---:|---|
 | `code` | string | yes | ExtendScript (ES3) code to evaluate in Photoshop. The last evaluated expression is returned. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `ps_recolor_object`
 
@@ -573,7 +595,7 @@ Blend If (Layer Style > Blending Options) on a layer: split the underlying-layer
 
 ## `ps_center_text_in_shape`
 
-Centres a text layer inside a shape layer (button, pill, tag, card) by the CAP HEIGHT of the text, which is how the eye reads it: the ink box of a line with descenders or accents sits off-centre. Multi-line point text is centred from the first cap top to the last baseline; paragraph text falls back to the ink box. Returns the space left on each side; offsetY nudges it optically.
+Centres a text layer inside a shape layer (button, pill, tag, card) by the CAP HEIGHT of the text, which is how the eye reads it: the ink box of a line with descenders or accents sits off-centre. Multi-line point text is centred from the first cap top to the last baseline; paragraph text falls back to the ink box. Returns the space left on each side; offsetY nudges it optically. With layerNames it centres a set of layers on both axes (block of lines, price phrase).
 
 | Parameter | Type | Required | Description |
 |---|---|:---:|---|
@@ -587,6 +609,40 @@ Centres a text layer inside a shape layer (button, pill, tag, card) by the CAP H
 | `vertical` | boolean |  |  Default: `true`. |
 | `offsetX` | number |  | Extra px to the right (optical adjustment). |
 | `offsetY` | number |  | Extra px downwards (optical adjustment). |
+| `layerNames` | string[] |  | Centre a SET as one (a text block of several layers, a price, icon + text): the box around their ink goes to the centre of the shape, measured without effects; the layers keep their positions relative to each other. |
+
+## `ps_recipe_motion_trail`
+
+Speed on an object (icon, product, ball): turns the layer into a Smart Object, puts a motion-blurred copy behind it shifted back along the movement (the trail) and a light motion blur on the object itself. The source asset should be sharp (no blur baked in by the image generator): the blur is done here, editable as Smart Filters.
+
+| Parameter | Type | Required | Description |
+|---|---|:---:|---|
+| `documentName` | string |  |  |
+| `layerName` | string | yes |  |
+| `angle` | number |  | Direction of the movement in degrees (0 = horizontal). Default: `0`. |
+| `distance` | number |  | Trail blur distance, px. Default: `90`. |
+| `offset` | number |  | Trail shift in px along the angle (negative = the other side). Default: `30`. |
+| `trailOpacity` | number |  |  Default: `85`. |
+| `selfBlur` | number |  | Light blur on the object itself (0 = sharp). Default: `12`. |
+
+## `ps_recipe_price_tag`
+
+A price set as one phrase ("PLANOS A PARTIR DE R$ 59,90/mês"): creates the text layers in the shape's artboard, puts the currency, cents and period at the same distance from the value as the gap between its own digits (cents on top, period on the baseline), the label a line gap above, and centres the set in the shape (measured without its shadow).
+
+| Parameter | Type | Required | Description |
+|---|---|:---:|---|
+| `documentName` | string |  |  |
+| `shapeLayerName` | string | yes | Card/shape that holds the price. |
+| `value` | string | yes | Main number, e.g. '59'. |
+| `currency` | string |  |  Default: `"R$"`. |
+| `cents` | string |  | e.g. ',90'. |
+| `period` | string |  | e.g. '/mês'. |
+| `label` | string |  | e.g. 'PLANOS A PARTIR DE'. |
+| `valueSize` | number |  | px. Default: `120`. |
+| `fonts` | object |  | PostScript names (default Poppins ExtraBold/SemiBold/Bold/Medium). |
+| `accentColor` | string |  |  Default: `"#F26A1B"`. |
+| `mutedColor` | string |  |  Default: `"#6B6B6B"`. |
+| `namePrefix` | string |  |  Default: `"Preco"`. |
 
 ## `ps_place_logo`
 
@@ -696,3 +752,108 @@ Recipe: product photo → finished product shot in one call. Cuts the product ou
 | `exportFormat` | `png` · `jpg` · `webp` |  |  Default: `"png"`. |
 | `quality` | integer |  |  |
 | `psdPath` | string |  | Also save the layered result as a PSD copy. |
+
+## `ps_create_path_shape`
+
+One shape layer made of several components combined with Photoshop's shape modes (Combine Shapes = add, Subtract Front Shape = subtract, Intersect, Exclude), like drawing with the shape tools in those modes: an abstract 'window' of rounded rectangles joined and cut, a speech bubble (rounded rect + tail), a frame with a hole. Also open paths (polyline) for lines with a stroke and no fill. polygon: the outline as points with a radius per vertex, so EVERY corner is rounded (adding/subtracting rounded rectangles leaves pointed corners where the shapes meet). The components stay live. Clip a photo to it for a window.
+
+| Parameter | Type | Required | Description |
+|---|---|:---:|---|
+| `documentName` | string |  |  |
+| `items` | object[] | yes | Components in order (document px, top-left origin). |
+| `fill` | string or null |  | null = no fill (outline or line only). Default: `"#FFFFFF"`. |
+| `stroke` | object |  |  |
+| `name` | string |  |  |
+| `aboveLayer` | string |  | Create right above this layer (puts it in that layer's group/artboard). |
+| `artboard` | string |  | Look for aboveLayer only inside this artboard. |
+| `opacity` | number |  |  |
+| `fillOpacity` | number |  |  |
+| `blendMode` | string |  |  |
+
+## `ps_recipe_callout`
+
+Callout line from a tag/label to a point on the subject, like the Pen tool in Shape mode: an angled run then a straight run (give the points), stroke only (2 px), and a double dot at one end (ring 18 px with a 1 px stroke at 90 % + filled dot 10 px). groupWith puts the line, the dots and the tag layers in one group (one group per tag inside the tags group).
+
+| Parameter | Type | Required | Description |
+|---|---|:---:|---|
+| `documentName` | string |  |  |
+| `points` | number[][] | yes | [[x,y], ...] in document px, e.g. tag edge → elbow → point on the subject. |
+| `dotAt` | `start` · `end` |  |  Default: `"end"`. |
+| `name` | string | yes | Base name: 'Linha <name>', 'Ponto <name>', 'Ponto <name> anel'. |
+| `color` | string |  |  Default: `"#FFFFFF"`. |
+| `lineWidth` | number |  |  Default: `2`. |
+| `ringDiameter` | number |  |  Default: `18`. |
+| `dotDiameter` | number |  |  Default: `10`. |
+| `aboveLayer` | string |  |  |
+| `artboard` | string |  |  |
+| `groupWith` | string[] |  | Tag layers (glass, circle, icon, text) to group with the line and the dots. |
+| `groupName` | string |  |  |
+
+## `ps_group_layers`
+
+Group the named layers into a new group where they are (inside their artboard or group), e.g. one group per tag with its line and dots inside the 'Tags' group. Same names in several artboards: pass artboard.
+
+| Parameter | Type | Required | Description |
+|---|---|:---:|---|
+| `documentName` | string |  |  |
+| `layerNames` | string[] |  |  |
+| `layerIds` | integer[] |  |  |
+| `groupName` | string | yes |  |
+| `artboard` | string |  |  |
+
+## `ps_recipe_gradient_background`
+
+Background of an artboard as a rectangle of the artboard's size + Gradient Overlay (radial by default). Unlike a gradient fill layer it does not shift when the artboard is duplicated to another format. Optional sun: a sharp disc (blur 0-1 px) in the centre colour, visible because the gradient is darker outside it. Measure inside the sun, just outside and in the corners.
+
+| Parameter | Type | Required | Description |
+|---|---|:---:|---|
+| `documentName` | string |  |  |
+| `artboard` | string | yes |  |
+| `stops` | object[] |  | Default red: #D8060A 0 · #B00206 39 · #8A0106 73 · #6A0105 100. |
+| `type` | `radial` · `linear` |  |  Default: `"radial"`. |
+| `angle` | number |  |  Default: `90`. |
+| `scale` | number |  |  Default: `105`. |
+| `offsetX` | number |  | % of the layer. Default: `0`. |
+| `offsetY` | number |  | % of the layer (negative = up). Default: `-12`. |
+| `name` | string |  |  |
+| `sun` | object |  |  |
+
+## `ps_recipe_vignette`
+
+Vignette that values the subject: selects what keeps its tone (an ellipse, or the subject expanded), inverts, adds an adjustment layer on the rest (Hue/Saturation lightness by default, or Curves / Levels) and softens the edge with the mask's Feather (non-destructive; default ~5.5 % of the short side, at least 60 px — 80 px on 1080x1440). It should rarely be noticed; it can be strong as long as the shape cannot be seen. Put it above the background/photo layers and below texts and cards. It darkens the background only: by default a cutout copy of the subject goes right above it.
+
+| Parameter | Type | Required | Description |
+|---|---|:---:|---|
+| `documentName` | string |  |  |
+| `artboard` | string |  |  |
+| `aboveLayer` | string |  | Create right above this layer (e.g. the background photo). |
+| `shape` | `ellipse` · `subject` |  |  Default: `"ellipse"`. |
+| `bounds` | object |  | ellipse: box in document px (default: 76 % x 70 % of the artboard, a bit above the centre). |
+| `subjectLayer` | string |  | shape subject: the photo layer to select the subject from (default aboveLayer). |
+| `expand` | number |  | shape subject: grow the selection so the subject sits inside the light area (default 60). |
+| `adjustment` | `hueSaturation` · `curves` · `levels` |  |  Default: `"hueSaturation"`. |
+| `amount` | number |  | hueSaturation: lightness −amount; curves/levels: how much darker. Default: `42`. |
+| `saturation` | number |  | hueSaturation: also change saturation outside the subject. |
+| `feather` | number |  | Mask feather in px (60+; bigger files need more). |
+| `name` | string |  |  |
+| `protectSubject` | boolean |  | Cutout copy of the subject (from subjectLayer/aboveLayer) right above the vignette, so only the background darkens. false only when a cutout already sits above. Default: `true`. |
+| `subjectName` | string |  | Name of the subject copy (default 'Assunto sobre a vinheta'). |
+
+## `ps_recipe_background_blur_clean`
+
+Blur a photo's background without a halo around the people: selects the subject on the scene layer, expands it (~10 px), removes the people from a copy with Content-Aware Fill (local, no generative credits), turns it into a Smart Object with a Gaussian Blur, and puts the subject cutout from the original on top. The original scene stays hidden below. Never blur a scene that still has the subject in it when a cutout of that subject sits on top: that is what makes the halo. method remove uses Photoshop's Remove tool instead (better fill, may spend generative credits: only with the person's consent; two steps, the person clicks Remove between them).
+
+| Parameter | Type | Required | Description |
+|---|---|:---:|---|
+| `documentName` | string |  |  |
+| `layerName` | string | yes | The scene/photo layer. |
+| `artboard` | string |  |  |
+| `expand` | number |  |  Default: `10`. |
+| `radius` | number |  | Gaussian blur radius, px. Default: `12`. |
+| `subjectName` | string |  |  |
+| `addSubject` | boolean |  | false when the document already has the subject cutout on top (a pop-out copy). Default: `true`. |
+| `method` | `contentAware` · `remove` |  | contentAware: Content-Aware Fill, local and free (default). remove: Photoshop's Remove tool (AI, better fill) — may spend the person's generative credits: ASK FIRST. Default: `"contentAware"`. |
+| `allowGenerativeCredits` | boolean |  | method remove: true only after the person agreed to spend credits. |
+| `step` | `prepare` · `finish` |  | method remove: 'prepare' hides the layers above and selects the subject; the person clicks Remove; 'finish' stamps, blurs and restores. |
+| `hiddenLayerIds` | integer[] |  | method remove, finish: the ids 'prepare' returned. |
+| `editsLayerName` | string |  | method remove, finish: the layer Remove created (default 'Remove tool edits'). |

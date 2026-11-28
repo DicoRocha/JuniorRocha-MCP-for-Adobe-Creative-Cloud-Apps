@@ -86,6 +86,7 @@ formato/canal, prazo de marca (logo, cores, fontes). Sem objetivo ou formato, pe
 | Retrato, foto de equipe | `foto-fundamentos` → `foto-retrato` → `foto-zonas` → `foto-saida` |
 | Foto de produto, e-commerce | `foto-fundamentos` → `foto-produto` → `foto-recorte-e-composicao` → `foto-saida` |
 | Montagem, troca de fundo, texto atrás do sujeito | `foto-fundamentos` → `foto-recorte-e-composicao` |
+| Refazer uma arte a partir de uma referência (IA ou internet), réplica ou variação (beta) | `craft-desconstrucao-referencia` → `foto-recorte-e-composicao` → `social-post` → `craft-organizacao-camadas` → `qa-revisao-visual` |
 | Selo, ícones, logo simples | `vetor-logo-e-selo` → `vetor-pacote-de-marca` |
 | Animação de logo, vinheta | `motion-direcao-de-arte` → `motion-logo-e-vinheta` |
 | Texto animado, legenda animada | `motion-direcao-de-arte` → `motion-tipografia-cinetica` → `motion-legendas-dinamicas` (legenda palavra por palavra, estilos de criador) |

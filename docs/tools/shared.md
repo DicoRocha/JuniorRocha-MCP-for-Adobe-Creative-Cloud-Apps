@@ -9,8 +9,8 @@ Status, code mode, skills, checkpoints, templates and campaigns. They work acros
 | [`jradb_get_status`](#jradb_get_status) | Check installed Adobe apps, running processes, live WebSocket/COM bridges and each app's command queue (command in flight and for how long, queued commands, suspected busy… |
 | [`jradb_launch_app`](#jradb_launch_app) | Launch an installed Adobe Creative Cloud application on the local machine, optionally opening a file with it (.prproj, .aep, .psd, .ai, .indd…) so it does not stop on the start… |
 | [`jradb_inspect_dom`](#jradb_inspect_dom) | API discovery: dynamically inspect any runtime object, property list, and method signatures inside Photoshop, After Effects, Premiere Pro, or Illustrator (e.g. |
-| [`jradb_bridge_transfer`](#jradb_bridge_transfer) | Cross-application pipeline: export the active document of a source app (Illustrator or Photoshop) to exchangeFilePath and import that file into After Effects or Premiere Pro. |
-| [`jradb_checkpoint`](#jradb_checkpoint) | Save a named, timestamped iteration of the active document/project BEFORE a structural change, a long render, a heavy preview or anything that could hang the app. |
+| [`jradb_bridge_transfer`](#jradb_bridge_transfer) | Cross-application pipeline: export a document (documentName; required when several are open) of a source app (Illustrator or Photoshop) to exchangeFilePath and import that file… |
+| [`jradb_checkpoint`](#jradb_checkpoint) | Save a named, timestamped iteration of a document (documentName; required when several are open) or the project BEFORE a structural change, a long render, a heavy preview or… |
 | [`jradb_contact_sheet`](#jradb_contact_sheet) | Contact sheet of delivered pieces: every image (png, jpg, webp, tiff) and video (one frame) in a folder, in name order, laid out in one PNG grid — review a whole campaign,… |
 | [`jradb_usage`](#jradb_usage) | Token accounting of this MCP's tool calls (sizes only, logged per call). |
 | [`jradb_find_skills`](#jradb_find_skills) | Skills first: call this BEFORE any task in the Adobe apps, with the task in plain words (any language). |
@@ -50,7 +50,7 @@ API discovery: dynamically inspect any runtime object, property list, and method
 
 ## `jradb_bridge_transfer`
 
-Cross-application pipeline: export the active document of a source app (Illustrator or Photoshop) to exchangeFilePath and import that file into After Effects or Premiere Pro. Supported: Illustrator -> png; Photoshop -> png or psd. (After Effects and Premiere Pro do not import SVG; for layered Illustrator art save the .ai with ai_manage_document and import it with ae_manage_project.)
+Cross-application pipeline: export a document (documentName; required when several are open) of a source app (Illustrator or Photoshop) to exchangeFilePath and import that file into After Effects or Premiere Pro. Supported: Illustrator -> png; Photoshop -> png or psd. (After Effects and Premiere Pro do not import SVG; for layered Illustrator art save the .ai with ai_manage_document and import it with ae_manage_project.)
 
 | Parameter | Type | Required | Description |
 |---|---|:---:|---|
@@ -59,16 +59,18 @@ Cross-application pipeline: export the active document of a source app (Illustra
 | `exchangeFilePath` | string | yes | Absolute path for the intermediate exported asset (e.g. 'C:/temp/transferred_asset.png'). |
 | `format` | `png` · `psd` · `svg` |  | Intermediate file format. Default: `"png"`. |
 | `importAsComp` | boolean |  | When importing PSD/AI into After Effects, import as layered composition. Default: `false`. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `jradb_checkpoint`
 
-Save a named, timestamped iteration of the active document/project BEFORE a structural change, a long render, a heavy preview or anything that could hang the app. Photoshop: layered PSD copy; InDesign: saveACopy; Illustrator, After Effects, Premiere: save, then copy the file (a never-saved document is saved as the checkpoint, reported as documentPathChanged); Lightroom: a Develop snapshot on the target photos. Default folder: '_checkpoints' next to the original file, or Documents/MCP-checkpoints.
+Save a named, timestamped iteration of a document (documentName; required when several are open) or the project BEFORE a structural change, a long render, a heavy preview or anything that could hang the app. Photoshop: layered PSD copy; InDesign: saveACopy; Illustrator, After Effects, Premiere: save, then copy the file (a never-saved document is saved as the checkpoint, reported as documentPathChanged); Lightroom: a Develop snapshot on the target photos. Default folder: '_checkpoints' next to the original file, or Documents/MCP-checkpoints.
 
 | Parameter | Type | Required | Description |
 |---|---|:---:|---|
 | `app` | `photoshop` · `illustrator` · `indesign` · `after-effects` · `premiere` · `lightroom` | yes |  |
 | `label` | string |  | Short name for the iteration, e.g. 'antes-da-animacao'. |
 | `folder` | string |  | Absolute folder for the copy. Ignored for Lightroom. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `jradb_contact_sheet`
 

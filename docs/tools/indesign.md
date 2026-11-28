@@ -49,6 +49,7 @@ Organise an InDesign page in groups by meaning: text on a shape becomes a label 
 | `page` | integer or string |  | Page number or name (default: active page). |
 | `apply` | boolean |  |  Default: `false`. |
 | `language` | `pt` · `en` |  | Language of the group names. Default: `"pt"`. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_get_document_info`
 
@@ -57,6 +58,7 @@ InDesign: open documents and, for the active one, page size, bleed, pages with t
 | Parameter | Type | Required | Description |
 |---|---|:---:|---|
 | `units` | `mm` · `cm` · `pt` · `px` · `in` · `pica` |  | Measurement unit for every number in this call (default mm). Default: `"mm"`. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_manage_document`
 
@@ -77,6 +79,7 @@ Create (size, pages, facing pages, margins, columns, bleed, print or web intent)
 | `intent` | `print` · `web` |  |  |
 | `filePath` | string |  | For open / save (.indd). |
 | `save` | boolean |  | For close: save first. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_manage_pages`
 
@@ -90,6 +93,7 @@ Add pages (after a page or at the end, with a parent page), remove, duplicate, m
 | `toPage` | integer or string |  | For move: place after this page. |
 | `count` | integer |  |  |
 | `parent` | string |  | Parent page name or prefix, e.g. 'A-Parent' or 'A'; 'None' removes it. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_find_objects`
 
@@ -105,6 +109,7 @@ Find frames and shapes: by type (TextFrame, Rectangle, Oval, Polygon, GraphicLin
 | `page` | string |  | Page name, e.g. '1'. |
 | `layer` | string |  |  |
 | `limit` | integer |  |  Default: `300`. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_modify_objects`
 
@@ -137,6 +142,7 @@ Edit frames and shapes (by ids, names or selection): move, move by, resize, rota
 | `locked` | boolean |  |  |
 | `visible` | boolean |  |  |
 | `remove` | boolean |  |  |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_create_text_frame`
 
@@ -154,6 +160,7 @@ Create a text frame on a page with text, formatting (paragraph/character style o
 | `objectStyle` | string |  |  |
 | `layer` | string |  |  |
 | `name` | string |  |  |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_edit_text`
 
@@ -171,6 +178,7 @@ Change the text of frames (replace or append), format the whole story or one par
 | `format` | object |  |  |
 | `frame` | object |  |  |
 | `threadTo` | integer |  | Id of the next frame in the thread. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_find_change`
 
@@ -187,6 +195,7 @@ Find / change across the whole document: plain text or GREP. Without a change it
 | `caseSensitive` | boolean |  |  |
 | `wholeWord` | boolean |  |  |
 | `includeParentPages` | boolean |  |  |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_create_shape`
 
@@ -213,6 +222,7 @@ Draw a rectangle, ellipse, polygon/star or line with fill, stroke, corner radius
 | `objectStyle` | string |  |  |
 | `layer` | string |  |  |
 | `name` | string |  |  |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_place_file`
 
@@ -229,6 +239,7 @@ Place an image, PDF, AI/PSD or a Word/RTF/TXT file: into a new frame (page + rec
 | `name` | string |  |  |
 | `layer` | string |  |  |
 | `objectStyle` | string |  |  |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_manage_styles`
 
@@ -247,6 +258,7 @@ List, create, update or apply paragraph, character, object, table and cell style
 | `properties` | object |  |  |
 | `clearOverrides` | boolean |  | Apply table style: clear local table/cell formatting (default true). |
 | `rows` | integer[] |  | Apply cell style: only these 0-based rows (default all cells). |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_swatches`
 
@@ -257,6 +269,7 @@ List the document's swatches or add a colour swatch ('#RRGGBB', [r,g,b] or [c,m,
 | `operation` | `list` · `add` |  |  Default: `"list"`. |
 | `color` | string or number[] |  | Swatch name ('Black', 'Paper', 'None', a document swatch), '#RRGGBB', [r,g,b] 0-255 or [c,m,y,k] 0-100. |
 | `name` | string |  |  |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_create_table`
 
@@ -274,6 +287,7 @@ Create a table in a new text frame from a 2-D array of values (rows × columns),
 | `tableStyle` | string |  |  |
 | `headerFill` | string or number[] |  | Swatch name ('Black', 'Paper', 'None', a document swatch), '#RRGGBB', [r,g,b] 0-255 or [c,m,y,k] 0-100. |
 | `name` | string |  |  |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_manage_layers`
 
@@ -286,6 +300,7 @@ List, add, rename, show/hide, lock/unlock or remove document layers.
 | `newName` | string |  |  |
 | `visible` | boolean |  |  |
 | `locked` | boolean |  |  |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_preflight`
 
@@ -295,6 +310,7 @@ Check the document before export: overset text, missing or modified links, low-r
 |---|---|:---:|---|
 | `minPpi` | number |  |  Default: `250`. |
 | `profile` | string |  | Name of an InDesign preflight profile, e.g. '[Basic] (working)'. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_links`
 
@@ -305,6 +321,7 @@ List placed files (links) with status, update modified links, or relink one (nam
 | `operation` | `list` · `update` · `relink` |  |  Default: `"list"`. |
 | `name` | string |  |  |
 | `newPath` | string |  |  |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_export`
 
@@ -320,6 +337,7 @@ Export the active document: PDF (with a PDF preset such as '[High Quality Print]
 | `pageRange` | string |  | e.g. '1-3,5'. Omit for all pages. |
 | `resolution` | integer |  | JPG/PNG ppi (default 150). |
 | `transparent` | boolean |  |  |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_manage_sections`
 
@@ -335,6 +353,7 @@ Sections and page numbering: list the sections, or set one starting on a page (s
 | `prefix` | string |  |  |
 | `includePrefix` | boolean |  | Show the prefix in page numbers (default: InDesign's). |
 | `marker` | string |  | Section marker text (shown by Type > Insert Special Character > Section Marker). |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_text_wrap`
 
@@ -349,6 +368,7 @@ Text wrap around objects: none, boundingBox, contour, jumpObject or nextColumn, 
 | `mode` | `none` · `boundingBox` · `contour` · `jumpObject` · `nextColumn` |  |  Default: `"boundingBox"`. |
 | `offset` | number or number[] |  |  |
 | `invert` | boolean |  |  |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_qr_code`
 
@@ -366,6 +386,7 @@ Create a QR code as vector artwork in a new frame: a web address (url), plain te
 | `color` | any |  |  |
 | `layer` | string |  |  |
 | `name` | string |  |  |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_paragraph_options`
 
@@ -383,6 +404,7 @@ Paragraph options on text frames (every paragraph of the story, or one by paragr
 | `tabs` | object[] |  |  |
 | `keepWithNext` | integer |  |  |
 | `hyphenation` | boolean |  |  |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_anchor_object`
 
@@ -396,6 +418,7 @@ Anchor an object to text so it moves with it: inline (sits in the line like a ch
 | `paragraphIndex` | integer |  |  |
 | `characterIndex` | integer |  |  |
 | `position` | `inline` · `aboveLine` · `custom` |  |  Default: `"inline"`. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_thread_text`
 
@@ -410,6 +433,7 @@ Thread text frames into one story in reading order (ids or names, in order), unt
 | `operation` | `thread` · `unthread` · `status` |  |  Default: `"thread"`. |
 | `addPagesUntilFits` | boolean |  |  Default: `false`. |
 | `maxNewPages` | integer |  |  Default: `40`. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_create_toc`
 
@@ -427,6 +451,7 @@ Create or update a table of contents from paragraph styles (e.g. Título 1 level
 | `name` | string |  |  |
 | `replace` | boolean |  | Replace an existing table of contents (default true). |
 | `includeOverset` | boolean |  |  |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_package`
 
@@ -446,6 +471,7 @@ Package the document for the print shop (File > Package): copies fonts, linked i
 | `pdfPreset` | string |  | PDF preset when includePdf, e.g. '[PDF/X-4:2008]'. |
 | `comments` | string |  |  |
 | `saveFirst` | boolean |  | Save pending changes before packaging (default true). |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_audit_document`
 
@@ -457,6 +483,7 @@ Check an InDesign document beyond preflight: overset text, text without paragrap
 | `minPointSize` | number |  | Default 6 pt for print, 9 pt for web. |
 | `safeMarginMm` | number |  | Distance from the trim for text (default 3 mm). |
 | `maxStories` | integer |  |  |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_data_merge`
 
@@ -472,6 +499,7 @@ Data merge without the Data Merge panel: the template page(s) carry {{field}} in
 | `imageFit` | `fill` · `proportionally` · `contentAware` · `frameToContent` |  |  Default: `"fill"`. |
 | `imageFolder` | string |  | Relative image paths in the data are resolved against this folder. |
 | `removeTemplate` | boolean |  |  Default: `true`. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_get_page_preview`
 
@@ -482,6 +510,7 @@ Visual check: render one InDesign page to JPEG and return it as an image.
 | `page` | integer or string |  | 1-based page number or page name; defaults to the active page. |
 | `resolution` | integer |  |  Default: `72`. |
 | `outputPath` | string |  |  |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_execute_extendscript`
 
@@ -491,6 +520,7 @@ InDesign escape hatch: run ExtendScript (ES3) with `app` in scope, as one undo s
 |---|---|:---:|---|
 | `code` | string | yes |  |
 | `units` | `mm` · `cm` · `pt` · `px` · `in` · `pica` |  | Measurement unit for every number in this call (default mm). Default: `"mm"`. |
+| `documentName` | string |  | Target document: the open file's name (e.g. 'Post.psd'), or its full path when two open files share a name. Required when more than one document is open in the app: commands never go to whatever document is in front. |
 
 ## `id_recipe_flyer`
 

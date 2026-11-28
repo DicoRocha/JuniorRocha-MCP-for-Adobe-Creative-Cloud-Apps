@@ -278,7 +278,7 @@ function connect() {
         app: "indesign",
         bridgeType: "uxp",
         appVersion: String(app.version || "unknown"),
-        pluginVersion: "1.0.9",
+        pluginVersion: "1.0.10",
         capabilities: ["uxp", "extendscriptHybrid", "extendscript", "dom"]
       })
     );

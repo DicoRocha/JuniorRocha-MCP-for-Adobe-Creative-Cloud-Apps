@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="#download"><img src="docs/assets/banner.svg" alt="Run your creative apps from a chat: 239 tools, 6 apps, 92 skills, 419 tests" width="100%"></a>
+  <a href="#download"><img src="docs/assets/banner.svg" alt="Run your creative apps from a chat: 248 tools, 6 apps, 93 skills, 450 tests" width="100%"></a>
 </p>
 
 # JuniorRocha MCP for Adobe Creative Cloud
@@ -76,7 +76,7 @@ See [Install from source](#install-from-source).
 - **Loads only what the job needs.** By default the client sees seven tools and looks up the other commands by
   name when a job calls for them; skills are loaded one by one through a router. See
   [On-demand loading](#on-demand-loading).
-- **Workflow knowledge included.** 92 skills describe how studio work is done in these apps, from the brief
+- **Workflow knowledge included.** 93 skills describe how studio work is done in these apps, from the brief
   to the delivery check.
 - **Skills first.** The assistant looks up the skills a request needs, tells you which ones it will follow and
   asks once before it starts. Tools that create or change work stay locked until it has. See
@@ -210,15 +210,15 @@ desk, and it is faster to correct a piece than to rebuild it in twelve sizes.
 
 | Mode | What the client sees | When to use |
 |---|---|---|
-| `code` (default) | 7 tools: `jradb_get_status`, `jradb_code`, `jradb_api`, `jradb_find_skills`, `jradb_get_skill`, `jradb_launch_app`, `jradb_usage` | Everyday use. `jradb_code` runs a short script that can call any of the 239 tools and return only what matters. |
-| `full` | All 239 tools | Clients without good scripting, or when you want each call visible and approved one by one. |
+| `code` (default) | 7 tools: `jradb_get_status`, `jradb_code`, `jradb_api`, `jradb_find_skills`, `jradb_get_skill`, `jradb_launch_app`, `jradb_usage` | Everyday use. `jradb_code` runs a short script that can call any of the 248 tools and return only what matters. |
+| `full` | All 248 tools | Clients without good scripting, or when you want each call visible and approved one by one. |
 
 Switch with `--tools full` or `JRADB_MCP_TOOLS=full`. In the Claude Desktop extension it is the *tool mode*
 setting.
 
 ## On-demand loading
 
-A server with 239 tools and 92 skills would normally fill the conversation before any work starts. This one
+A server with 248 tools and 93 skills would normally fill the conversation before any work starts. This one
 loads only what the job in front of it needs, for commands and for skills alike.
 
 <p align="center">
@@ -588,8 +588,8 @@ previews returned by the tools, follows that client's own policy.
 
 | Page | What is in it |
 |---|---|
-| [`docs/tools/`](docs/tools/README.md) | All 239 tools with parameters, one page per app |
-| [`docs/SKILLS.md`](docs/SKILLS.md) | The 92 skills and the purpose of each |
+| [`docs/tools/`](docs/tools/README.md) | All 248 tools with parameters, one page per app |
+| [`docs/SKILLS.md`](docs/SKILLS.md) | The 93 skills and the purpose of each |
 | [`docs/MACOS.md`](docs/MACOS.md) | macOS installation, what was validated and what was not |
 | [`docs/KNOWN-ISSUES.md`](docs/KNOWN-ISSUES.md) | What is not available, and open items |
 | [`mac-validation/`](mac-validation/README.md) | Test routine and helpers for validating on a Mac |

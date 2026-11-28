@@ -11,6 +11,7 @@ Ofício: `print-fundamentos`, `print-flyer-cartaz`.
 
 | Item | Regra |
 |---|---|
+| Documento alvo | **Sempre `documentName`** (nome do arquivo aberto; caminho completo se dois tiverem o mesmo nome). A pessoa pode estar trabalhando em outro arquivo do mesmo programa: com mais de um aberto, comando sem nome é recusado (`DOCUMENT_REQUIRED`). O programa traz o alvo para a frente só durante o comando e devolve a frente ao documento que estava antes (regra do usuário, 27/11/2026) |
 | Unidades | `units` em cada chamada (padrão mm); `rect` = {x, y, width, height} do topo esquerdo da página |
 | Tipo | tamanho e entrelinha **em pt** nas ferramentas tipadas; no script livre escreva `"10pt"` |
 | Desfazer | cada chamada é um passo |
@@ -71,6 +72,10 @@ Ternário encadeado só com parênteses (`a ? x : (b ? y : z)`): sem eles o Exte
 | Quebra de linha no mesmo parágrafo | `\n` no `contents` (o `\r` abre parágrafo novo) |
 
 ## 5. Armadilhas
+
+- **Documento alvo (27/11/2026):** no script livre pegue o documento pelo nome (`app.documents.itemByName("Manual.indd")`), nunca por
+  `app.activeDocument` — com mais de um aberto o script é recusado. Ou passe `documentName` ao script: ele roda
+  com esse documento na frente e a frente volta ao anterior no fim.
 
 - Número puro em script com `units: "mm"` vira mm até em tamanho de fonte.
 - Preset PDF/X de fábrica sem sangria: o `id_export` copia o preset e liga a sangria; confira `pdf.bleed` no retorno.

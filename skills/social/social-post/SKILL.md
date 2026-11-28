@@ -38,9 +38,15 @@ Leia antes: `craft-composicao` e `craft-formatos`.
 
 ## 3. Outros formatos (recompor, não esticar)
 
-Para 1:1 e 9:16: duplique o PSD, mude o tamanho da tela (`ps_modify_canvas` resizeCanvas),
-reposicione foto e textos para a nova proporção e respeite a zona segura de 9:16 (texto fora
-de ~250 px do topo e ~400 px da base). Olhe cada versão.
+**Variações da mesma arte para mídia digital ficam num único PSD, uma prancheta por formato**, com nomes
+claros (`Post 3x4 1080x1440`, `Story 9x16 1080x1920`, `Quadrado 1x1 1080x1080`). Fica mais fácil mudar as
+duas à mão ou por automação (regra do usuário, 25/11/2026). Monte a 1ª prancheta inteira e crie as outras com
+`ps_artboards` operation `duplicate` (`source`, `newName`, `width`, `height`), depois reenquadre; os Smart Objects dos assets
+podem ser os mesmos (duplicados como instância) para trocar uma imagem e atualizar todas as pranchetas.
+Exportação: uma imagem por prancheta, com o nome dela.
+
+Em cada prancheta, reposicione foto e textos para a proporção (nunca esticar) e respeite a zona segura de
+9:16 (texto fora de ~250 px do topo e ~400 px da base). Olhe cada versão.
 
 ## 4. Série (vários posts iguais)
 

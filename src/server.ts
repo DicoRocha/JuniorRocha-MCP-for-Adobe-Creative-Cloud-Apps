@@ -146,7 +146,8 @@ export const SERVER_INSTRUCTIONS = [
   "3. Load each skill with jradb_get_skill { name } and follow its steps and its exit gate (qa-revisao-visual for every delivery).",
   "4. If no skill covers the request, say so before starting.",
   "5. Each new request looks its skills up again, even in the same conversation.",
-  "Tools that create or change work answer SKILLS_REQUIRED until skills were looked up, again when the work moves to an app no looked-up skill covers, and after a long pause."
+  "Tools that create or change work answer SKILLS_REQUIRED until skills were looked up, again when the work moves to an app no looked-up skill covers, and after a long pause.",
+  "Target document: in Photoshop, Illustrator and InDesign always pass documentName (the open file's name). The person may be working in another file of the same app; with several documents open a command without it is refused (DOCUMENT_REQUIRED). In scripts take the document by name, never app.activeDocument."
 ].join("\n");
 
 export function createAdobeMcpServer(options: CreateAdobeMcpServerOptions = {}): AdobeMcpRuntime {

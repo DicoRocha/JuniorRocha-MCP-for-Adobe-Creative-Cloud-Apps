@@ -11,6 +11,7 @@ Referências: `references/bezier-and-menus.md` (círculos, arcos, comandos de me
 
 | Item | Regra |
 |---|---|
+| Documento alvo | **Sempre `documentName`** (nome do arquivo aberto; caminho completo se dois tiverem o mesmo nome). A pessoa pode estar trabalhando em outro arquivo do mesmo programa: com mais de um aberto, comando sem nome é recusado (`DOCUMENT_REQUIRED`). O programa traz o alvo para a frente só durante o comando e devolve a frente ao documento que estava antes (regra do usuário, 27/11/2026) |
 | Coordenadas de criação | pontos, **Y para cima**. Leia `artboardRect` [left, top, right, bottom] (no `ai_manage_document` create ou `ai_get_document_info`) e converta: `aiX = left + x`, `aiY = top − y` |
 | Coordenadas de edição | `ai_find_objects` / `ai_modify_objects` usam x/y da prancheta, origem no topo, **Y para baixo** |
 | Alvo | `uuids` de `ai_find_objects` (nomes podem repetir) |
@@ -57,6 +58,12 @@ Ternário encadeado só com parênteses (`a ? x : (b ? y : z)`): sem eles o Exte
 
 ## 4. Armadilhas
 
+- **Documento alvo (27/11/2026):** no script livre pegue o documento pelo nome (`app.documents.getByName("Post.ai")`), nunca por
+  `app.activeDocument` — com mais de um aberto o script é recusado. Ou passe `documentName` ao script: ele roda
+  com esse documento na frente e a frente volta ao anterior no fim.
+- Comandos de menu (`executeMenuCommand`: Pathfinder, desmarcar, agrupar) e `app.selection` só agem no
+  documento da frente: rode-os dentro de uma ferramenta/script com `documentName`, nunca soltos.
+
 - Sinal de Y errado → desenho fora da prancheta. Sempre leia o `artboardRect`.
 - Família de ícones: uma prancheta por ícone (mesmo tamanho), traço único (9 pt em 240 pt), pontas e cantos
   redondos; confira tudo junto numa prancheta temporária `_overview` com fundo escuro e apague depois.
@@ -69,6 +76,19 @@ Ternário encadeado só com parênteses (`a ? x : (b ? y : z)`): sem eles o Exte
   (`DocumentPreset.width = 20000`) abre no canvas largo; 10 000 px não basta. Nele `doc.scaleFactor` = 10 e o
   DOM mede tudo dividido por 10 (prancheta de 1080 pt = 108 unidades); Exportar para telas a 100 % continua
   dando PNG no tamanho real.
+
+- **Pathfinder por script (25/11/2026):** antes de `executeMenuCommand`, limpe e defina a seleção inteira:
+  `app.executeMenuCommand("deselectall"); doc.selection = [itens]`. Um objeto que ficou selecionado (a moldura)
+  entrou no "menos frente" como objeto de trás e o resultado foi a moldura vazada. Retângulo arredondado:
+  `layer.pathItems.roundedRectangle(top, left, w, h, r, r)`; depois de `expandStyle` o resultado pode vir num
+  grupo de um item só: tire do grupo para usar como máscara de recorte.
+- **Janela com foto e vazamento:** grupo de recorte [caminho da janela + foto] e, por cima, grupo de recorte
+  [limite da área que pode vazar + PSD recortado vinculado]. **Sem desfoque na foto** (halo em volta do recorte).
+  Cantos todos arredondados: monte o contorno com os pontos e alças calculados (filete por vértice;
+  no Illustrator `leftDirection` = entrada, `rightDirection` = saída). Efeito vivo num item dentro de grupo de
+  recorte infla `left/top` (bounds visíveis): alinhe por `geometricBounds`.
+- **Perfil de largura do traço** (`strokeWidthProfile`): existe, mas recusa qualquer valor. Para traço de pincel
+  largo → fino desenhe o contorno como forma.
 
 ## 5. Portão
 

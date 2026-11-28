@@ -26,8 +26,9 @@ function __psMakeSolidColor(spec) {
 }
 
 function __psRequireDoc() {
+  // The dispatcher already brought the named target document to front (__mcpEnterDocument).
   if (!app.documents || app.documents.length === 0) {
-    throw new Error("No active document in Adobe Photoshop.");
+    throw new Error("No open document in Adobe Photoshop.");
   }
   return app.activeDocument;
 }
@@ -82,7 +83,17 @@ function __psFindLayer(container, id, name) {
  */
 function __psTargetLayer(doc, params) {
   if (typeof params.layerId === "number" || params.layerName) {
-    var found = __psFindLayer(doc, params.layerId, params.layerName);
+    // artboard: look only inside that artboard. With the same layer names in several artboards (one PSD, one
+    // artboard per format) the first match was always the first artboard (25/11/2026).
+    var scope = doc;
+    if (params.artboard) {
+      try {
+        scope = doc.layerSets.getByName(params.artboard);
+      } catch (_eAb) {
+        throw new Error("Artboard not found: " + params.artboard);
+      }
+    }
+    var found = __psFindLayer(scope, params.layerId, params.layerName);
     if (!found) {
       throw new Error("Layer not found (layerId=" + String(params.layerId) + ", layerName=" + String(params.layerName) + ").");
     }
@@ -547,6 +558,276 @@ function __psShapeLayer(doc, shape, rect, radius, hex, name) {
   var L = doc.activeLayer;
   if (name) L.name = name;
   return L;
+}
+
+
+/**
+ * Path shape layer built from several components with Photoshop's shape operations (Combine Shapes, Subtract
+ * Front Shape, Intersect, Exclude), like drawing with the shape tools in those modes. Items: rounded | rectangle |
+ * ellipse | polyline (points). Fill and/or stroke (stroke-only = a line or an outline). Tested 25/11/2026.
+ */
+function __psPathItemPoints(it) {
+  var pts = [];
+  // Photoshop's PathPointInfo is the reverse of Illustrator's: leftDirection is the OUTGOING handle (towards the
+  // next point) and rightDirection the incoming one. With them the Illustrator way round the arcs came out as
+  // straight chamfers (25/11/2026). P/C take (anchor, incoming, outgoing).
+  function P(a, l, r) {
+    var p = new PathPointInfo();
+    p.kind = l || r ? PointKind.SMOOTHPOINT : PointKind.CORNERPOINT;
+    p.anchor = a;
+    p.leftDirection = r || a;
+    p.rightDirection = l || a;
+    return p;
+  }
+  var t = String(it.type || it.shape || "rounded");
+  if (t === "polygon") {
+    // Closed outline with EVERY corner rounded (convex and concave): adding and subtracting rounded rectangles
+    // leaves the corners the other operation creates pointed (25/11/2026). points: [[x, y, radius?], ...] in
+    // order around the shape; radius per vertex or cornerRadius for all.
+    var rp = __psRoundPolygon(it.points, typeof it.cornerRadius === "number" ? it.cornerRadius : 0);
+    for (var q = 0; q < rp.length; q++) {
+      var pp = new PathPointInfo();
+      pp.kind = PointKind.CORNERPOINT;
+      pp.anchor = rp[q].a;
+      pp.leftDirection = rp[q].o; // Photoshop: left = outgoing
+      pp.rightDirection = rp[q].i;
+      pts.push(pp);
+    }
+    return pts;
+  }
+  if (t === "polyline" || t === "line") {
+    for (var i = 0; i < it.points.length; i++) pts.push(P([it.points[i][0], it.points[i][1]]));
+    return pts;
+  }
+  var L = it.x, T = it.y, R = it.x + it.width, B = it.y + it.height;
+  if (t === "ellipse") {
+    var cx = (L + R) / 2, cy = (T + B) / 2, rx = (R - L) / 2, ry = (B - T) / 2, kx = rx * 0.5523, ky = ry * 0.5523;
+    pts.push(P([cx, T], [cx - kx, T], [cx + kx, T]));
+    pts.push(P([R, cy], [R, cy - ky], [R, cy + ky]));
+    pts.push(P([cx, B], [cx + kx, B], [cx - kx, B]));
+    pts.push(P([L, cy], [L, cy + ky], [L, cy - ky]));
+    return pts;
+  }
+  var r = t === "rectangle" ? 0 : Math.max(0, Math.min(it.radius || 0, (R - L) / 2, (B - T) / 2));
+  if (r <= 0) return [P([L, T]), P([R, T]), P([R, B]), P([L, B])];
+  var k = r * 0.5523;
+  function C(a, l, rr) {
+    var p = new PathPointInfo();
+    p.kind = PointKind.CORNERPOINT;
+    p.anchor = a;
+    p.leftDirection = rr;
+    p.rightDirection = l;
+    return p;
+  }
+  pts.push(C([L + r, T], [L + r - k, T], [L + r, T]));
+  pts.push(C([R - r, T], [R - r, T], [R - r + k, T]));
+  pts.push(C([R, T + r], [R, T + r - k], [R, T + r]));
+  pts.push(C([R, B - r], [R, B - r], [R, B - r + k]));
+  pts.push(C([R - r, B], [R - r + k, B], [R - r, B]));
+  pts.push(C([L + r, B], [L + r, B], [L + r - k, B]));
+  pts.push(C([L, B - r], [L, B - r + k], [L, B - r]));
+  pts.push(C([L, T + r], [L, T + r], [L, T + r - k]));
+  return pts;
+}
+
+/**
+ * Rounds every vertex of a closed polygon (fillet), convex or concave. Returns anchors with incoming (i) and
+ * outgoing (o) handles. A radius larger than half of a neighbouring edge is reduced to fit.
+ */
+function __psRoundPolygon(points, defR) {
+  var n = points.length, out = [];
+  function len(v) { return Math.sqrt(v[0] * v[0] + v[1] * v[1]); }
+  for (var i = 0; i < n; i++) {
+    var P = points[i], A = points[(i - 1 + n) % n], B = points[(i + 1) % n];
+    var r = P.length > 2 && typeof P[2] === "number" ? P[2] : defR;
+    var ua = [A[0] - P[0], A[1] - P[1]], ub = [B[0] - P[0], B[1] - P[1]];
+    var la = len(ua), lb = len(ub);
+    if (!r || la === 0 || lb === 0) { out.push({ a: [P[0], P[1]], i: [P[0], P[1]], o: [P[0], P[1]] }); continue; }
+    ua = [ua[0] / la, ua[1] / la];
+    ub = [ub[0] / lb, ub[1] / lb];
+    var cos = Math.max(-1, Math.min(1, ua[0] * ub[0] + ua[1] * ub[1]));
+    var th = Math.acos(cos);
+    if (th < 0.01 || th > Math.PI - 0.01) { out.push({ a: [P[0], P[1]], i: [P[0], P[1]], o: [P[0], P[1]] }); continue; }
+    var tlen = r / Math.tan(th / 2);
+    var maxT = Math.min(la, lb) / 2;
+    if (tlen > maxT) { r = r * maxT / tlen; tlen = maxT; }
+    var h = (4 / 3) * Math.tan((Math.PI - th) / 4) * r;
+    var P1 = [P[0] + ua[0] * tlen, P[1] + ua[1] * tlen], P2 = [P[0] + ub[0] * tlen, P[1] + ub[1] * tlen];
+    out.push({ a: P1, i: P1, o: [P1[0] - ua[0] * h, P1[1] - ua[1] * h] });
+    out.push({ a: P2, i: [P2[0] - ub[0] * h, P2[1] - ub[1] * h], o: P2 });
+  }
+  return out;
+}
+
+function __psShapeOp(op) {
+  var o = String(op || "add").toLowerCase();
+  if (o === "subtract" || o === "minusfront" || o === "subtractfront") return ShapeOperation.SHAPESUBTRACT;
+  if (o === "intersect") return ShapeOperation.SHAPEINTERSECT;
+  if (o === "exclude" || o === "xor") return ShapeOperation.SHAPEXOR;
+  return ShapeOperation.SHAPEADD;
+}
+
+function __psStrokeStyleDesc(st, fillOn) {
+  var s = stringIDToTypeID, c = charIDToTypeID;
+  var ss = new ActionDescriptor();
+  ss.putInteger(s("strokeStyleVersion"), 2);
+  ss.putBoolean(s("strokeEnabled"), true);
+  ss.putBoolean(s("fillEnabled"), fillOn);
+  ss.putUnitDouble(s("strokeStyleLineWidth"), c("#Pxl"), st.width || 1);
+  ss.putEnumerated(s("strokeStyleLineCapType"), s("strokeStyleLineCapType"), s(st.cap === "round" ? "strokeStyleRoundCap" : "strokeStyleButtCap"));
+  ss.putEnumerated(s("strokeStyleLineJoinType"), s("strokeStyleLineJoinType"), s(st.join === "round" ? "strokeStyleRoundJoin" : "strokeStyleMiterJoin"));
+  var al = st.align === "inside" ? "strokeStyleAlignInside" : (st.align === "outside" ? "strokeStyleAlignOutside" : "strokeStyleAlignCenter");
+  ss.putEnumerated(s("strokeStyleLineAlignment"), s("strokeStyleLineAlignment"), s(al));
+  ss.putUnitDouble(s("strokeStyleOpacity"), c("#Prc"), typeof st.opacity === "number" ? st.opacity : 100);
+  var sc = new ActionDescriptor();
+  sc.putObject(c("Clr "), c("RGBC"), __psRgbDesc(st.color || "#FFFFFF"));
+  ss.putObject(s("strokeStyleContent"), s("solidColorLayer"), sc);
+  return ss;
+}
+
+function __psPathShape(doc, items, opts) {
+  app.activeDocument = doc;
+  var s = stringIDToTypeID, c = charIDToTypeID;
+  var subs = [];
+  for (var i = 0; i < items.length; i++) {
+    var spi = new SubPathInfo();
+    spi.entireSubPath = __psPathItemPoints(items[i]);
+    var t = String(items[i].type || items[i].shape || "rounded");
+    spi.closed = !(t === "polyline" || t === "line") || items[i].closed === true;
+    spi.operation = i === 0 ? ShapeOperation.SHAPEADD : __psShapeOp(items[i].op);
+    subs.push(spi);
+  }
+  var tmpName = "__mcp_path_" + new Date().getTime();
+  var wp = doc.pathItems.add(tmpName, subs);
+  wp.select();
+  var fillOn = opts.fill !== null && opts.fill !== false && opts.fill !== undefined;
+  var mk = new ActionDescriptor();
+  var ref = new ActionReference();
+  ref.putClass(s("contentLayer"));
+  mk.putReference(c("null"), ref);
+  var cl = new ActionDescriptor();
+  var type = new ActionDescriptor();
+  type.putObject(c("Clr "), c("RGBC"), __psRgbDesc(fillOn ? opts.fill : (opts.stroke && opts.stroke.color) || "#FFFFFF"));
+  cl.putObject(c("Type"), s("solidColorLayer"), type);
+  if (opts.stroke) cl.putObject(s("strokeStyle"), s("strokeStyle"), __psStrokeStyleDesc(opts.stroke, fillOn));
+  mk.putObject(c("Usng"), s("contentLayer"), cl);
+  executeAction(c("Mk  "), mk, DialogModes.NO);
+  var L = doc.activeLayer;
+  for (var k = doc.pathItems.length - 1; k >= 0; k--) {
+    if (doc.pathItems[k].name === tmpName) {
+      try {
+        doc.pathItems[k].remove();
+      } catch (_eRm) {}
+    }
+  }
+  if (opts.name) L.name = opts.name;
+  if (typeof opts.opacity === "number") L.opacity = opts.opacity;
+  if (typeof opts.fillOpacity === "number") L.fillOpacity = opts.fillOpacity;
+  if (opts.blendMode) L.blendMode = __psBlendMode(opts.blendMode);
+  return L;
+}
+
+/** Selects layers by id (first replaces, the rest add). */
+function __psSelectIds(ids) {
+  for (var i = 0; i < ids.length; i++) {
+    var r = new ActionReference();
+    r.putIdentifier(charIDToTypeID("Lyr "), ids[i]);
+    var ds = new ActionDescriptor();
+    ds.putReference(charIDToTypeID("null"), r);
+    if (i > 0) ds.putEnumerated(stringIDToTypeID("selectionModifier"), stringIDToTypeID("selectionModifierType"), stringIDToTypeID("addToSelection"));
+    ds.putBoolean(charIDToTypeID("MkVs"), false);
+    executeAction(charIDToTypeID("slct"), ds, DialogModes.NO);
+  }
+}
+
+/** Selects layers by id (first replaces, the rest add) and groups them, inside whatever group or artboard they are. */
+function __psGroupLayers(doc, layers, name) {
+  app.activeDocument = doc;
+  for (var i = 0; i < layers.length; i++) {
+    var r = new ActionReference();
+    r.putIdentifier(charIDToTypeID("Lyr "), layers[i].id);
+    var ds = new ActionDescriptor();
+    ds.putReference(charIDToTypeID("null"), r);
+    if (i > 0) ds.putEnumerated(stringIDToTypeID("selectionModifier"), stringIDToTypeID("selectionModifierType"), stringIDToTypeID("addToSelection"));
+    ds.putBoolean(charIDToTypeID("MkVs"), false);
+    executeAction(charIDToTypeID("slct"), ds, DialogModes.NO);
+  }
+  var mk = new ActionDescriptor();
+  var rs = new ActionReference();
+  rs.putClass(stringIDToTypeID("layerSection"));
+  mk.putReference(charIDToTypeID("null"), rs);
+  var rf = new ActionReference();
+  rf.putEnumerated(charIDToTypeID("Lyr "), charIDToTypeID("Ordn"), charIDToTypeID("Trgt"));
+  mk.putReference(charIDToTypeID("From"), rf);
+  var nm = new ActionDescriptor();
+  nm.putString(charIDToTypeID("Nm  "), name);
+  mk.putObject(charIDToTypeID("Usng"), stringIDToTypeID("layerSection"), nm);
+  executeAction(charIDToTypeID("Mk  "), mk, DialogModes.NO);
+  return doc.activeLayer;
+}
+
+/** Gradient overlay descriptor (layer effect). stops: [{color, location 0-100}]. */
+function __psGradientOverlayFx(stops, type, angle, scale, offX, offY) {
+  var c = charIDToTypeID;
+  var fx = new ActionDescriptor();
+  fx.putUnitDouble(c("Scl "), c("#Prc"), 100);
+  var o = new ActionDescriptor();
+  o.putBoolean(c("enab"), true);
+  o.putEnumerated(c("Md  "), c("BlnM"), c("Nrml"));
+  o.putUnitDouble(c("Opct"), c("#Prc"), 100);
+  var gr = new ActionDescriptor();
+  gr.putString(c("Nm  "), "custom");
+  gr.putEnumerated(c("GrdF"), c("GrdF"), c("CstS"));
+  gr.putDouble(c("Intr"), 4096);
+  var cl = new ActionList(), tl = new ActionList();
+  for (var i = 0; i < stops.length; i++) {
+    var loc = Math.round((stops[i].location / 100) * 4096);
+    var st = new ActionDescriptor();
+    st.putObject(c("Clr "), c("RGBC"), __psRgbDesc(stops[i].color));
+    st.putEnumerated(c("Type"), c("Clry"), c("UsrS"));
+    st.putInteger(c("Lctn"), loc);
+    st.putInteger(c("Mdpn"), 50);
+    cl.putObject(c("Clrt"), st);
+    var t = new ActionDescriptor();
+    t.putUnitDouble(c("Opct"), c("#Prc"), 100);
+    t.putInteger(c("Lctn"), loc);
+    t.putInteger(c("Mdpn"), 50);
+    tl.putObject(c("TrnS"), t);
+  }
+  gr.putList(c("Clrs"), cl);
+  gr.putList(c("Trns"), tl);
+  o.putObject(c("Grad"), c("Grdn"), gr);
+  o.putUnitDouble(c("Angl"), c("#Ang"), angle);
+  o.putEnumerated(c("Type"), c("GrdT"), c(type === "linear" ? "Lnr " : "Rdl "));
+  o.putBoolean(c("Rvrs"), false);
+  o.putBoolean(c("Algn"), true);
+  o.putUnitDouble(c("Scl "), c("#Prc"), scale);
+  var ofs = new ActionDescriptor();
+  ofs.putUnitDouble(c("Hrzn"), c("#Prc"), offX || 0);
+  ofs.putUnitDouble(c("Vrtc"), c("#Prc"), offY || 0);
+  o.putObject(c("Ofst"), c("Pnt "), ofs);
+  fx.putObject(c("GrFl"), c("GrFl"), o);
+  return fx;
+}
+
+function __psSetLayerFx(doc, layer, fx) {
+  doc.activeLayer = layer;
+  var ds = new ActionDescriptor();
+  var rf = new ActionReference();
+  rf.putProperty(charIDToTypeID("Prpr"), charIDToTypeID("Lefx"));
+  rf.putEnumerated(charIDToTypeID("Lyr "), charIDToTypeID("Ordn"), charIDToTypeID("Trgt"));
+  ds.putReference(charIDToTypeID("null"), rf);
+  ds.putObject(charIDToTypeID("T   "), charIDToTypeID("Lefx"), fx);
+  executeAction(charIDToTypeID("setd"), ds, DialogModes.NO);
+}
+
+/** Artboard by name (rect + set), or fails with the list. */
+function __psArtboardByName(doc, name) {
+  var all = __psArtboards(doc);
+  for (var i = 0; i < all.length; i++) if (all[i].name === name) return { info: all[i], set: doc.layerSets.getByName(name) };
+  var names = [];
+  for (var j = 0; j < all.length; j++) names.push(all[j].name);
+  __mcpFail("NOT_FOUND", "No artboard named '" + name + "'. Artboards: " + (names.join(", ") || "none") + ".");
 }
 
 /** Source for a recipe: an open document, or a file opened here (closed again at the end, unchanged). */
@@ -1251,6 +1532,14 @@ function __psWriteWeb(dup, filePath, fmt, quality, p) {
     } else {
       __mcpFail("INVALID_PARAMS", "Unknown format '" + fmt + "'. Use png, jpg or webp.");
     }
+    // Save for Web writes spaces as hyphens ("Post 3x4.png" -> "Post-3x4.png", live 25/11/2026): give the file the
+    // name that was asked for, so the path we report exists.
+    var asked = new File(filePath);
+    if (!asked.exists) {
+      var wanted = decodeURI(asked.name);
+      var hyph = new File(asked.parent.fsName + "/" + wanted.replace(/ /g, "-"));
+      if (hyph.exists) hyph.rename(wanted);
+    }
     return new File(filePath).length;
   };
   var bytes = once(q);
@@ -1824,6 +2113,130 @@ function __psDispatch(action, params, _options) {
     }
   }
 
+  if (action === "ps.recipe.motionTrail") {
+    // Speed on an object (icon, product): a motion-blurred copy behind, shifted back along the movement (the trail),
+    // and a light blur on the object itself. The object becomes a Smart Object first (its mask goes inside).
+    var dM = params.documentName ? app.documents.getByName(params.documentName) : __psRequireDoc();
+    app.activeDocument = dM;
+    var Lm = __psFindLayer(dM, null, String(params.layerName));
+    if (!Lm || Lm.typename === "LayerSet") __mcpFail("NOT_FOUND", "Layer '" + params.layerName + "' not found.");
+    var nameM = Lm.name;
+    dM.activeLayer = Lm;
+    executeAction(stringIDToTypeID("newPlacedLayer"), undefined, DialogModes.NO);
+    var topM = dM.activeLayer;
+    topM.name = nameM;
+    var angM = typeof params.angle === "number" ? params.angle : 0;
+    var blurM = function (layer, dist) {
+      dM.activeLayer = layer;
+      var de = new ActionDescriptor();
+      de.putInteger(charIDToTypeID("Angl"), Math.round(angM));
+      de.putUnitDouble(charIDToTypeID("Dstn"), charIDToTypeID("#Pxl"), dist);
+      executeAction(charIDToTypeID("MtnB"), de, DialogModes.NO);
+    };
+    var trM = topM.duplicate(topM, ElementPlacement.PLACEAFTER);
+    trM.name = nameM + " rastro";
+    blurM(trM, typeof params.distance === "number" ? params.distance : 90);
+    var offM = typeof params.offset === "number" ? params.offset : 30;
+    var radM = angM * Math.PI / 180;
+    trM.translate(Math.round(offM * Math.cos(radM)), Math.round(-offM * Math.sin(radM)));
+    trM.opacity = typeof params.trailOpacity === "number" ? params.trailOpacity : 85;
+    var selfM = typeof params.selfBlur === "number" ? params.selfBlur : 12;
+    if (selfM > 0) blurM(topM, selfM);
+    dM.activeLayer = topM;
+    return { layer: topM.name, trail: trM.name, angle: angM, distance: typeof params.distance === "number" ? params.distance : 90, offset: offM, selfBlur: selfM };
+  }
+
+  if (action === "ps.text.arrangePrice") {
+    // A price is one phrase: currency, cents and period touch the value at the gap between its own digits, the label
+    // sits a line gap above, and the set is centred in its shape (measured without effects).
+    var dP = params.documentName ? app.documents.getByName(params.documentName) : __psRequireDoc();
+    app.activeDocument = dP;
+    var prevP = app.preferences.rulerUnits;
+    app.preferences.rulerUnits = Units.PIXELS;
+    try {
+      var getP = function (n) {
+        if (!n) return null;
+        var l = __psFindLayer(dP, null, String(n));
+        if (!l) __mcpFail("NOT_FOUND", "Layer '" + n + "' not found.");
+        return l;
+      };
+      var bP = function (l) {
+        var b = l.bounds;
+        return [b[0].as("px"), b[1].as("px"), b[2].as("px"), b[3].as("px")];
+      };
+      if (params.queryShape) {
+        var qS = getP(params.queryShape);
+        var qb = qS.bounds;
+        try {
+          qb = qS.boundsNoEffects;
+        } catch (_eQ) {}
+        return { shape: qS.name, bounds: [qb[0].as("px"), qb[1].as("px"), qb[2].as("px"), qb[3].as("px")] };
+      }
+      var V = getP(params.valueLayer), C = getP(params.currencyLayer), D = getP(params.centsLayer), P = getP(params.periodLayer), Lb = getP(params.labelLayer), S = getP(params.shapeLayer);
+      // gap between the first two digits of the value (ink), measured on duplicates of the value layer
+      var txtV = String(V.textItem.contents).replace(/[^0-9]/g, "");
+      var gapP = typeof params.gap === "number" ? params.gap : null;
+      if (gapP === null && txtV.length >= 2) {
+        var probe = function (s) {
+          var t = V.duplicate();
+          t.textItem.contents = s;
+          var b = bP(t);
+          t.remove();
+          return b[2] - b[0];
+        };
+        gapP = Math.round(probe(txtV.substr(0, 2)) - probe(txtV.charAt(0)) - probe(txtV.charAt(1)));
+      }
+      if (gapP === null) gapP = Math.round(V.textItem.size.as("px") * 0.05);
+      var v = bP(V);
+      if (C) {
+        var c = bP(C);
+        C.translate(v[0] - gapP - c[2], v[3] - c[3]);
+      }
+      if (D) {
+        var dd = bP(D);
+        D.translate(v[2] + gapP - dd[0], v[1] - dd[1]);
+      }
+      if (P) {
+        var pp = bP(P);
+        P.translate(v[2] + gapP - pp[0], v[3] - pp[3]);
+      }
+      var lineGap = typeof params.labelGap === "number" ? params.labelGap : Math.round(V.textItem.size.as("px") * 0.2);
+      if (Lb) {
+        var lb = bP(Lb);
+        Lb.translate(0, v[1] - lineGap - lb[3]);
+      }
+      var parts = [V, C, D, P];
+      var u = [1e9, 1e9, -1e9, -1e9];
+      for (var i = 0; i < parts.length; i++) {
+        if (!parts[i]) continue;
+        var q = bP(parts[i]);
+        u = [Math.min(u[0], q[0]), Math.min(u[1], q[1]), Math.max(u[2], q[2]), Math.max(u[3], q[3])];
+      }
+      var top = Lb ? bP(Lb)[1] : u[1];
+      var cx, cy;
+      if (S) {
+        var sb = S.bounds;
+        try {
+          sb = S.boundsNoEffects;
+        } catch (_eSb) {}
+        cx = (sb[0].as("px") + sb[2].as("px")) / 2;
+        cy = (sb[1].as("px") + sb[3].as("px")) / 2;
+      } else {
+        cx = typeof params.centerX === "number" ? params.centerX : (u[0] + u[2]) / 2;
+        cy = typeof params.centerY === "number" ? params.centerY : (top + u[3]) / 2;
+      }
+      var dx = cx - (u[0] + u[2]) / 2, dy = cy - (top + u[3]) / 2;
+      for (var j = 0; j < parts.length; j++) if (parts[j]) parts[j].translate(dx, dy);
+      if (Lb) {
+        var lb2 = bP(Lb);
+        Lb.translate(cx - (lb2[0] + lb2[2]) / 2, dy);
+      }
+      return { gap: gapP, labelGap: lineGap, center: [cx, cy], value: bP(V) };
+    } finally {
+      app.preferences.rulerUnits = prevP;
+    }
+  }
+
   if (action === "ps.layers.groupPlan") {
     // Builds the groups proposed by ps_organize_layers: children first, then the group that holds them.
     var docGP = __psRequireDoc();
@@ -1994,6 +2407,37 @@ function __psDispatch(action, params, _options) {
       docSel.selection.deselect();
     } else if (opS === "invert") {
       docSel.selection.invert();
+    } else if (opS === "maskFromBackground") {
+      // Subject + ground that runs off the edges (person on a sofa, robot on a rock) on a plain generated
+      // background: Select Subject keeps only the person/robot. Magic wand on the background at several points
+      // (contiguous, added), expand 1 px, invert, layer mask (25/11/2026).
+      if (!params.points || !params.points.length) throw new Error("operation 'maskFromBackground' requires points [[x,y],...] on the background.");
+      var lyrW = __psTargetLayer(docSel, params);
+      docSel.activeLayer = lyrW;
+      for (var pw = 0; pw < params.points.length; pw++) {
+        var wd = new ActionDescriptor();
+        var wr = new ActionReference();
+        wr.putProperty(charIDToTypeID("Chnl"), charIDToTypeID("fsel"));
+        wd.putReference(charIDToTypeID("null"), wr);
+        var wpnt = new ActionDescriptor();
+        wpnt.putUnitDouble(charIDToTypeID("Hrzn"), charIDToTypeID("#Pxl"), params.points[pw][0]);
+        wpnt.putUnitDouble(charIDToTypeID("Vrtc"), charIDToTypeID("#Pxl"), params.points[pw][1]);
+        wd.putObject(charIDToTypeID("T   "), charIDToTypeID("Pnt "), wpnt);
+        wd.putInteger(charIDToTypeID("Tlrn"), typeof params.tolerance === "number" ? params.tolerance : 42);
+        wd.putBoolean(charIDToTypeID("AntA"), true);
+        wd.putBoolean(charIDToTypeID("Cntg"), true);
+        executeAction(charIDToTypeID(pw === 0 ? "setd" : "AddT"), wd, DialogModes.NO);
+      }
+      docSel.selection.expand(UnitValue(1, "px"));
+      docSel.selection.invert();
+      var mkW = new ActionDescriptor();
+      mkW.putClass(charIDToTypeID("Nw  "), charIDToTypeID("Chnl"));
+      var mrW = new ActionReference();
+      mrW.putEnumerated(charIDToTypeID("Chnl"), charIDToTypeID("Chnl"), charIDToTypeID("Msk "));
+      mkW.putReference(charIDToTypeID("At  "), mrW);
+      mkW.putEnumerated(charIDToTypeID("Usng"), charIDToTypeID("UsrM"), charIDToTypeID("RvlS"));
+      executeAction(charIDToTypeID("Mk  "), mkW, DialogModes.NO);
+      return { operation: opS, layer: String(docSel.activeLayer.name), points: params.points.length, mask: true };
     } else if (opS === "rectangle") {
       if (!params.bounds) throw new Error("operation 'rectangle' requires bounds.");
       var bR = params.bounds;
@@ -2159,6 +2603,21 @@ function __psDispatch(action, params, _options) {
     if (params.category === "layerStyle") {
       var lyrS = __psTargetLayer(docF, params);
       docF.activeLayer = lyrS;
+      if (params.type === "clear") {
+        // Clear Layer Style. Photoshop also resets the blend mode and fill opacity: put them back (25/11/2026).
+        var keepMode = lyrS.blendMode, keepFill = lyrS.fillOpacity;
+        var dsClr = new ActionDescriptor();
+        var rfClr = new ActionReference();
+        rfClr.putEnumerated(charIDToTypeID("Lyr "), charIDToTypeID("Ordn"), charIDToTypeID("Trgt"));
+        dsClr.putReference(charIDToTypeID("null"), rfClr);
+        executeAction(stringIDToTypeID("disableLayerStyle"), dsClr, DialogModes.NO);
+        var lyrC = docF.activeLayer;
+        try {
+          lyrC.blendMode = keepMode;
+          lyrC.fillOpacity = keepFill;
+        } catch (_eKeep) {}
+        return { applied: "clear", category: "layerStyle", layerId: lyrC.id, blendModeKept: String(keepMode), fillOpacityKept: keepFill };
+      }
       var fx = __psLayerStyle(params.type, sF);
       // Keep the styles already on the layer: read its layerEffects descriptor and put this one effect into it.
       // (Setting a fresh layerEffects object would wipe every other style.) replaceExisting: true starts clean.
@@ -2306,6 +2765,12 @@ function __psDispatch(action, params, _options) {
     var docPl = __psRequireDoc();
     var plFile = new File(params.filePath);
     if (!plFile.exists) __mcpFail("FILE_NOT_FOUND", "File not found: " + params.filePath);
+    if (params.into) {
+      // Place inside a group or artboard: the placed layer lands above the active layer, in its container.
+      var intoPl = __psFindLayer(docPl, null, String(params.into));
+      if (!intoPl || intoPl.typename !== "LayerSet") __mcpFail("NOT_FOUND", "No group or artboard named '" + params.into + "'.");
+      docPl.activeLayer = intoPl.layers.length ? intoPl.layers[0] : intoPl;
+    }
     var plDesc = new ActionDescriptor();
     plDesc.putPath(charIDToTypeID("null"), plFile);
     if (params.linked === true) plDesc.putBoolean(charIDToTypeID("Lnkd"), true);
@@ -2334,7 +2799,15 @@ function __psDispatch(action, params, _options) {
       plLayer.translate(new UnitValue(tx - pb[0].as("px"), "px"), new UnitValue(ty - pb[1].as("px"), "px"));
       pb = plLayer.bounds;
     }
+    var cutPl = null;
+    if (params.cutout) {
+      // Select Subject (no generative credits) as a layer mask; bounds become the subject's.
+      cutPl = __psCutout(docPl, plLayer, params.cutout === "removeBackground" ? "removeBackground" : "selectSubject");
+      plLayer = docPl.activeLayer;
+      pb = plLayer.bounds;
+    }
     return {
+      cutout: cutPl,
       layerId: plLayer.id,
       layerName: plLayer.name,
       kind: __psKindName(plLayer),
@@ -2459,6 +2932,51 @@ function __psDispatch(action, params, _options) {
         for (var qa = 0; qa < listQ.length; qa++) namesQ.push(String(listQ[qa].name));
         return { document: docA.name, method: "quickExport", folder: folderQ.fsName, expected: namesQ, extension: params.format === "jpg" ? "jpg" : "png" };
       }
+      if (opA === "duplicate") {
+        // One artboard → a new format: duplicate the whole artboard (groups and Smart Objects come along), take the
+        // " copy" off every name and resize the board. Layers keep their positions; reframe them afterwards.
+        var allD = __psArtboards(docA);
+        var srcD = null;
+        for (var di = 0; di < allD.length; di++) if (allD[di].name === String(params.source)) srcD = allD[di];
+        if (!srcD) __mcpFail("NOT_FOUND", "No artboard named '" + params.source + "'. Use operation 'list'.");
+        var srcSet = __psFindLayer(docA, srcD.id, null);
+        var cpD = srcSet.duplicate();
+        cpD.name = String(params.newName || (srcD.name + " copia"));
+        var stripD = function (set) {
+          for (var si = 0; si < set.layers.length; si++) {
+            var ly = set.layers[si];
+            var nm = String(ly.name).replace(/ (copy|c\u00f3pia|copia)( \d+)?$/i, "");
+            if (nm !== ly.name) ly.name = nm;
+            if (ly.typename === "LayerSet") stripD(ly);
+          }
+        };
+        stripD(cpD);
+        var rightD = 0;
+        for (var dj = 0; dj < allD.length; dj++) rightD = Math.max(rightD, allD[dj].rect.x + allD[dj].rect.width);
+        var txD = typeof params.x === "number" ? params.x : rightD + (typeof params.gap === "number" ? params.gap : 100);
+        var tyD = typeof params.y === "number" ? params.y : srcD.rect.y;
+        var nowD = __psArtboards(docA), curD = null;
+        for (var dk = 0; dk < nowD.length; dk++) if (nowD[dk].id === cpD.id) curD = nowD[dk];
+        if (curD && (curD.rect.x !== txD || curD.rect.y !== tyD)) cpD.translate(txD - curD.rect.x, tyD - curD.rect.y);
+        var wD = typeof params.width === "number" ? params.width : srcD.rect.width;
+        var hD = typeof params.height === "number" ? params.height : srcD.rect.height;
+        docA.activeLayer = cpD;
+        var edD = new ActionDescriptor();
+        var refD = new ActionReference();
+        refD.putEnumerated(charIDToTypeID("Lyr "), charIDToTypeID("Ordn"), charIDToTypeID("Trgt"));
+        edD.putReference(charIDToTypeID("null"), refD);
+        var abD = new ActionDescriptor();
+        var rcD = new ActionDescriptor();
+        rcD.putDouble(charIDToTypeID("Top "), tyD);
+        rcD.putDouble(charIDToTypeID("Left"), txD);
+        rcD.putDouble(charIDToTypeID("Btom"), tyD + hD);
+        rcD.putDouble(charIDToTypeID("Rght"), txD + wD);
+        abD.putObject(stringIDToTypeID("artboardRect"), stringIDToTypeID("classFloatRect"), rcD);
+        edD.putObject(stringIDToTypeID("artboard"), stringIDToTypeID("artboard"), abD);
+        edD.putInteger(stringIDToTypeID("changeSizes"), 1);
+        executeAction(stringIDToTypeID("editArtboardEvent"), edD, DialogModes.NO);
+        return { document: docA.name, from: srcD.name, duplicated: { name: String(cpD.name), id: cpD.id, rect: { x: txD, y: tyD, width: wD, height: hD } }, offset: { x: txD - srcD.rect.x, y: tyD - srcD.rect.y }, note: "Layers kept their place relative to the board; reframe them for the new size (offset = how far the copy moved)." };
+      }
       if (opA === "create") {
         var specs = params.artboards || [];
         if (!specs.length) __mcpFail("INVALID_PARAMS", "artboards: [{ name, width, height, x?, y? }]");
@@ -2470,13 +2988,17 @@ function __psDispatch(action, params, _options) {
           var sp = specs[sa];
           var rectA = { x: typeof sp.x === "number" ? sp.x : cursorX, y: typeof sp.y === "number" ? sp.y : 0, width: sp.width, height: sp.height };
           var abL = __psMakeArtboard(docA, sp.name, rectA);
+          // Photoshop leaves an empty "Layer 1" in a new artboard: take it out.
+          for (var el = abL.layers.length - 1; el >= 0; el--) {
+            var eL = abL.layers[el];
+            if (eL.typename !== "ArtLayer" || !/^(Layer|Camada) \d+$/.test(String(eL.name))) continue;
+            var ebx = eL.bounds;
+            if (ebx[2].as("px") - ebx[0].as("px") === 0) eL.remove();
+          }
           if (sp.backgroundColor) {
-            var bgL = abL.artLayers.add();
-            bgL.name = "Fundo";
-            docA.activeLayer = bgL;
-            docA.selection.select([[rectA.x, rectA.y], [rectA.x + rectA.width, rectA.y], [rectA.x + rectA.width, rectA.y + rectA.height], [rectA.x, rectA.y + rectA.height]]);
-            docA.selection.fill(__psMakeSolidColor(sp.backgroundColor));
-            docA.selection.deselect();
+            // A Solid Color fill layer fills the artboard at any size (a duplicate resized to another format keeps it full).
+            docA.activeLayer = abL.layers.length ? abL.layers[0] : abL;
+            __psSolidFillLayer(docA, sp.backgroundColor, "Fundo");
           }
           cursorX = rectA.x + rectA.width + (params.gap || 100);
           made.push({ name: String(abL.name), id: abL.id, rect: rectA });
@@ -2762,6 +3284,34 @@ function __psDispatch(action, params, _options) {
     var prevUnitsCt = app.preferences.rulerUnits;
     app.preferences.rulerUnits = Units.PIXELS;
     try {
+      if (params.layerNames && params.layerNames.length) {
+        // A set (text block, price): centred as one by the box around its ink; the shape is measured without effects
+        // (a drop shadow moves the centre ~10 px). The layers keep their positions relative to each other.
+        var shSet = __psFindLayer(docCt, params.shapeLayerId, params.shapeLayerName);
+        if (!shSet) __mcpFail("NOT_FOUND", "Shape layer not found (shapeLayerName / shapeLayerId).");
+        var bxS = function (layer, noFx) {
+          var b = layer.bounds;
+          if (noFx) {
+            try {
+              b = layer.boundsNoEffects;
+            } catch (_eNs) {}
+          }
+          return [b[0].as("px"), b[1].as("px"), b[2].as("px"), b[3].as("px")];
+        };
+        var setL = [], u = [1e9, 1e9, -1e9, -1e9];
+        for (var sn = 0; sn < params.layerNames.length; sn++) {
+          var ls = __psFindLayer(docCt, null, String(params.layerNames[sn]));
+          if (!ls) __mcpFail("NOT_FOUND", "Layer '" + params.layerNames[sn] + "' not found.");
+          var lb = bxS(ls, false);
+          u = [Math.min(u[0], lb[0]), Math.min(u[1], lb[1]), Math.max(u[2], lb[2]), Math.max(u[3], lb[3])];
+          setL.push(ls);
+        }
+        var sbS = bxS(shSet, true);
+        var dxS = params.horizontal === false ? 0 : (sbS[0] + sbS[2]) / 2 - (u[0] + u[2]) / 2 + (params.offsetX || 0);
+        var dyS = params.vertical === false ? 0 : (sbS[1] + sbS[3]) / 2 - (u[1] + u[3]) / 2 + (params.offsetY || 0);
+        for (var sm = 0; sm < setL.length; sm++) setL[sm].translate(dxS, dyS);
+        return { centered: params.layerNames, shape: shSet.name, moved: { x: dxS, y: dyS }, setBounds: [u[0] + dxS, u[1] + dyS, u[2] + dxS, u[3] + dyS], shapeBounds: sbS };
+      }
       var txL = __psFindLayer(docCt, params.textLayerId, params.textLayerName);
       var shL = __psFindLayer(docCt, params.shapeLayerId, params.shapeLayerName);
       if (!txL) __mcpFail("NOT_FOUND", "Text layer not found (textLayerName / textLayerId).");
@@ -2942,6 +3492,414 @@ function __psDispatch(action, params, _options) {
       return { layer: String(LS.name), kind: __psKindName(LS), shape: params.shape || "rounded", bounds: [x, y, x + params.width, y + params.height], radius: params.shape === "rounded" || !params.shape ? Math.min(params.radius || 0, params.width / 2, params.height / 2) : 0 };
     } finally {
       app.preferences.rulerUnits = prevS;
+    }
+  }
+
+
+  if (action === "ps.shape.path") {
+    var docP = params.documentName ? app.documents.getByName(params.documentName) : __psRequireDoc();
+    var prevP = app.preferences.rulerUnits;
+    app.preferences.rulerUnits = Units.PIXELS;
+    try {
+      if (!params.items || !params.items.length) __mcpFail("INVALID_PARAMS", "items is empty.");
+      if (params.aboveLayer) docP.activeLayer = __psTargetLayer(docP, { layerName: params.aboveLayer, artboard: params.artboard });
+      var LP = __psPathShape(docP, params.items, { fill: params.fill === undefined ? "#FFFFFF" : params.fill, stroke: params.stroke, name: params.name || "Forma", opacity: params.opacity, fillOpacity: params.fillOpacity, blendMode: params.blendMode });
+      var bP = LP.bounds;
+      return { layer: String(LP.name), layerId: LP.id, parent: String(LP.parent.name), components: params.items.length, bounds: [bP[0].as("px"), bP[1].as("px"), bP[2].as("px"), bP[3].as("px")] };
+    } finally {
+      app.preferences.rulerUnits = prevP;
+    }
+  }
+
+  if (action === "ps.recipe.callout") {
+    // Callout line like the Pen tool in Shape mode: an angled run and a straight run, stroke only, plus a double
+    // dot (ring + filled dot) at one end. Optionally grouped with the tag it points from (one group per tag).
+    var docCo = params.documentName ? app.documents.getByName(params.documentName) : __psRequireDoc();
+    var prevCo = app.preferences.rulerUnits;
+    app.preferences.rulerUnits = Units.PIXELS;
+    try {
+      var ptsCo = params.points;
+      if (!ptsCo || ptsCo.length < 2) __mcpFail("INVALID_PARAMS", "points needs at least 2 points [[x,y],...].");
+      var nmCo = params.name || "Chamada";
+      var colCo = params.color || "#FFFFFF";
+      if (params.aboveLayer) docCo.activeLayer = __psTargetLayer(docCo, { layerName: params.aboveLayer, artboard: params.artboard });
+      var endCo = params.dotAt === "start" ? ptsCo[0] : ptsCo[ptsCo.length - 1];
+      var ring = typeof params.ringDiameter === "number" ? params.ringDiameter : 18;
+      var dot = typeof params.dotDiameter === "number" ? params.dotDiameter : 10;
+      var made = [];
+      var lineCo = __psPathShape(docCo, [{ type: "polyline", points: ptsCo }], { fill: null, stroke: { width: params.lineWidth || 2, color: colCo }, name: "Linha " + nmCo });
+      made.push(lineCo);
+      if (ring > 0) {
+        var rgCo = __psPathShape(docCo, [{ type: "ellipse", x: endCo[0] - ring / 2, y: endCo[1] - ring / 2, width: ring, height: ring }], { fill: null, stroke: { width: 1, color: colCo, align: "inside" }, name: "Ponto " + nmCo + " anel", opacity: 90 });
+        made.push(rgCo);
+      }
+      if (dot > 0) made.push(__psPathShape(docCo, [{ type: "ellipse", x: endCo[0] - dot / 2, y: endCo[1] - dot / 2, width: dot, height: dot }], { fill: colCo, name: "Ponto " + nmCo }));
+      var grpCo = null;
+      if (params.groupWith && params.groupWith.length) {
+        var all = made.slice(0);
+        for (var gw = 0; gw < params.groupWith.length; gw++) all.push(__psTargetLayer(docCo, { layerName: params.groupWith[gw], artboard: params.artboard }));
+        grpCo = __psGroupLayers(docCo, all, params.groupName || nmCo);
+      }
+      var names = [];
+      for (var mc = 0; mc < made.length; mc++) names.push(String(made[mc].name));
+      return { layers: names, group: grpCo ? String(grpCo.name) : null, end: endCo };
+    } finally {
+      app.preferences.rulerUnits = prevCo;
+    }
+  }
+
+  if (action === "ps.layers.group") {
+    var docGr = params.documentName ? app.documents.getByName(params.documentName) : __psRequireDoc();
+    var lysGr = [];
+    var namesGr = params.layerNames || [];
+    for (var ig = 0; ig < namesGr.length; ig++) lysGr.push(__psTargetLayer(docGr, { layerName: namesGr[ig], artboard: params.artboard }));
+    var idsGr = params.layerIds || [];
+    for (var jg = 0; jg < idsGr.length; jg++) lysGr.push(__psTargetLayer(docGr, { layerId: idsGr[jg], artboard: params.artboard }));
+    if (!lysGr.length) __mcpFail("INVALID_PARAMS", "Name the layers to group (layerNames or layerIds).");
+    var gGr = __psGroupLayers(docGr, lysGr, params.groupName);
+    return { group: String(gGr.name), parent: String(gGr.parent.name), layers: lysGr.length };
+  }
+
+  if (action === "ps.recipe.gradientBackground") {
+    // Background as a rectangle the size of the artboard + Gradient Overlay. A gradient FILL layer moves when
+    // the artboard is duplicated (Photoshop recomputes it across both artboards); a layer effect on a shape
+    // does not. Optional sun: a sharp disc in the centre colour (blur 0-1 px) that only shows because the
+    // gradient gets darker outside it (25/11/2026).
+    var docBg = params.documentName ? app.documents.getByName(params.documentName) : __psRequireDoc();
+    var prevBg = app.preferences.rulerUnits;
+    app.preferences.rulerUnits = Units.PIXELS;
+    try {
+      var abBg = __psArtboardByName(docBg, params.artboard);
+      var rcBg = abBg.info.rect;
+      var setBg = abBg.set;
+      var bottom = setBg.layers[setBg.layers.length - 1];
+      docBg.activeLayer = bottom;
+      var stopsBg = params.stops || [{ color: "#D8060A", location: 0 }, { color: "#B00206", location: 39 }, { color: "#8A0106", location: 73 }, { color: "#6A0105", location: 100 }];
+      var rectBg = __psShapeLayer(docBg, "rectangle", [rcBg.x, rcBg.y, rcBg.x + rcBg.width, rcBg.y + rcBg.height], 0, stopsBg[0].color, params.name || "Fundo degrade");
+      __psSetLayerFx(docBg, rectBg, __psGradientOverlayFx(stopsBg, params.type || "radial", typeof params.angle === "number" ? params.angle : 90, params.scale || 105, params.offsetX || 0, typeof params.offsetY === "number" ? params.offsetY : -12));
+      var sunOut = null;
+      if (params.sun) {
+        var dS = params.sun.diameter || Math.round(rcBg.width * 0.64);
+        var cxS = rcBg.x + (typeof params.sun.centerX === "number" ? params.sun.centerX : rcBg.width / 2);
+        var cyS = rcBg.y + (typeof params.sun.centerY === "number" ? params.sun.centerY : rcBg.height * 0.23);
+        var sunL = __psShapeLayer(docBg, "ellipse", [cxS - dS / 2, cyS - dS / 2, cxS + dS / 2, cyS + dS / 2], 0, params.sun.color || stopsBg[0].color, params.sun.name || "Sol");
+        var blurS = typeof params.sun.blur === "number" ? params.sun.blur : 1;
+        if (blurS > 0) {
+          sunL = __psToSmartObject(docBg, sunL);
+          sunL.name = params.sun.name || "Sol";
+          var gS = new ActionDescriptor();
+          gS.putUnitDouble(charIDToTypeID("Rds "), charIDToTypeID("#Pxl"), blurS);
+          executeAction(charIDToTypeID("GsnB"), gS, DialogModes.NO);
+        }
+        sunOut = { layer: String(docBg.activeLayer.name), diameter: dS, center: [cxS, cyS], blur: blurS };
+      }
+      return { artboard: params.artboard, background: String(rectBg.name), rect: [rcBg.x, rcBg.y, rcBg.width, rcBg.height], stops: stopsBg, sun: sunOut, note: "Measure inside the sun, just outside it and in the corners: the edges must be darker for the sun to show." };
+    } finally {
+      app.preferences.rulerUnits = prevBg;
+    }
+  }
+
+
+  if (action === "ps.recipe.vignette") {
+    // Vignette (taught by the user 25/11/2026): select what should keep its tone (an ellipse, or the subject
+    // expanded), invert, adjustment layer on the inverse (Hue/Saturation lightness, Curves or Levels) and a SOFT
+    // edge with the mask's own Feather (non-destructive; 60 px or more, 80 on 1080x1440; larger file = larger
+    // feather). It should rarely be noticed: darken what we do not want people to look at.
+    var docV = params.documentName ? app.documents.getByName(params.documentName) : __psRequireDoc();
+    app.activeDocument = docV;
+    var prevV = app.preferences.rulerUnits;
+    app.preferences.rulerUnits = Units.PIXELS;
+    try {
+      var c = charIDToTypeID, s = stringIDToTypeID;
+      var shapeV = params.shape || "ellipse";
+      if (params.aboveLayer) docV.activeLayer = __psTargetLayer(docV, { layerName: params.aboveLayer, artboard: params.artboard });
+      var anchorV = docV.activeLayer;
+      if (shapeV === "subject") {
+        var srcV = __psTargetLayer(docV, { layerName: params.subjectLayer || params.aboveLayer, artboard: params.artboard });
+        docV.activeLayer = srcV;
+        var sdV = new ActionDescriptor();
+        sdV.putBoolean(s("sampleAllLayers"), false);
+        executeAction(s("autoCutout"), sdV, DialogModes.NO);
+        if (params.expand !== 0) docV.selection.expand(UnitValue(typeof params.expand === "number" ? params.expand : 60, "px"));
+        docV.activeLayer = anchorV;
+      } else {
+        var bx = params.bounds;
+        if (!bx) {
+          var rcV = params.artboard ? __psArtboardByName(docV, params.artboard).info.rect : { x: 0, y: 0, width: docV.width.as("px"), height: docV.height.as("px") };
+          bx = { left: rcV.x + rcV.width * 0.12, top: rcV.y + rcV.height * 0.1, right: rcV.x + rcV.width * 0.88, bottom: rcV.y + rcV.height * 0.8 };
+        }
+        var elD = new ActionDescriptor();
+        var elR = new ActionReference();
+        elR.putProperty(c("Chnl"), c("fsel"));
+        elD.putReference(c("null"), elR);
+        var elB = new ActionDescriptor();
+        elB.putUnitDouble(c("Top "), c("#Pxl"), bx.top);
+        elB.putUnitDouble(c("Left"), c("#Pxl"), bx.left);
+        elB.putUnitDouble(c("Btom"), c("#Pxl"), bx.bottom);
+        elB.putUnitDouble(c("Rght"), c("#Pxl"), bx.right);
+        elD.putObject(c("T   "), c("Elps"), elB);
+        elD.putBoolean(c("AntA"), true);
+        executeAction(c("setd"), elD, DialogModes.NO);
+      }
+      docV.selection.invert();
+      var adjV = params.adjustment || "hueSaturation";
+      var amt = typeof params.amount === "number" ? params.amount : 42;
+      var mk = new ActionDescriptor();
+      var rf = new ActionReference();
+      rf.putClass(c("AdjL"));
+      mk.putReference(c("null"), rf);
+      var al = new ActionDescriptor();
+      al.putString(c("Nm  "), params.name || "Vinheta");
+      if (adjV === "curves") {
+        var cv = new ActionDescriptor();
+        cv.putEnumerated(s("presetKind"), s("presetKindType"), s("presetKindCustom"));
+        var chl = new ActionList();
+        var ch = new ActionDescriptor();
+        var chr = new ActionReference();
+        chr.putEnumerated(c("Chnl"), c("Chnl"), c("Cmps"));
+        ch.putReference(c("Chnl"), chr);
+        var pl = new ActionList();
+        var pts = [[0, 0], [128, Math.max(0, 128 - amt * 1.4)], [255, Math.max(0, 255 - amt)]];
+        for (var pi = 0; pi < pts.length; pi++) {
+          var pt = new ActionDescriptor();
+          pt.putDouble(c("Hrzn"), pts[pi][0]);
+          pt.putDouble(c("Vrtc"), pts[pi][1]);
+          pl.putObject(c("Pnt "), pt);
+        }
+        ch.putList(c("Crv "), pl);
+        chl.putObject(c("CrvA"), ch);
+        cv.putList(c("Adjs"), chl);
+        al.putObject(c("Type"), c("Crvs"), cv);
+      } else if (adjV === "levels") {
+        var lv = new ActionDescriptor();
+        lv.putEnumerated(s("presetKind"), s("presetKindType"), s("presetKindCustom"));
+        var ll = new ActionList();
+        var la = new ActionDescriptor();
+        var lr = new ActionReference();
+        lr.putEnumerated(c("Chnl"), c("Chnl"), c("Cmps"));
+        la.putReference(c("Chnl"), lr);
+        la.putDouble(c("Gmm "), Math.max(0.1, 1 - amt / 100));
+        ll.putObject(c("LvlA"), la);
+        lv.putList(c("Adjs"), ll);
+        al.putObject(c("Type"), c("Lvls"), lv);
+      } else {
+        var hs = new ActionDescriptor();
+        hs.putEnumerated(s("presetKind"), s("presetKindType"), s("presetKindCustom"));
+        hs.putBoolean(c("Clrz"), false);
+        var hl = new ActionList();
+        var hm = new ActionDescriptor();
+        hm.putInteger(c("H   "), 0);
+        hm.putInteger(c("Strt"), typeof params.saturation === "number" ? params.saturation : 0);
+        hm.putInteger(c("Lght"), -Math.abs(amt));
+        hl.putObject(c("Hst2"), hm);
+        hs.putList(c("Adjs"), hl);
+        al.putObject(c("Type"), c("HStr"), hs);
+      }
+      mk.putObject(c("Usng"), c("AdjL"), al);
+      executeAction(c("Mk  "), mk, DialogModes.NO);
+      var LV = docV.activeLayer;
+      LV.name = params.name || "Vinheta";
+      var fth = typeof params.feather === "number" ? params.feather : Math.max(60, Math.round(Math.min(docV.width.as("px"), docV.height.as("px")) * 0.055));
+      var fd = new ActionDescriptor();
+      var fr = new ActionReference();
+      fr.putEnumerated(c("Lyr "), c("Ordn"), c("Trgt"));
+      fd.putReference(c("null"), fr);
+      var ft = new ActionDescriptor();
+      ft.putUnitDouble(s("userMaskFeather"), c("#Pxl"), fth);
+      fd.putObject(c("T   "), c("Lyr "), ft);
+      executeAction(c("setd"), fd, DialogModes.NO);
+      try {
+        docV.selection.deselect();
+      } catch (_eDs) {}
+      // The vignette darkens the BACKGROUND, never the subject (user correction 25/11/2026): a cutout copy of the
+      // subject goes right above the vignette, so the people keep their tone even where the ellipse reaches them.
+      var protV = null;
+      if (params.protectSubject !== false) {
+        var srcP = null;
+        try {
+          srcP = __psTargetLayer(docV, { layerName: params.subjectLayer || params.aboveLayer, artboard: params.artboard });
+        } catch (_eSp) {
+          srcP = null;
+        }
+        if (srcP && srcP.typename === "ArtLayer" && srcP !== LV) {
+          protV = srcP.duplicate(LV, ElementPlacement.PLACEBEFORE);
+          protV.name = params.subjectName || "Assunto sobre a vinheta";
+          if (!protV.visible) protV.visible = true;
+          docV.activeLayer = protV;
+          var sdP = new ActionDescriptor();
+          sdP.putBoolean(s("sampleAllLayers"), false);
+          executeAction(s("autoCutout"), sdP, DialogModes.NO);
+          var mkP = new ActionDescriptor();
+          mkP.putClass(c("Nw  "), c("Chnl"));
+          var mrP = new ActionReference();
+          mrP.putEnumerated(c("Chnl"), c("Chnl"), c("Msk "));
+          mkP.putReference(c("At  "), mrP);
+          mkP.putEnumerated(c("Usng"), c("UsrM"), c("RvlS"));
+          executeAction(c("Mk  "), mkP, DialogModes.NO);
+          try {
+            docV.selection.deselect();
+          } catch (_eDs3) {}
+        }
+      }
+      return {
+        layer: String(LV.name),
+        adjustment: adjV,
+        amount: amt,
+        feather: fth,
+        shape: shapeV,
+        parent: String(LV.parent.name),
+        subjectOnTop: protV ? String(protV.name) : null,
+        note: protV
+          ? "Subject cutout above the vignette: only the background darkens. Feather lives in the mask properties."
+          : "No subject copy (pass subjectLayer/aboveLayer = the photo, or protectSubject false on purpose). Feather lives in the mask properties."
+      };
+    } finally {
+      app.preferences.rulerUnits = prevV;
+    }
+  }
+
+  if (action === "ps.recipe.backgroundBlurClean") {
+    // Blurred background without a halo (taught by the user 25/11/2026): blurring a scene that still has the
+    // people in it smears them outside the cutout. Select the subject, expand ~10 px, remove the people from a
+    // copy of the scene (Content-Aware Fill here: no generative credits; the Remove tool with AI is the manual
+    // alternative and needs every layer above hidden), merge into a Smart Object, blur it, and put the subject
+    // cutout from the original scene on top.
+    var docB = params.documentName ? app.documents.getByName(params.documentName) : __psRequireDoc();
+    app.activeDocument = docB;
+    var prevB = app.preferences.rulerUnits;
+    app.preferences.rulerUnits = Units.PIXELS;
+    try {
+      var cB = charIDToTypeID, sB = stringIDToTypeID;
+      var scene = __psTargetLayer(docB, { layerName: params.layerName, artboard: params.artboard });
+      var baseName = String(scene.name);
+      var methodB = params.method || "contentAware";
+      // Remove tool (AI) — may spend the person's Adobe generative credits: only with their consent, and in two
+      // steps, because the Remove button is clicked by the person. step "prepare": hides every visible layer above
+      // the scene (Remove uses everything visible), selects the subject + expand, leaves the selection on the
+      // scene. The person clicks Remove (contextual task bar). step "finish": stamps scene + "Remove tool edits"
+      // into one layer (Ctrl+Alt+E), Smart Object, blur, subject cutout on top, layers shown again.
+      if (methodB === "remove") {
+        if (params.allowGenerativeCredits !== true) __mcpFail("CONSENT_REQUIRED", "The Remove tool can spend the person's Adobe generative credits. Ask first; call again with allowGenerativeCredits: true, or use method contentAware (local, free).");
+        if ((params.step || "prepare") === "prepare") {
+          var hiddenB = [];
+          var hideAbove = function (container, stopAt) {
+            for (var hi = 0; hi < container.layers.length; hi++) {
+              var Lh = container.layers[hi];
+              if (Lh === stopAt) return true;
+              if (Lh.typename === "LayerSet" && __psFindLayer(Lh, stopAt.id, null)) {
+                if (hideAbove(Lh, stopAt)) return true;
+                continue;
+              }
+              if (Lh.visible) { Lh.visible = false; hiddenB.push(Lh.id); }
+            }
+            return false;
+          };
+          hideAbove(docB, scene);
+          docB.activeLayer = scene;
+          var spB = new ActionDescriptor();
+          spB.putBoolean(sB("sampleAllLayers"), false);
+          executeAction(sB("autoCutout"), spB, DialogModes.NO);
+          docB.selection.expand(UnitValue(typeof params.expand === "number" ? params.expand : 10, "px"));
+          docB.activeLayer = scene;
+          return { step: "prepare", hiddenLayerIds: hiddenB, scene: baseName, next: "Ask the person to click Remove on the contextual task bar (it creates a 'Remove tool edits' layer). Then call again with step: 'finish' and the same hiddenLayerIds." };
+        }
+        // finish
+        var edits = null;
+        var editsName = params.editsLayerName || "Remove tool edits";
+        try { edits = __psTargetLayer(docB, { layerName: editsName, artboard: params.artboard }); } catch (_eEd) { edits = null; }
+        if (!edits) __mcpFail("NOT_FOUND", "No '" + editsName + "' layer: the Remove step did not run (or the layer has another name: pass editsLayerName).");
+        try { docB.selection.deselect(); } catch (_eDs2) {}
+        __psSelectIds([scene.id, edits.id]);
+        var mgB = new ActionDescriptor();
+        mgB.putBoolean(cB("Dplc"), true);
+        executeAction(cB("Mrg2"), mgB, DialogModes.NO);
+        var stamped = docB.activeLayer;
+        executeAction(sB("newPlacedLayer"), undefined, DialogModes.NO);
+        stamped = docB.activeLayer;
+        stamped.name = baseName + " sem pessoas (desfoque)";
+        var gR = new ActionDescriptor();
+        gR.putUnitDouble(cB("Rds "), cB("#Pxl"), typeof params.radius === "number" ? params.radius : 12);
+        executeAction(cB("GsnB"), gR, DialogModes.NO);
+        var ids = params.hiddenLayerIds || [];
+        for (var ri = 0; ri < ids.length; ri++) {
+          var Lr = __psFindLayer(docB, ids[ri], null);
+          if (Lr) Lr.visible = true;
+        }
+        var subjR = null;
+        if (params.addSubject !== false) {
+          subjR = scene.duplicate(stamped, ElementPlacement.PLACEBEFORE);
+          subjR.name = params.subjectName || "Pessoas recortadas";
+          docB.activeLayer = subjR;
+          var sdR = new ActionDescriptor();
+          sdR.putBoolean(sB("sampleAllLayers"), false);
+          executeAction(sB("autoCutout"), sdR, DialogModes.NO);
+          var mkR = new ActionDescriptor();
+          mkR.putClass(cB("Nw  "), cB("Chnl"));
+          var mrR = new ActionReference();
+          mrR.putEnumerated(cB("Chnl"), cB("Chnl"), cB("Msk "));
+          mkR.putReference(cB("At  "), mrR);
+          mkR.putEnumerated(cB("Usng"), cB("UsrM"), cB("RvlS"));
+          executeAction(cB("Mk  "), mkR, DialogModes.NO);
+        }
+        scene.visible = false;
+        edits.visible = false;
+        return { step: "finish", method: "remove", cleanBlurred: String(stamped.name), subject: subjR ? String(subjR.name) : null, restored: ids.length };
+      }
+      // 1. subject selection on the scene (only this layer)
+      docB.activeLayer = scene;
+      var sdB = new ActionDescriptor();
+      sdB.putBoolean(sB("sampleAllLayers"), false);
+      executeAction(sB("autoCutout"), sdB, DialogModes.NO);
+      docB.selection.expand(UnitValue(typeof params.expand === "number" ? params.expand : 10, "px"));
+      docB.selection.store(docB.channels.add());
+      var selCh = docB.channels[docB.channels.length - 1];
+      selCh.name = "__mcp_sujeito";
+      // 2. clean plate: copy, rasterize, content-aware fill where the people were
+      var clean = scene.duplicate(scene, ElementPlacement.PLACEBEFORE);
+      clean.name = baseName + " sem pessoas";
+      docB.activeLayer = clean;
+      try { clean.rasterize(RasterizeType.ENTIRELAYER); } catch (_eR) {}
+      docB.selection.load(selCh);
+      var fl = new ActionDescriptor();
+      fl.putEnumerated(cB("Usng"), cB("FlCn"), sB("contentAware"));
+      fl.putBoolean(sB("contentAwareColorAdaptationFill"), true);
+      fl.putUnitDouble(cB("Opct"), cB("#Prc"), 100);
+      fl.putEnumerated(cB("Md  "), cB("BlnM"), cB("Nrml"));
+      executeAction(cB("Fl  "), fl, DialogModes.NO);
+      docB.selection.deselect();
+      // 3. Smart Object + blur
+      docB.activeLayer = clean;
+      executeAction(sB("newPlacedLayer"), undefined, DialogModes.NO);
+      clean = docB.activeLayer;
+      clean.name = baseName + " sem pessoas (desfoque)";
+      var gB = new ActionDescriptor();
+      gB.putUnitDouble(cB("Rds "), cB("#Pxl"), typeof params.radius === "number" ? params.radius : 12);
+      executeAction(cB("GsnB"), gB, DialogModes.NO);
+      // 4. subject cutout from the original scene, on top (skip when the document already has one, e.g. a pop-out)
+      if (params.addSubject === false) {
+        scene.visible = false;
+        try { selCh.remove(); } catch (_eC0) {}
+        return { scene: baseName + " (hidden, kept)", cleanBlurred: String(clean.name), subject: null, method: "contentAwareFill" };
+      }
+      var subj = scene.duplicate(clean, ElementPlacement.PLACEBEFORE);
+      subj.name = params.subjectName || "Pessoas recortadas";
+      docB.activeLayer = subj;
+      try { subj.grouped = false; } catch (_eG) {}
+      var sd2 = new ActionDescriptor();
+      sd2.putBoolean(sB("sampleAllLayers"), false);
+      executeAction(sB("autoCutout"), sd2, DialogModes.NO);
+      var mkM = new ActionDescriptor();
+      mkM.putClass(cB("Nw  "), cB("Chnl"));
+      var mrM = new ActionReference();
+      mrM.putEnumerated(cB("Chnl"), cB("Chnl"), cB("Msk "));
+      mkM.putReference(cB("At  "), mrM);
+      mkM.putEnumerated(cB("Usng"), cB("UsrM"), cB("RvlS"));
+      executeAction(cB("Mk  "), mkM, DialogModes.NO);
+      scene.visible = false;
+      try { selCh.remove(); } catch (_eC) {}
+      return { scene: baseName + " (hidden, kept)", cleanBlurred: String(clean.name), subject: String(docB.activeLayer.name), radius: typeof params.radius === "number" ? params.radius : 12, method: "contentAwareFill" };
+    } finally {
+      app.preferences.rulerUnits = prevB;
     }
   }
 
@@ -3681,9 +4639,11 @@ function __mcpDispatch(action, params, options) {
   } catch (_eD) {
     prevDialogs = null;
   }
+  var docState = __mcpEnterDocument(action, params);
   try {
     return __psDispatch(action, params, options);
   } finally {
+    __mcpLeaveDocument(docState);
     try {
       if (prevUnits !== null) app.preferences.rulerUnits = prevUnits;
       if (prevDialogs !== null) app.displayDialogs = prevDialogs;

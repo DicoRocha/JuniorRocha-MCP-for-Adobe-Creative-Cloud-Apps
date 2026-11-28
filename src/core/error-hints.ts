@@ -135,8 +135,20 @@ const HINTS: Record<string, ErrorHint> = {
   DOCUMENT_NOT_FOUND: {
     recoverable: true,
     hint:
-      "No open document has that name. List the open documents and pass the exact name (the user may have closed or " +
-      "renamed it); leave documentName out to act on the active document.",
+      "No open document has that name. The message lists the open ones: pass the exact name (the user may have closed " +
+      "or renamed it). Never fall back to the document in front.",
+    nextTools: ["ps_list_documents"]
+  },
+  DOCUMENT_REQUIRED: {
+    recoverable: true,
+    hint:
+      "Several documents are open in the app and the command did not say which one: repeat it with documentName (the " +
+      "file you are working on; the message lists the open ones). The person may be working in another of them.",
+    nextTools: ["ps_list_documents", "ai_get_document_info", "id_get_document_info"]
+  },
+  DOCUMENT_AMBIGUOUS: {
+    recoverable: true,
+    hint: "Two open documents share that name: pass the full path of the one you mean as documentName.",
     nextTools: ["ps_list_documents"]
   },
   PROJECT_DIRTY: {

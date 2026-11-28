@@ -2504,6 +2504,15 @@ function __idRecipeCatalog(doc, params, C, F, W, H, b, m, s, warnings) {
 
 function __mcpDispatch(action, params, options) {
   params = params || {};
+  var targetState = __mcpEnterDocument(action, params);
+  try {
+    return __idDispatchInDoc(action, params, options);
+  } finally {
+    __mcpLeaveDocument(targetState);
+  }
+}
+
+function __idDispatchInDoc(action, params, options) {
   var prefs = app.scriptPreferences;
   var prevUnit = null;
   var prevInteraction = null;

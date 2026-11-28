@@ -9,6 +9,11 @@ Base: `docs/conhecimento/03`. Ver também `foto-produto`, `social-thumbnail`.
 
 ## 1. Recorte (sempre por máscara)
 
+Asset gerado por IA para recortar: peça o sujeito em **fundo liso da cor dominante do cenário** onde ele vai
+entrar (laranja num fundo laranja) — o Selecionar Assunto separou pessoa + sofá laranja de um fundo laranja
+sem halo (25/11/2026), e qualquer resto de borda some no cenário. Atalho para colocar e recortar de uma vez:
+`ps_place_file { filePath, into, cutout: true }`.
+
 Atalho: `ps_recipe_remove_background({ filePath | documentName, cropToSubject, padding, psdPath })` faz
 os passos 1–2 numa cópia do documento inteiro (Smart Object + máscara do Remover Fundo) e **salva em PSD**
 (`<foto>_recorte.psd`): é esse PSD que entra no Illustrator, InDesign, After e Premiere. PNG (`outputPath`) só
@@ -72,6 +77,36 @@ assunto por cima. O quadro inteiro é o que garante o alinhamento entre as duas.
 
 Já tem o PNG recortado? `filePath` com `cutout: "no"`. A imagem já está no documento (sem fundo)? `imageName`.
 
+### Janela abstrata com vazamento parcial (testado 25/11/2026, posts "Define it yourself" e escola)
+
+Quando a forma é uma janela (retângulos arredondados somados e subtraídos) e só **uma parte** do sujeito vaza
+(cabelo e cadeira à esquerda e no recorte de cima, cabeças acima do contorno):
+
+1. Forma: `ps_create_path_shape` (add/subtract) · Illustrator: retângulos arredondados + Pathfinder menos frente.
+2. Foto inteira com máscara de corte na forma, **sem desfoque**. Regra (usuário, 25/11/2026): quando há uma
+   cópia recortada do sujeito por cima do próprio cenário, **não desfoque o cenário** — o desfoque espalha o
+   sujeito borrado para fora do recorte e cria uma borda/halo em volta dele (aparência amadora). Desfoque de
+   fundo só quando o sujeito e o fundo são imagens separadas.
+   Janela com **todos os cantos arredondados** (convexos e côncavos): `ps_create_path_shape` com `type: "polygon"`
+   e raio por vértice; somar e subtrair retângulos arredondados deixa pontas onde as formas se cruzam.
+3. Cópia recortada por cima, **sem** máscara de corte: Selecionar Assunto **∩ polígono da área que pode vazar**
+   (janela + lado/topo onde o vazamento faz sentido), com os **mesmos cantos arredondados da janela** — um limite
+   de cantos retos deixa o braço da cadeira cobrir o canto arredondado. Por script: caminho → `makeSelection`
+   em interseção com o assunto. Sem o limite, cadeira e corpo aparecem pelos vãos de baixo.
+4. **Duplicar uma camada recortada (clip) gera outra recortada:** solte a cópia (`Ungr`) para ela aparecer fora.
+5. **Mover a camada move a máscara junto** (vinculada): depois de mover a foto, a área do vazamento desce e
+   o sujeito aparece fora da janela. Desvincule a máscara (`userMaskLinked: false`) ou refaça-a depois de mover.
+6. Foto que aparece dentro **e** fora da janela (janela só com contorno, como no post da escola): **o mesmo
+   tratamento dentro e fora** — a foto inteira um pouco mais escura (preto ~25 % sobre ela, recortado na foto da
+   janela e na cópia do pop-out para o contorno verde continuar vivo), sem diferença de claro/escuro nem de
+   desfoque entre dentro e fora, e um **degradê de baixo para cima** (preto 85 % → transparente na metade) que
+   escurece só a base. As camadas na mesma escala e posição; gere a imagem **mais aberta** (ou expanda para baixo
+   no Magnific) para cobrir a prancheta inteira nessa escala.
+7. Illustrator: foto colocada com grupo de recorte pela janela; PSD recortado (`ps_recipe_remove_background`,
+   `cropToSubject: false` para alinhar com a foto) **vinculado** e recortado pelo mesmo limite arredondado.
+   Trocar o caminho de recorte de um grupo: depois, `caminho.clipping = true` **e** `grupo.clipped = true`
+   (sem isso o limite aparece como forma preenchida por cima da foto).
+
 ### Ajustes (os dois apps)
 
 - Pouca coisa saindo: aumente `overflow` (ou posicione a forma com `shapeBounds`).
@@ -102,6 +137,51 @@ Já tem o PNG recortado? `filePath` com `cutout: "no"`. A imagem já está no do
 
 Duplique a foto acima do título → selectSubject → máscara na cópia (`addMaskFromSelection`).
 Título fica entre a foto e o recorte. Confira se a parte escondida do texto ainda deixa ler.
+
+## 4b. Vinheta (ensinada pelo usuário, 25/11/2026)
+
+Valoriza o assunto: escurece o que não queremos que a pessoa olhe e deixa no tom original (mais claro, por
+contraste) o que ela deve ver. Na maioria das vezes não deve ser notada — pode ser forte, desde que não se perceba
+a forma que faz a sombra.
+
+1. Seleção do que fica no tom original: normalmente uma elipse, mas pode ser o assunto com a seleção **expandida**
+   (maior que ele).
+2. Inverter a seleção e criar uma camada de ajuste nela: Matiz/Saturação (luminosidade, ex. −42), Curvas ou Níveis.
+3. Na máscara do ajuste, **Feather (Difusão) de 60 px ou mais** nas propriedades da máscara (não destrutivo):
+   80 px em 1080×1440; arquivo maior, feather maior. A transição tem de esconder a forma.
+4. **A vinheta escurece só o fundo, nunca o assunto** (correção do usuário, 25/11/2026): uma **cópia recortada do
+   assunto vai por cima da vinheta**. Sem ela, onde a elipse alcança as pessoas (cabelo, braços, mochila nas
+   bordas) elas escurecem junto. Ordem: foto/cenário → Vinheta → assunto recortado → escurecimento geral
+   (se houver) → cartões e textos.
+Ferramenta: `ps_recipe_vignette { aboveLayer, shape: "ellipse" | "subject", bounds, adjustment, amount, feather }`
+— por padrão (`protectSubject: true`) já cria a camada "Assunto sobre a vinheta" a partir de `aboveLayer`/`subjectLayer`.
+Se já existe um recorte do assunto (ex.: depois do fundo desfocado sem halo), passe `protectSubject: false` e
+coloque a vinheta **abaixo** desse recorte.
+
+## 4c. Fundo desfocado sem halo (ensinado pelo usuário, 25/11/2026)
+
+Desfocar um cenário que ainda tem as pessoas espalha as pessoas borradas para fora do recorte → halo. Antes:
+1. Selecionar o assunto na camada do cenário e **expandir ~10 px**.
+2. Tirar as pessoas do fundo: ferramenta **Remover** (IA) — ocultar antes todas as camadas de cima, porque ela usa
+   tudo o que está visível; ela cria uma camada só com a correção: selecionar fundo + correção e **Carimbar
+   (Ctrl+Alt+E)** ou duplicar as duas e Mesclar. Sem o Remover: **Preenchimento sensível ao conteúdo**.
+3. Converter a camada limpa em objeto inteligente e desfocar (Desfoque gaussiano ou Desfoque de campo).
+4. Assunto recortado do cenário original por cima.
+Com janela e pop-out já montados (post "Define it yourself"): faça a placa limpa a partir da foto da janela,
+deixe-a recortada na janela no lugar da foto (a original fica oculta embaixo) e mantenha a cópia recortada do
+pop-out por cima — não crie outra. Para o Illustrator, exporte a placa limpa desfocada como PNG e troque o vínculo
+da foto no grupo de recorte (`relink`, mesma caixa).
+Ferramenta: `ps_recipe_background_blur_clean { layerName, expand: 10, radius, addSubject }`.
+- **Padrão `method: "contentAware"`**: preenchimento sensível ao conteúdo, local, sem crédito. Testado ao vivo
+  (25/11/2026, posts da escola e "Define it yourself"): sem halo no cabelo nem no perfil.
+- **`method: "remove"`** (ferramenta Remover, IA, preenche melhor): **pode gastar créditos generativos da Adobe da
+  pessoa — pergunte antes** e só passe `allowGenerativeCredits: true` com o "sim" dela. São dois passos:
+  `step: "prepare"` (oculta tudo acima do cenário, seleciona o assunto +10 px) → a pessoa clica **Remover** na
+  barra contextual → `step: "finish"` com os `hiddenLayerIds` (carimba cenário + "Remove tool edits",
+  objeto inteligente, desfoque, mostra as camadas de novo). O "prepare" foi testado; o "finish" ainda não ao vivo.
+- `addSubject: false` quando o documento já tem a cópia recortada por cima (pop-out): a placa limpa entra no lugar
+  da foto, recortada na janela.
+
 
 ## 5. Grão e unificação final
 

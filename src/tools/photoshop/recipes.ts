@@ -152,7 +152,8 @@ export function registerPhotoshopRecipes(server: McpServer, router: BridgeRouter
     "ps_center_text_in_shape",
     "Centres a text layer inside a shape layer (button, pill, tag, card) by the CAP HEIGHT of the text, which is how the eye reads it: " +
       "the ink box of a line with descenders or accents sits off-centre. Multi-line point text is centred from the first cap top to the " +
-      "last baseline; paragraph text falls back to the ink box. Returns the space left on each side; offsetY nudges it optically.",
+      "last baseline; paragraph text falls back to the ink box. Returns the space left on each side; offsetY nudges it optically. " +
+      "With layerNames it centres a set of layers on both axes (block of lines, price phrase).",
     {
       documentName: z.string().optional(),
       textLayerName: z.string().optional(),
@@ -163,12 +164,88 @@ export function registerPhotoshopRecipes(server: McpServer, router: BridgeRouter
       horizontal: z.boolean().optional().default(true),
       vertical: z.boolean().optional().default(true),
       offsetX: z.number().optional().describe("Extra px to the right (optical adjustment)."),
-      offsetY: z.number().optional().describe("Extra px downwards (optical adjustment).")
+      offsetY: z.number().optional().describe("Extra px downwards (optical adjustment)."),
+      layerNames: z
+        .array(z.string())
+        .optional()
+        .describe("Centre a SET as one (a text block of several layers, a price, icon + text): the box around their ink goes to the centre of the shape, measured without effects; the layers keep their positions relative to each other.")
     },
     async (params) => {
       try {
         const res = await router.dispatch("photoshop", "ps.text.centerInShape", params, { undoGroup: "MCP: Center text in shape" });
         return formatSuccessResponse(res.data);
+      } catch (err) {
+        return formatErrorResponse(err);
+      }
+    }
+  );
+
+  server.tool(
+    "ps_recipe_motion_trail",
+    "Speed on an object (icon, product, ball): turns the layer into a Smart Object, puts a motion-blurred copy behind it shifted " +
+      "back along the movement (the trail) and a light motion blur on the object itself. The source asset should be sharp (no blur " +
+      "baked in by the image generator): the blur is done here, editable as Smart Filters.",
+    {
+      documentName: z.string().optional(),
+      layerName: z.string(),
+      angle: z.number().optional().default(0).describe("Direction of the movement in degrees (0 = horizontal)."),
+      distance: z.number().min(1).max(999).optional().default(90).describe("Trail blur distance, px."),
+      offset: z.number().optional().default(30).describe("Trail shift in px along the angle (negative = the other side)."),
+      trailOpacity: z.number().min(0).max(100).optional().default(85),
+      selfBlur: z.number().min(0).max(200).optional().default(12).describe("Light blur on the object itself (0 = sharp).")
+    },
+    async (params) => {
+      try {
+        const res = await router.dispatch("photoshop", "ps.recipe.motionTrail", params, { undoGroup: "MCP: Motion trail", timeoutMs: 70000 });
+        return formatSuccessResponse(res.data);
+      } catch (err) {
+        return formatErrorResponse(err);
+      }
+    }
+  );
+
+  server.tool(
+    "ps_recipe_price_tag",
+    "A price set as one phrase (\"PLANOS A PARTIR DE R$ 59,90/mês\"): creates the text layers in the shape's artboard, puts the currency, " +
+      "cents and period at the same distance from the value as the gap between its own digits (cents on top, period on the baseline), " +
+      "the label a line gap above, and centres the set in the shape (measured without its shadow).",
+    {
+      documentName: z.string().optional(),
+      shapeLayerName: z.string().describe("Card/shape that holds the price."),
+      value: z.string().describe("Main number, e.g. '59'."),
+      currency: z.string().optional().default("R$"),
+      cents: z.string().optional().describe("e.g. ',90'."),
+      period: z.string().optional().describe("e.g. '/mês'."),
+      label: z.string().optional().describe("e.g. 'PLANOS A PARTIR DE'."),
+      valueSize: z.number().positive().optional().default(120).describe("px."),
+      fonts: z
+        .object({ value: z.string().optional(), currency: z.string().optional(), cents: z.string().optional(), period: z.string().optional(), label: z.string().optional() })
+        .optional()
+        .describe("PostScript names (default Poppins ExtraBold/SemiBold/Bold/Medium)."),
+      accentColor: z.string().optional().default("#F26A1B"),
+      mutedColor: z.string().optional().default("#6B6B6B"),
+      namePrefix: z.string().optional().default("Preco")
+    },
+    async (params) => {
+      try {
+        const f = { value: "Poppins-ExtraBold", currency: "Poppins-SemiBold", cents: "Poppins-Bold", period: "Poppins-Medium", label: "Poppins-Medium", ...(params.fonts ?? {}) };
+        const q = await router.dispatch("photoshop", "ps.text.arrangePrice", { documentName: params.documentName, queryShape: params.shapeLayerName });
+        const b = (q.data as { bounds: number[] }).bounds;
+        const pos: [number, number] = [Math.round(b[0] + 20), Math.round((b[1] + b[3]) / 2)];
+        const vs = params.valueSize;
+        const make = async (name: string, text: string, font: string, size: number, color: string) => {
+          await router.dispatch("photoshop", "ps.layer.create", { documentName: params.documentName, layerType: "text", name, text, font, fontSize: size, color, position: pos }, { undoGroup: "MCP: Price tag" });
+          return name;
+        };
+        const P = params.namePrefix;
+        const names: Record<string, string | undefined> = {};
+        if (params.label) names.labelLayer = await make(`${P} rotulo`, params.label, f.label, Math.round(vs * 0.18), params.mutedColor);
+        names.valueLayer = await make(`${P} valor`, params.value, f.value, vs, params.accentColor);
+        if (params.currency) names.currencyLayer = await make(`${P} moeda`, params.currency, f.currency, Math.round(vs * 0.28), params.accentColor);
+        if (params.cents) names.centsLayer = await make(`${P} centavos`, params.cents, f.cents, Math.round(vs * 0.38), params.accentColor);
+        if (params.period) names.periodLayer = await make(`${P} periodo`, params.period, f.period, Math.round(vs * 0.2), params.mutedColor);
+        const res = await router.dispatch("photoshop", "ps.text.arrangePrice", { documentName: params.documentName, shapeLayer: params.shapeLayerName, ...names }, { undoGroup: "MCP: Price tag" });
+        return formatSuccessResponse({ layers: names, ...(res.data as object) });
       } catch (err) {
         return formatErrorResponse(err);
       }
@@ -401,6 +478,229 @@ export function registerPhotoshopRecipes(server: McpServer, router: BridgeRouter
           mimeType: pv.mimeType,
           includeImageContent: true
         });
+      } catch (err) {
+        return formatErrorResponse(err);
+      }
+    }
+  );
+
+  const hex = z.string().regex(/^#?[0-9a-fA-F]{6}$/, "colour as #RRGGBB");
+  const pathItem = z.object({
+    type: z.enum(["rounded", "rectangle", "ellipse", "polyline", "polygon"]).default("rounded"),
+    op: z
+      .enum(["add", "subtract", "intersect", "exclude"])
+      .optional()
+      .describe("Combine Shapes / Subtract Front Shape / Intersect Shape Areas / Exclude Overlapping Shapes. The first item is always add."),
+    x: z.number().optional(),
+    y: z.number().optional(),
+    width: z.number().positive().optional(),
+    height: z.number().positive().optional(),
+    radius: z.number().min(0).optional().describe("rounded: corner radius, px."),
+    points: z
+      .array(z.array(z.number()).min(2).max(3))
+      .optional()
+      .describe("polyline: [[x,y], ...] (open path, use with stroke). polygon: [[x,y,radius?], ...] around the shape, every corner rounded (convex and concave)."),
+    cornerRadius: z.number().min(0).optional().describe("polygon: radius for the vertices that do not give their own."),
+    closed: z.boolean().optional().describe("polyline: close it (a polygon, e.g. a speech-bubble tail).")
+  });
+
+  server.tool(
+    "ps_create_path_shape",
+    "One shape layer made of several components combined with Photoshop's shape modes (Combine Shapes = add, Subtract Front Shape = " +
+      "subtract, Intersect, Exclude), like drawing with the shape tools in those modes: an abstract 'window' of rounded rectangles " +
+      "joined and cut, a speech bubble (rounded rect + tail), a frame with a hole. Also open paths (polyline) for lines with a stroke " +
+      "and no fill. polygon: the outline as points with a radius per vertex, so EVERY corner is rounded (adding/subtracting rounded " +
+      "rectangles leaves pointed corners where the shapes meet). The components stay live. Clip a photo to it for a window.",
+    {
+      documentName: z.string().optional(),
+      items: z.array(pathItem).min(1).describe("Components in order (document px, top-left origin)."),
+      fill: hex.nullable().optional().default("#FFFFFF").describe("null = no fill (outline or line only)."),
+      stroke: z
+        .object({
+          width: z.number().positive().default(2),
+          color: hex.default("#FFFFFF"),
+          align: z.enum(["inside", "center", "outside"]).optional(),
+          cap: z.enum(["butt", "round"]).optional(),
+          opacity: z.number().min(0).max(100).optional()
+        })
+        .optional(),
+      name: z.string().optional(),
+      aboveLayer: z.string().optional().describe("Create right above this layer (puts it in that layer's group/artboard)."),
+      artboard: z.string().optional().describe("Look for aboveLayer only inside this artboard."),
+      opacity: z.number().min(0).max(100).optional(),
+      fillOpacity: z.number().min(0).max(100).optional(),
+      blendMode: z.string().optional()
+    },
+    async (params) => {
+      try {
+        const res = await router.dispatch("photoshop", "ps.shape.path", params, { undoGroup: "MCP: Path shape", timeoutMs: 45000 });
+        return formatSuccessResponse(res.data);
+      } catch (err) {
+        return formatErrorResponse(err);
+      }
+    }
+  );
+
+  server.tool(
+    "ps_recipe_callout",
+    "Callout line from a tag/label to a point on the subject, like the Pen tool in Shape mode: an angled run then a straight run " +
+      "(give the points), stroke only (2 px), and a double dot at one end (ring 18 px with a 1 px stroke at 90 % + filled dot 10 px). " +
+      "groupWith puts the line, the dots and the tag layers in one group (one group per tag inside the tags group).",
+    {
+      documentName: z.string().optional(),
+      points: z.array(z.array(z.number()).length(2)).min(2).describe("[[x,y], ...] in document px, e.g. tag edge → elbow → point on the subject."),
+      dotAt: z.enum(["start", "end"]).optional().default("end"),
+      name: z.string().describe("Base name: 'Linha <name>', 'Ponto <name>', 'Ponto <name> anel'."),
+      color: hex.optional().default("#FFFFFF"),
+      lineWidth: z.number().positive().optional().default(2),
+      ringDiameter: z.number().min(0).optional().default(18),
+      dotDiameter: z.number().min(0).optional().default(10),
+      aboveLayer: z.string().optional(),
+      artboard: z.string().optional(),
+      groupWith: z.array(z.string()).optional().describe("Tag layers (glass, circle, icon, text) to group with the line and the dots."),
+      groupName: z.string().optional()
+    },
+    async (params) => {
+      try {
+        const res = await router.dispatch("photoshop", "ps.recipe.callout", params, { undoGroup: "MCP: Callout", timeoutMs: 45000 });
+        return formatSuccessResponse(res.data);
+      } catch (err) {
+        return formatErrorResponse(err);
+      }
+    }
+  );
+
+  server.tool(
+    "ps_group_layers",
+    "Group the named layers into a new group where they are (inside their artboard or group), e.g. one group per tag with its line " +
+      "and dots inside the 'Tags' group. Same names in several artboards: pass artboard.",
+    {
+      documentName: z.string().optional(),
+      layerNames: z.array(z.string()).optional(),
+      layerIds: z.array(z.number().int()).optional(),
+      groupName: z.string(),
+      artboard: z.string().optional()
+    },
+    async (params) => {
+      try {
+        const res = await router.dispatch("photoshop", "ps.layers.group", params, { undoGroup: "MCP: Group layers" });
+        return formatSuccessResponse(res.data);
+      } catch (err) {
+        return formatErrorResponse(err);
+      }
+    }
+  );
+
+  server.tool(
+    "ps_recipe_gradient_background",
+    "Background of an artboard as a rectangle of the artboard's size + Gradient Overlay (radial by default). Unlike a gradient fill " +
+      "layer it does not shift when the artboard is duplicated to another format. Optional sun: a sharp disc (blur 0-1 px) in the " +
+      "centre colour, visible because the gradient is darker outside it. Measure inside the sun, just outside and in the corners.",
+    {
+      documentName: z.string().optional(),
+      artboard: z.string(),
+      stops: z
+        .array(z.object({ color: hex, location: z.number().min(0).max(100) }))
+        .min(2)
+        .optional()
+        .describe("Default red: #D8060A 0 · #B00206 39 · #8A0106 73 · #6A0105 100."),
+      type: z.enum(["radial", "linear"]).optional().default("radial"),
+      angle: z.number().optional().default(90),
+      scale: z.number().min(10).max(150).optional().default(105),
+      offsetX: z.number().optional().default(0).describe("% of the layer."),
+      offsetY: z.number().optional().default(-12).describe("% of the layer (negative = up)."),
+      name: z.string().optional(),
+      sun: z
+        .object({
+          diameter: z.number().positive().optional(),
+          centerX: z.number().optional().describe("px from the artboard's left."),
+          centerY: z.number().optional().describe("px from the artboard's top."),
+          color: hex.optional(),
+          blur: z.number().min(0).max(10).optional().default(1),
+          name: z.string().optional()
+        })
+        .optional()
+    },
+    async (params) => {
+      try {
+        const res = await router.dispatch("photoshop", "ps.recipe.gradientBackground", params, { undoGroup: "MCP: Gradient background", timeoutMs: 45000 });
+        return formatSuccessResponse(res.data);
+      } catch (err) {
+        return formatErrorResponse(err);
+      }
+    }
+  );
+
+  server.tool(
+    "ps_recipe_vignette",
+    "Vignette that values the subject: selects what keeps its tone (an ellipse, or the subject expanded), inverts, adds an adjustment " +
+      "layer on the rest (Hue/Saturation lightness by default, or Curves / Levels) and softens the edge with the mask's Feather " +
+      "(non-destructive; default ~5.5 % of the short side, at least 60 px — 80 px on 1080x1440). It should rarely be noticed; it can be " +
+      "strong as long as the shape cannot be seen. Put it above the background/photo layers and below texts and cards. It darkens the " +
+      "background only: by default a cutout copy of the subject goes right above it.",
+    {
+      documentName: z.string().optional(),
+      artboard: z.string().optional(),
+      aboveLayer: z.string().optional().describe("Create right above this layer (e.g. the background photo)."),
+      shape: z.enum(["ellipse", "subject"]).optional().default("ellipse"),
+      bounds: z
+        .object({ left: z.number(), top: z.number(), right: z.number(), bottom: z.number() })
+        .optional()
+        .describe("ellipse: box in document px (default: 76 % x 70 % of the artboard, a bit above the centre)."),
+      subjectLayer: z.string().optional().describe("shape subject: the photo layer to select the subject from (default aboveLayer)."),
+      expand: z.number().min(0).optional().describe("shape subject: grow the selection so the subject sits inside the light area (default 60)."),
+      adjustment: z.enum(["hueSaturation", "curves", "levels"]).optional().default("hueSaturation"),
+      amount: z.number().min(1).max(100).optional().default(42).describe("hueSaturation: lightness −amount; curves/levels: how much darker."),
+      saturation: z.number().min(-100).max(100).optional().describe("hueSaturation: also change saturation outside the subject."),
+      feather: z.number().min(0).max(1000).optional().describe("Mask feather in px (60+; bigger files need more)."),
+      name: z.string().optional(),
+      protectSubject: z
+        .boolean()
+        .optional()
+        .default(true)
+        .describe("Cutout copy of the subject (from subjectLayer/aboveLayer) right above the vignette, so only the background darkens. false only when a cutout already sits above."),
+      subjectName: z.string().optional().describe("Name of the subject copy (default 'Assunto sobre a vinheta').")
+    },
+    async (params) => {
+      try {
+        const res = await router.dispatch("photoshop", "ps.recipe.vignette", params, { undoGroup: "MCP: Vignette", timeoutMs: 60000 });
+        return formatSuccessResponse(res.data);
+      } catch (err) {
+        return formatErrorResponse(err);
+      }
+    }
+  );
+
+  server.tool(
+    "ps_recipe_background_blur_clean",
+    "Blur a photo's background without a halo around the people: selects the subject on the scene layer, expands it (~10 px), " +
+      "removes the people from a copy with Content-Aware Fill (local, no generative credits), turns it into a Smart Object with a " +
+      "Gaussian Blur, and puts the subject cutout from the original on top. The original scene stays hidden below. Never blur a " +
+      "scene that still has the subject in it when a cutout of that subject sits on top: that is what makes the halo. method remove uses " +
+      "Photoshop's Remove tool instead (better fill, may spend generative credits: only with the person's consent; two steps, the person " +
+      "clicks Remove between them).",
+    {
+      documentName: z.string().optional(),
+      layerName: z.string().describe("The scene/photo layer."),
+      artboard: z.string().optional(),
+      expand: z.number().min(0).max(100).optional().default(10),
+      radius: z.number().min(1).max(250).optional().default(12).describe("Gaussian blur radius, px."),
+      subjectName: z.string().optional(),
+      addSubject: z.boolean().optional().default(true).describe("false when the document already has the subject cutout on top (a pop-out copy)."),
+      method: z
+        .enum(["contentAware", "remove"])
+        .optional()
+        .default("contentAware")
+        .describe("contentAware: Content-Aware Fill, local and free (default). remove: Photoshop's Remove tool (AI, better fill) — may spend the person's generative credits: ASK FIRST."),
+      allowGenerativeCredits: z.boolean().optional().describe("method remove: true only after the person agreed to spend credits."),
+      step: z.enum(["prepare", "finish"]).optional().describe("method remove: 'prepare' hides the layers above and selects the subject; the person clicks Remove; 'finish' stamps, blurs and restores."),
+      hiddenLayerIds: z.array(z.number().int()).optional().describe("method remove, finish: the ids 'prepare' returned."),
+      editsLayerName: z.string().optional().describe("method remove, finish: the layer Remove created (default 'Remove tool edits').")
+    },
+    async (params) => {
+      try {
+        const res = await router.dispatch("photoshop", "ps.recipe.backgroundBlurClean", params, { undoGroup: "MCP: Background blur (clean)", timeoutMs: 120000 });
+        return formatSuccessResponse(res.data);
       } catch (err) {
         return formatErrorResponse(err);
       }
